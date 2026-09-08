@@ -29,6 +29,8 @@ import Ets2026Mode from './components/Ets2026Mode';
 import Sequential3StepMode from './components/Sequential3StepMode';
 import Ets2026IpaMode from './components/Ets2026IpaMode';
 import JapaneseMinnaMode from './components/JapaneseMinnaMode';
+import MemoryMatchGame from './components/games/MemoryMatchGame';
+import SurvivalGame from './components/games/SurvivalGame';
 import { AiStatusProvider } from './components/AiStatusProvider';
 import AiStatusBadge from './components/AiStatusBadge';
 import AiDashboardModal from './components/AiDashboardModal';
@@ -291,6 +293,8 @@ function App() {
               {activeTab === 'mixedGame' && <MixedGameMode words={words} speak={speak} />}
               {activeTab === 'speaking' && <SpeakingMode words={words} />}
               {activeTab === 'translator' && <TranslatorMode speak={speak} />}
+              {activeTab === 'game_memory' && <MemoryMatchGame words={filteredWords} speak={speak} />}
+              {activeTab === 'game_survival' && <SurvivalGame words={filteredWords} speak={speak} />}
             </div>
           </main>
         </div>

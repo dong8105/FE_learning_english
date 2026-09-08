@@ -19,7 +19,9 @@ import {
     Award,
     Flame,
     Volume2,
-    BookmarkCheck
+    BookmarkCheck,
+    Heart,
+    LayoutGrid
 } from 'lucide-react';
 
 export default function Sidebar({ activeTab, setActiveTab, isOpen, onClose }) {
@@ -181,6 +183,16 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, onClose }) {
                         <SidebarButton id="grammar" icon={BookOpen} label="Luyện Ngữ Pháp"/>
                         <SidebarButton id="mixed" icon={Layers} label="Bài Tập Tổng Hợp"/>
                         <SidebarButton id="speaking" icon={Mic} label="Luyện Đọc (AI)"/>
+                    </div>
+                </div>
+
+                <div>
+                    <h2 className="text-xs font-black text-violet-500 dark:text-violet-400 uppercase tracking-wider mb-3 px-2 flex items-center gap-2">
+                        <Gamepad2 size={16} /> Khu vực Trò chơi
+                    </h2>
+                    <div className="flex flex-col gap-1">
+                        <SidebarButton id="game_memory" icon={LayoutGrid} label="Lật Thẻ Nhớ" />
+                        <SidebarButton id="game_survival" icon={Heart} label="Sinh Tồn 5s" />
                     </div>
                 </div>
 
