@@ -31,6 +31,9 @@ import Ets2026IpaMode from './components/Ets2026IpaMode';
 import JapaneseMinnaMode from './components/JapaneseMinnaMode';
 import MemoryMatchGame from './components/games/MemoryMatchGame';
 import SurvivalGame from './components/games/SurvivalGame';
+import HangmanGame from './components/games/HangmanGame';
+import FallingWordsGame from './components/games/FallingWordsGame';
+import WordScrambleGame from './components/games/WordScrambleGame';
 import { AiStatusProvider } from './components/AiStatusProvider';
 import AiStatusBadge from './components/AiStatusBadge';
 import AiDashboardModal from './components/AiDashboardModal';
@@ -295,6 +298,9 @@ function App() {
               {activeTab === 'translator' && <TranslatorMode speak={speak} />}
               {activeTab === 'game_memory' && <MemoryMatchGame words={filteredWords} speak={speak} />}
               {activeTab === 'game_survival' && <SurvivalGame words={filteredWords} speak={speak} />}
+              {activeTab === 'game_hangman' && <HangmanGame words={filteredWords} speak={speak} />}
+              {activeTab === 'game_falling' && <FallingWordsGame words={filteredWords} speak={speak} />}
+              {activeTab === 'game_scramble' && <WordScrambleGame words={filteredWords} speak={speak} />}
             </div>
           </main>
         </div>

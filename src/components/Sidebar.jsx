@@ -21,7 +21,9 @@ import {
     Volume2,
     BookmarkCheck,
     Heart,
-    LayoutGrid
+    LayoutGrid,
+    CloudRain,
+    HelpCircle
 } from 'lucide-react';
 
 export default function Sidebar({ activeTab, setActiveTab, isOpen, onClose }) {
@@ -193,6 +195,9 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, onClose }) {
                     <div className="flex flex-col gap-1">
                         <SidebarButton id="game_memory" icon={LayoutGrid} label="Lật Thẻ Nhớ" />
                         <SidebarButton id="game_survival" icon={Heart} label="Sinh Tồn 5s" />
+                        <SidebarButton id="game_hangman" icon={HelpCircle} label="Đoán Chữ (Hangman)" />
+                        <SidebarButton id="game_falling" icon={CloudRain} label="Mưa Từ Vựng" />
+                        <SidebarButton id="game_scramble" icon={Shuffle} label="Xếp Chữ (Đảo Từ)" />
                     </div>
                 </div>
 
