@@ -296,11 +296,11 @@ function App() {
               {activeTab === 'mixedGame' && <MixedGameMode words={words} speak={speak} />}
               {activeTab === 'speaking' && <SpeakingMode words={words} />}
               {activeTab === 'translator' && <TranslatorMode speak={speak} />}
-              {activeTab === 'game_memory' && <MemoryMatchGame words={filteredWords} speak={speak} />}
-              {activeTab === 'game_survival' && <SurvivalGame words={filteredWords} speak={speak} />}
-              {activeTab === 'game_hangman' && <HangmanGame words={filteredWords} speak={speak} />}
-              {activeTab === 'game_falling' && <FallingWordsGame words={filteredWords} speak={speak} />}
-              {activeTab === 'game_scramble' && <WordScrambleGame words={filteredWords} speak={speak} />}
+              {activeTab === 'game_memory' && <MemoryMatchGame words={filteredWords && filteredWords.length >= 8 ? filteredWords : words} speak={speak} />}
+              {activeTab === 'game_survival' && <SurvivalGame words={filteredWords && filteredWords.length >= 4 ? filteredWords : words} speak={speak} />}
+              {activeTab === 'game_hangman' && <HangmanGame words={filteredWords && filteredWords.length >= 4 ? filteredWords : words} speak={speak} />}
+              {activeTab === 'game_falling' && <FallingWordsGame words={filteredWords && filteredWords.length >= 4 ? filteredWords : words} speak={speak} />}
+              {activeTab === 'game_scramble' && <WordScrambleGame words={filteredWords && filteredWords.length >= 4 ? filteredWords : words} speak={speak} />}
             </div>
           </main>
         </div>
