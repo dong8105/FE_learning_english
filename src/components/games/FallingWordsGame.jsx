@@ -9,97 +9,104 @@ export default function FallingWordsGame({ words, speak }) {
     const [isPaused, setIsPaused] = useState(false);
     const [inputValue, setInputValue] = useState('');
     const [fallingWords, setFallingWords] = useState([]);
-    const [destroyedWord, setDestroyedWord] = useState(null); // for explosion effect
+    const [destroyedWord, setDestroyedWord] = useState(null);
 
     const [highScore, setHighScore] = useState(() => {
         return parseInt(localStorage.getItem('falling_words_high_score')) || 0;
     });
 
-    const arenaRef = useRef(null);
     const inputRef = useRef(null);
     const wordIdCounter = useRef(1);
+    const isGameOverRef = useRef(false);
+    const isPausedRef = useRef(false);
 
-    // Speed scales with score
-    const speed = Math.min(1.2, 0.35 + Math.floor(score / 50) * 0.1);
+    isGameOverRef.current = isGameOver;
+    isPausedRef.current = isPaused;
+
+    // Filter valid words with clean English
+    const validWords = (words || [])
+        .filter(w => w.en && w.vi)
+        .map(w => ({
+            ...w,
+            cleanEn: w.en.replace(/\(.*?\)/g, '').trim(),
+        }))
+        .filter(w => w.cleanEn.length > 0);
+
+    // Speed scales gently with score
+    const speed = Math.min(1.1, 0.35 + Math.floor(score / 50) * 0.08);
 
     // Spawn a new falling word
     const spawnWord = useCallback(() => {
-        if (!words || words.length === 0 || isGameOver || isPaused) return;
+        if (validWords.length === 0 || isGameOverRef.current || isPausedRef.current) return;
 
-        const randomWord = words[Math.floor(Math.random() * words.length)];
-        // Random X position between 8% and 75%
-        const xPos = Math.floor(Math.random() * 68) + 8;
+        const randomWord = validWords[Math.floor(Math.random() * validWords.length)];
+        const xPos = Math.floor(Math.random() * 65) + 8;
 
         const newFallingWord = {
             id: wordIdCounter.current++,
             word: randomWord,
             x: xPos,
-            y: 0, // percentage from top
+            y: 0,
         };
 
         setFallingWords(prev => {
-            // Keep at most 4 words active at once
             if (prev.length >= 4) return prev;
             return [...prev, newFallingWord];
         });
-    }, [words, isGameOver, isPaused]);
+    }, [validWords]);
 
-    // Spawn interval
+    // Spawn timer
     useEffect(() => {
-        if (isGameOver || isPaused) return;
+        if (isGameOver || isPaused || validWords.length === 0) return;
 
-        // Spawn roughly every 2.5 - 3.5 seconds
-        const spawnTimer = setInterval(() => {
+        const spawnInterval = setInterval(() => {
             spawnWord();
-        }, Math.max(1800, 3200 - Math.floor(score / 30) * 200));
+        }, Math.max(1800, 3200 - Math.floor(score / 40) * 180));
 
-        return () => clearInterval(spawnTimer);
-    }, [spawnWord, isGameOver, isPaused, score]);
+        return () => clearInterval(spawnInterval);
+    }, [spawnWord, isGameOver, isPaused, score, validWords.length]);
 
-    // Game loop (physics update for falling words)
+    // Game loop (advances words down)
     useEffect(() => {
-        if (isGameOver || isPaused) return;
+        if (isGameOver || isPaused || validWords.length === 0) return;
 
         const interval = setInterval(() => {
-            setFallingWords(prev => {
-                const nextWords = [];
-                let lostLife = false;
+            let reachedBottomCount = 0;
 
+            setFallingWords(prev => {
+                const survivors = [];
                 for (const item of prev) {
-                    const newY = item.y + speed;
-                    if (newY >= 88) {
-                        // Word reached bottom
-                        lostLife = true;
+                    const nextY = item.y + speed;
+                    if (nextY >= 86) {
+                        reachedBottomCount++;
                     } else {
-                        nextWords.push({ ...item, y: newY });
+                        survivors.push({ ...item, y: nextY });
                     }
                 }
-
-                if (lostLife) {
-                    setLives(l => {
-                        const remaining = l - 1;
-                        if (remaining <= 0) {
-                            handleGameOver();
-                        }
-                        return remaining;
-                    });
-                    setCombo(0);
-                }
-
-                return nextWords;
+                return survivors;
             });
+
+            if (reachedBottomCount > 0) {
+                setCombo(0);
+                setLives(prevLives => {
+                    const nextLives = Math.max(0, prevLives - reachedBottomCount);
+                    if (nextLives <= 0) {
+                        setIsGameOver(true);
+                        setScore(finalScore => {
+                            if (finalScore > highScore) {
+                                setHighScore(finalScore);
+                                localStorage.setItem('falling_words_high_score', finalScore.toString());
+                            }
+                            return finalScore;
+                        });
+                    }
+                    return nextLives;
+                });
+            }
         }, 50);
 
         return () => clearInterval(interval);
-    }, [isGameOver, isPaused, speed]); // eslint-disable-line react-hooks/exhaustive-deps
-
-    const handleGameOver = () => {
-        setIsGameOver(true);
-        if (score > highScore) {
-            setHighScore(score);
-            localStorage.setItem('falling_words_high_score', score.toString());
-        }
-    };
+    }, [isGameOver, isPaused, speed, highScore, validWords.length]);
 
     // Auto-focus input
     useEffect(() => {
@@ -113,23 +120,21 @@ export default function FallingWordsGame({ words, speak }) {
         const cleanInput = value.trim().toLowerCase();
         if (!cleanInput) return;
 
-        const matchedIndex = fallingWords.findIndex(item => item.word.en.toLowerCase() === cleanInput);
+        const matchedIndex = fallingWords.findIndex(item =>
+            item.word.cleanEn.toLowerCase() === cleanInput
+        );
 
         if (matchedIndex !== -1) {
             const matched = fallingWords[matchedIndex];
-            // Play audio
-            speak(matched.word.en);
+            speak(matched.word.cleanEn);
 
-            // Explosion effect
-            setDestroyedWord({ x: matched.x, y: matched.y, text: matched.word.en });
-            setTimeout(() => setDestroyedWord(null), 700);
+            setDestroyedWord({ x: matched.x, y: matched.y, text: matched.word.cleanEn });
+            setTimeout(() => setDestroyedWord(null), 650);
 
-            // Increase score with combo multiplier
             const points = 10 + combo * 2;
             setScore(s => s + points);
             setCombo(c => c + 1);
 
-            // Remove word
             setFallingWords(prev => prev.filter((_, idx) => idx !== matchedIndex));
             setInputValue('');
         }
@@ -157,11 +162,10 @@ export default function FallingWordsGame({ words, speak }) {
         setFallingWords([]);
         setInputValue('');
         wordIdCounter.current = 1;
-        // Spawn initial word
-        setTimeout(() => spawnWord(), 500);
+        setTimeout(() => spawnWord(), 400);
     };
 
-    if (!words || words.length < 5) {
+    if (validWords.length < 5) {
         return (
             <div className="flex flex-col items-center justify-center p-10 bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-gray-200 dark:border-slate-800">
                 <AlertCircle size={48} className="text-gray-300 dark:text-slate-600 mb-4" />
@@ -174,9 +178,9 @@ export default function FallingWordsGame({ words, speak }) {
         <div className="max-w-3xl mx-auto space-y-4 animate-fade-in pb-16">
             {/* Top Bar: Stats & Controls */}
             <div className="flex flex-wrap items-center justify-between bg-white dark:bg-slate-900 p-4 rounded-3xl shadow-sm border border-gray-200 dark:border-slate-800 gap-4">
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-6 px-2">
                     {/* Lives */}
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1">
                         {[1, 2, 3].map(i => (
                             <Heart
                                 key={i}
@@ -197,12 +201,12 @@ export default function FallingWordsGame({ words, speak }) {
                     {/* Combo */}
                     {combo > 1 && (
                         <div className="flex items-center gap-1 px-3 py-1 bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 rounded-full font-black text-xs animate-bounce">
-                            <Zap size={14} /> Combo x{combo}!
+                            <Zap size={14} /> x{combo}!
                         </div>
                     )}
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                     <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 dark:bg-slate-800 rounded-xl text-xs font-bold text-gray-500 dark:text-slate-400">
                         <Trophy size={14} className="text-amber-500" /> Kỷ lục: {highScore}
                     </div>
@@ -226,17 +230,11 @@ export default function FallingWordsGame({ words, speak }) {
             </div>
 
             {/* Game Arena */}
-            <div
-                ref={arenaRef}
-                className="relative h-[420px] md:h-[480px] bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-950 rounded-3xl border-2 border-indigo-900/50 shadow-inner overflow-hidden select-none"
-            >
-                {/* Background Grid Pattern */}
-                <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#818cf8_1px,transparent_1px)] [background-size:16px_16px]"></div>
-
+            <div className="relative h-[380px] md:h-[450px] bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-950 rounded-3xl border-2 border-indigo-900/50 shadow-inner overflow-hidden select-none">
                 {/* Danger Zone Line */}
-                <div className="absolute bottom-[10%] left-0 right-0 border-b-2 border-dashed border-red-500/50 flex justify-between px-4">
-                    <span className="text-[10px] uppercase font-bold tracking-widest text-red-400/60">Vùng nguy hiểm</span>
-                    <span className="text-[10px] uppercase font-bold tracking-widest text-red-400/60">Danger Zone</span>
+                <div className="absolute bottom-[14%] left-0 right-0 border-b-2 border-dashed border-red-500/40 flex justify-between px-4">
+                    <span className="text-[10px] uppercase font-bold tracking-widest text-red-400/60">Vạch nguy hiểm</span>
+                    <span className="text-[10px] uppercase font-bold tracking-widest text-red-400/60">Danger</span>
                 </div>
 
                 {/* Falling Words */}
@@ -249,18 +247,18 @@ export default function FallingWordsGame({ words, speak }) {
                             top: `${item.y}%`,
                         }}
                     >
-                        <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-3.5 py-2 rounded-2xl shadow-xl border-2 border-indigo-500 flex flex-col items-center gap-0.5 animate-pulse">
-                            <span className="text-xs font-black text-indigo-600 dark:text-indigo-400 max-w-[140px] truncate text-center">
-                                {item.word.vi}
+                        <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-3 py-1.5 rounded-2xl shadow-xl border-2 border-indigo-400 flex flex-col items-center max-w-[150px]">
+                            <span className="text-sm font-black text-indigo-700 dark:text-indigo-300 truncate">
+                                {item.word.cleanEn}
                             </span>
-                            <span className="text-[10px] font-mono text-gray-400 dark:text-slate-500">
-                                ({item.word.en.length} chữ cái)
+                            <span className="text-[10px] text-gray-500 dark:text-slate-400 truncate w-full text-center">
+                                {item.word.vi}
                             </span>
                         </div>
                     </div>
                 ))}
 
-                {/* Explosion / Blast Effect on Hit */}
+                {/* Explosion Effect on Hit */}
                 {destroyedWord && (
                     <div
                         className="absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-none animate-ping"
@@ -269,8 +267,8 @@ export default function FallingWordsGame({ words, speak }) {
                             top: `${destroyedWord.y}%`,
                         }}
                     >
-                        <div className="px-4 py-2 bg-green-500 text-white font-black rounded-full shadow-2xl text-base">
-                            💥 {destroyedWord.text} +10!
+                        <div className="px-3.5 py-1.5 bg-green-500 text-white font-black rounded-full shadow-2xl text-sm">
+                            💥 {destroyedWord.text} +10
                         </div>
                     </div>
                 )}
@@ -282,7 +280,7 @@ export default function FallingWordsGame({ words, speak }) {
                         <h3 className="text-2xl font-black text-white mb-4">Đang tạm dừng</h3>
                         <button
                             onClick={() => setIsPaused(false)}
-                            className="px-6 py-2.5 bg-indigo-600 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-700 transition"
+                            className="px-6 py-2.5 bg-indigo-600 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-700 transition cursor-pointer"
                         >
                             Tiếp Tục Chơi
                         </button>
@@ -306,7 +304,7 @@ export default function FallingWordsGame({ words, speak }) {
             </div>
 
             {/* Input Bar */}
-            <div className="bg-white dark:bg-slate-900 p-4 rounded-3xl shadow-sm border border-gray-200 dark:border-slate-800">
+            <div className="bg-white dark:bg-slate-900 p-3.5 md:p-4 rounded-3xl shadow-sm border border-gray-200 dark:border-slate-800">
                 <div className="relative flex items-center">
                     <input
                         ref={inputRef}
@@ -315,8 +313,8 @@ export default function FallingWordsGame({ words, speak }) {
                         value={inputValue}
                         onChange={handleInputChange}
                         onKeyDown={handleKeyDown}
-                        placeholder="Gõ từ tiếng Anh tương ứng và nhấn Enter..."
-                        className="w-full pl-5 pr-28 py-3.5 bg-gray-50 dark:bg-slate-800 border-2 border-transparent focus:border-indigo-500 dark:focus:border-indigo-500 rounded-2xl outline-none font-bold text-gray-800 dark:text-white placeholder-gray-400 transition"
+                        placeholder="Gõ từ tiếng Anh đang rơi và nhấn Enter..."
+                        className="w-full pl-4 pr-24 py-3 bg-gray-50 dark:bg-slate-800 border-2 border-transparent focus:border-indigo-500 dark:focus:border-indigo-500 rounded-2xl outline-none font-bold text-gray-800 dark:text-white placeholder-gray-400 transition text-base"
                     />
                     <button
                         onClick={() => {
@@ -324,14 +322,11 @@ export default function FallingWordsGame({ words, speak }) {
                             setInputValue('');
                         }}
                         disabled={isGameOver || isPaused || !inputValue.trim()}
-                        className="absolute right-2 px-5 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white font-black rounded-xl text-sm transition cursor-pointer disabled:cursor-not-allowed shadow-sm"
+                        className="absolute right-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white font-black rounded-xl text-sm transition cursor-pointer disabled:cursor-not-allowed shadow-sm"
                     >
                         Bắn 🚀
                     </button>
                 </div>
-                <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-2 text-center">
-                    💡 <strong>Mẹo:</strong> Nhìn nghĩa tiếng Việt đang rơi xuống, gõ thật nhanh từ tiếng Anh tương ứng trước khi chạm vạch đỏ!
-                </p>
             </div>
         </div>
     );

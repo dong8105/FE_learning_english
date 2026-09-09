@@ -10,33 +10,40 @@ export default function HangmanGame({ words, speak }) {
     const [score, setScore] = useState(0);
     const [streak, setStreak] = useState(0);
     const [hintsUsed, setHintsUsed] = useState(0);
-    const [showFullWord, setShowFullWord] = useState(false);
 
     // Pick a new word
     const nextWord = useCallback(() => {
         if (!words || words.length === 0) return;
+        
         // Filter words that have valid English letters
-        const validWords = words.filter(w => w.en && /[a-zA-Z]/.test(w.en));
+        const validWords = words
+            .filter(w => w.en && w.vi)
+            .map(w => ({
+                ...w,
+                cleanEn: w.en.replace(/\(.*?\)/g, '').trim(),
+            }))
+            .filter(w => /[a-zA-Z]/.test(w.cleanEn));
+
         if (validWords.length === 0) return;
 
         const randomWord = validWords[Math.floor(Math.random() * validWords.length)];
         setTargetWord(randomWord);
         setGuessedLetters(new Set());
         setHintsUsed(0);
-        setShowFullWord(false);
     }, [words]);
 
     useEffect(() => {
         nextWord();
     }, [nextWord]);
 
+    const targetClean = targetWord ? targetWord.cleanEn.toLowerCase() : '';
+
     // Calculate wrong guesses
     const wrongGuesses = targetWord
-        ? Array.from(guessedLetters).filter(letter => !targetWord.en.toLowerCase().includes(letter)).length
+        ? Array.from(guessedLetters).filter(letter => !targetClean.includes(letter)).length
         : 0;
 
-    const isWon = targetWord && targetWord.en
-        .toLowerCase()
+    const isWon = targetWord && targetClean
         .split('')
         .filter(char => /[a-zA-Z]/.test(char))
         .every(char => guessedLetters.has(char));
@@ -46,7 +53,7 @@ export default function HangmanGame({ words, speak }) {
     // Speak word on win
     useEffect(() => {
         if (isWon && targetWord) {
-            speak(targetWord.en);
+            speak(targetWord.cleanEn);
             setScore(s => s + 10 + Math.max(0, (MAX_WRONG - wrongGuesses) * 2));
             setStreak(st => st + 1);
         } else if (isLost && targetWord) {
@@ -82,8 +89,7 @@ export default function HangmanGame({ words, speak }) {
     // Hint function
     const useHint = () => {
         if (!targetWord || isWon || isLost || hintsUsed >= 2) return;
-        const unrevealedLetters = targetWord.en
-            .toLowerCase()
+        const unrevealedLetters = targetClean
             .split('')
             .filter(c => /[a-zA-Z]/.test(c) && !guessedLetters.has(c));
 
@@ -106,12 +112,11 @@ export default function HangmanGame({ words, speak }) {
     const livesLeft = Math.max(0, MAX_WRONG - wrongGuesses);
 
     return (
-        <div className="max-w-3xl mx-auto space-y-6 animate-fade-in pb-16">
-            {/* Top Bar: Score & Lives */}
+        <div className="max-w-3xl mx-auto space-y-4 md:space-y-6 animate-fade-in pb-16">
+            {/* Top Bar */}
             <div className="flex flex-wrap items-center justify-between bg-white dark:bg-slate-900 p-4 rounded-3xl shadow-sm border border-gray-200 dark:border-slate-800 gap-4">
-                <div className="flex items-center gap-6">
-                    {/* Lives / Hearts */}
-                    <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-6 px-2">
+                    <div className="flex items-center gap-1">
                         <span className="text-xs font-bold text-gray-400 uppercase tracking-wider mr-1">Mạng:</span>
                         {[...Array(MAX_WRONG)].map((_, i) => (
                             <Heart
@@ -124,13 +129,11 @@ export default function HangmanGame({ words, speak }) {
 
                     <div className="w-px h-8 bg-gray-200 dark:bg-slate-700 hidden sm:block"></div>
 
-                    {/* Score */}
                     <div className="flex flex-col">
                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Điểm</span>
                         <span className="text-2xl font-black text-indigo-600 dark:text-indigo-400 leading-none">{score}</span>
                     </div>
 
-                    {/* Streak */}
                     {streak > 1 && (
                         <div className="flex items-center gap-1 px-3 py-1 bg-orange-50 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400 rounded-full font-black text-xs">
                             🔥 x{streak}
@@ -143,7 +146,6 @@ export default function HangmanGame({ words, speak }) {
                         onClick={useHint}
                         disabled={isWon || isLost || hintsUsed >= 2}
                         className="px-4 py-2 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/30 dark:hover:bg-amber-900/40 text-amber-700 dark:text-amber-400 rounded-xl font-bold text-sm flex items-center gap-1.5 transition disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
-                        title="Gợi ý mở 1 chữ cái"
                     >
                         <HelpCircle size={16} /> Gợi ý ({2 - hintsUsed})
                     </button>
@@ -157,52 +159,44 @@ export default function HangmanGame({ words, speak }) {
                 </div>
             </div>
 
-            {/* Main Stage: Hangman Graphic + Clues */}
-            <div className="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-3xl shadow-sm border border-gray-200 dark:border-slate-800 transition-colors">
+            {/* Main Stage */}
+            <div className="bg-white dark:bg-slate-900 p-5 md:p-8 rounded-3xl shadow-sm border border-gray-200 dark:border-slate-800 transition-colors">
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-                    {/* Hangman SVG Illustration */}
+                    {/* Hangman SVG */}
                     <div className="md:col-span-4 flex justify-center items-center">
-                        <svg viewBox="0 0 200 240" className="w-36 h-44 md:w-44 md:h-52 stroke-current text-slate-700 dark:text-slate-300">
-                            {/* Base / Gallows */}
+                        <svg viewBox="0 0 200 240" className="w-32 h-40 md:w-44 md:h-52 stroke-current text-slate-700 dark:text-slate-300">
                             <line x1="20" y1="220" x2="100" y2="220" strokeWidth="6" strokeLinecap="round" />
                             <line x1="60" y1="220" x2="60" y2="20" strokeWidth="6" strokeLinecap="round" />
                             <line x1="60" y1="20" x2="150" y2="20" strokeWidth="6" strokeLinecap="round" />
                             <line x1="150" y1="20" x2="150" y2="50" strokeWidth="4" strokeLinecap="round" />
                             <line x1="60" y1="50" x2="90" y2="20" strokeWidth="4" strokeLinecap="round" />
 
-                            {/* 1. Head */}
                             {wrongGuesses >= 1 && (
                                 <circle cx="150" cy="70" r="20" strokeWidth="4" fill="none" className="text-indigo-600 dark:text-indigo-400" />
                             )}
-                            {/* 2. Body */}
                             {wrongGuesses >= 2 && (
                                 <line x1="150" y1="90" x2="150" y2="150" strokeWidth="4" strokeLinecap="round" className="text-indigo-600 dark:text-indigo-400" />
                             )}
-                            {/* 3. Left Arm */}
                             {wrongGuesses >= 3 && (
                                 <line x1="150" y1="105" x2="120" y2="135" strokeWidth="4" strokeLinecap="round" className="text-indigo-600 dark:text-indigo-400" />
                             )}
-                            {/* 4. Right Arm */}
                             {wrongGuesses >= 4 && (
                                 <line x1="150" y1="105" x2="180" y2="135" strokeWidth="4" strokeLinecap="round" className="text-indigo-600 dark:text-indigo-400" />
                             )}
-                            {/* 5. Left Leg */}
                             {wrongGuesses >= 5 && (
                                 <line x1="150" y1="150" x2="125" y2="195" strokeWidth="4" strokeLinecap="round" className="text-indigo-600 dark:text-indigo-400" />
                             )}
-                            {/* 6. Right Leg (Final mistake) */}
                             {wrongGuesses >= 6 && (
                                 <line x1="150" y1="150" x2="175" y2="195" strokeWidth="4" strokeLinecap="round" className="text-red-500" />
                             )}
                         </svg>
                     </div>
 
-                    {/* Word Clues & Letter Slots */}
-                    <div className="md:col-span-8 flex flex-col items-center md:items-start text-center md:text-left space-y-4">
-                        {/* Clue Category & Meaning */}
+                    {/* Clues & Slots */}
+                    <div className="md:col-span-8 flex flex-col items-center md:items-start text-center md:text-left space-y-3">
                         <div>
                             {targetWord.category && (
-                                <span className="inline-block px-3 py-1 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 text-xs font-bold rounded-full mb-2">
+                                <span className="inline-block px-3 py-1 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 text-xs font-bold rounded-full mb-1">
                                     {targetWord.category}
                                 </span>
                             )}
@@ -217,16 +211,16 @@ export default function HangmanGame({ words, speak }) {
                         </div>
 
                         {/* Letter Slots */}
-                        <div className="flex flex-wrap gap-2 justify-center md:justify-start pt-2">
-                            {targetWord.en.split('').map((char, index) => {
+                        <div className="flex flex-wrap gap-1.5 md:gap-2 justify-center md:justify-start pt-2">
+                            {targetWord.cleanEn.split('').map((char, index) => {
                                 const isAlpha = /[a-zA-Z]/.test(char);
                                 const isGuessed = guessedLetters.has(char.toLowerCase());
-                                const displayChar = !isAlpha ? char : ((isGuessed || isLost || showFullWord) ? char : '');
+                                const displayChar = !isAlpha ? char : ((isGuessed || isLost) ? char : '');
 
                                 return (
                                     <div
                                         key={index}
-                                        className={`w-9 h-12 md:w-11 md:h-14 flex items-center justify-center font-black text-xl md:text-2xl rounded-xl border-b-4 transition-all ${
+                                        className={`w-8 h-11 md:w-11 md:h-14 flex items-center justify-center font-black text-lg md:text-2xl rounded-xl border-b-4 transition-all ${
                                             !isAlpha
                                                 ? 'border-transparent text-gray-400'
                                                 : isLost && !isGuessed
@@ -242,26 +236,25 @@ export default function HangmanGame({ words, speak }) {
                             })}
                         </div>
 
-                        {/* Audio speaker button when finished */}
                         {(isWon || isLost) && (
                             <button
-                                onClick={() => speak(targetWord.en)}
+                                onClick={() => speak(targetWord.cleanEn)}
                                 className="mt-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-indigo-100 transition cursor-pointer"
                             >
-                                <Volume2 size={18} /> Nghe phát âm từ: <span className="underline">{targetWord.en}</span>
+                                <Volume2 size={18} /> Nghe phát âm: <span className="underline">{targetWord.cleanEn}</span>
                             </button>
                         )}
                     </div>
                 </div>
 
-                {/* Win / Loss Banners */}
+                {/* Win Banner */}
                 {isWon && (
                     <div className="mt-6 p-4 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800/40 rounded-2xl flex flex-wrap items-center justify-between gap-3 animate-fade-in">
                         <div className="flex items-center gap-3">
                             <CheckCircle2 size={28} className="text-green-500" />
                             <div>
                                 <h4 className="font-bold text-green-800 dark:text-green-400">Chính xác! Xuất sắc lắm!</h4>
-                                <p className="text-xs text-green-700 dark:text-green-500">Từ đúng là: <strong>{targetWord.en}</strong></p>
+                                <p className="text-xs text-green-700 dark:text-green-500">Từ đúng là: <strong>{targetWord.cleanEn}</strong></p>
                             </div>
                         </div>
                         <button
@@ -273,13 +266,14 @@ export default function HangmanGame({ words, speak }) {
                     </div>
                 )}
 
+                {/* Loss Banner */}
                 {isLost && (
                     <div className="mt-6 p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/40 rounded-2xl flex flex-wrap items-center justify-between gap-3 animate-fade-in">
                         <div className="flex items-center gap-3">
                             <XCircle size={28} className="text-red-500" />
                             <div>
                                 <h4 className="font-bold text-red-800 dark:text-red-400">Bạn đã hết lượt đoán!</h4>
-                                <p className="text-xs text-red-700 dark:text-red-500">Từ đúng là: <strong className="uppercase">{targetWord.en}</strong></p>
+                                <p className="text-xs text-red-700 dark:text-red-500">Từ đúng là: <strong className="uppercase">{targetWord.cleanEn}</strong></p>
                             </div>
                         </div>
                         <button
@@ -294,14 +288,11 @@ export default function HangmanGame({ words, speak }) {
 
             {/* Virtual On-Screen Keyboard */}
             <div className="bg-white dark:bg-slate-900 p-4 md:p-6 rounded-3xl shadow-sm border border-gray-200 dark:border-slate-800">
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 text-center">
-                    Bấm bàn phím hoặc click các chữ cái bên dưới:
-                </p>
                 <div className="grid grid-cols-7 sm:grid-cols-9 gap-1.5 md:gap-2">
                     {ALPHABET.map((char) => {
                         const lower = char.toLowerCase();
                         const isGuessed = guessedLetters.has(lower);
-                        const isInTarget = targetWord.en.toLowerCase().includes(lower);
+                        const isInTarget = targetClean.includes(lower);
 
                         let keyClass = "h-11 md:h-12 font-black rounded-xl text-base md:text-lg transition-all flex items-center justify-center cursor-pointer shadow-sm";
                         if (!isGuessed) {
