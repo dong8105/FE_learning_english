@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { RefreshCw, Trophy, Volume2, HelpCircle, Heart, CheckCircle2, XCircle, ArrowRight } from 'lucide-react';
+import { RefreshCw, Trophy, Volume2, HelpCircle, Heart, CheckCircle2, XCircle, ArrowRight, Sparkles, Rocket } from 'lucide-react';
 
 const MAX_WRONG = 6;
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -11,11 +11,9 @@ export default function HangmanGame({ words, speak }) {
     const [streak, setStreak] = useState(0);
     const [hintsUsed, setHintsUsed] = useState(0);
 
-    // Pick a new word
     const nextWord = useCallback(() => {
         if (!words || words.length === 0) return;
         
-        // Filter words that have valid English letters
         const validWords = words
             .filter(w => w.en && w.vi)
             .map(w => ({
@@ -38,7 +36,6 @@ export default function HangmanGame({ words, speak }) {
 
     const targetClean = targetWord ? targetWord.cleanEn.toLowerCase() : '';
 
-    // Calculate wrong guesses
     const wrongGuesses = targetWord
         ? Array.from(guessedLetters).filter(letter => !targetClean.includes(letter)).length
         : 0;
@@ -50,18 +47,16 @@ export default function HangmanGame({ words, speak }) {
 
     const isLost = wrongGuesses >= MAX_WRONG;
 
-    // Speak word on win
     useEffect(() => {
         if (isWon && targetWord) {
             speak(targetWord.cleanEn);
-            setScore(s => s + 10 + Math.max(0, (MAX_WRONG - wrongGuesses) * 2));
+            setScore(s => s + 20 + Math.max(0, (MAX_WRONG - wrongGuesses) * 5));
             setStreak(st => st + 1);
         } else if (isLost && targetWord) {
             setStreak(0);
         }
     }, [isWon, isLost]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Guess letter handler
     const guessLetter = useCallback((char) => {
         const lower = char.toLowerCase();
         if (isWon || isLost || guessedLetters.has(lower)) return;
@@ -73,7 +68,6 @@ export default function HangmanGame({ words, speak }) {
         });
     }, [isWon, isLost, guessedLetters]);
 
-    // Keyboard listener for desktop
     useEffect(() => {
         const handleKeyDown = (e) => {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
@@ -86,7 +80,6 @@ export default function HangmanGame({ words, speak }) {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [guessLetter]);
 
-    // Hint function
     const useHint = () => {
         if (!targetWord || isWon || isLost || hintsUsed >= 2) return;
         const unrevealedLetters = targetClean
@@ -102,9 +95,9 @@ export default function HangmanGame({ words, speak }) {
 
     if (!words || words.length === 0 || !targetWord) {
         return (
-            <div className="flex flex-col items-center justify-center p-10 bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-gray-200 dark:border-slate-800">
-                <HelpCircle size={48} className="text-gray-300 dark:text-slate-600 mb-4 animate-spin" />
-                <h2 className="text-xl font-bold text-gray-600 dark:text-slate-400">Đang nạp từ vựng...</h2>
+            <div className="flex flex-col items-center justify-center p-12 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-3xl shadow-xl border border-gray-200 dark:border-slate-800">
+                <HelpCircle size={56} className="text-cyan-400 mb-4 animate-spin" />
+                <h2 className="text-xl font-bold text-gray-600 dark:text-slate-300">Đang chuẩn bị phi thuyền...</h2>
             </div>
         );
     }
@@ -113,30 +106,35 @@ export default function HangmanGame({ words, speak }) {
 
     return (
         <div className="max-w-3xl mx-auto space-y-4 md:space-y-6 animate-fade-in pb-16">
-            {/* Top Bar */}
-            <div className="flex flex-wrap items-center justify-between bg-white dark:bg-slate-900 p-4 rounded-3xl shadow-sm border border-gray-200 dark:border-slate-800 gap-4">
+            {/* Top Bar: Spaceman Theme */}
+            <div className="bg-gradient-to-r from-cyan-500/10 via-indigo-500/10 to-violet-500/10 dark:from-cyan-950/40 dark:via-indigo-950/40 dark:to-violet-950/40 p-4 md:p-5 rounded-3xl border border-cyan-200/50 dark:border-cyan-800/40 backdrop-blur-xl shadow-lg flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center gap-6 px-2">
-                    <div className="flex items-center gap-1">
-                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider mr-1">Mạng:</span>
+                    {/* Lives (Oxygen tanks / Hearts) */}
+                    <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-black tracking-widest uppercase text-cyan-600 dark:text-cyan-400 mr-1">Oxy:</span>
                         {[...Array(MAX_WRONG)].map((_, i) => (
-                            <Heart
+                            <div
                                 key={i}
-                                size={22}
-                                className={i < livesLeft ? 'fill-red-500 text-red-500 transition-all' : 'text-gray-300 dark:text-slate-700'}
+                                className={`w-4 h-6 rounded-md transition-all duration-300 ${
+                                    i < livesLeft
+                                        ? 'bg-gradient-to-t from-cyan-500 to-blue-400 shadow-sm shadow-cyan-500/50 scale-100'
+                                        : 'bg-gray-200 dark:bg-slate-800 opacity-30 scale-90'
+                                }`}
                             />
                         ))}
                     </div>
 
-                    <div className="w-px h-8 bg-gray-200 dark:bg-slate-700 hidden sm:block"></div>
+                    <div className="w-px h-8 bg-cyan-200 dark:bg-cyan-800/40 hidden sm:block"></div>
 
+                    {/* Score */}
                     <div className="flex flex-col">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Điểm</span>
-                        <span className="text-2xl font-black text-indigo-600 dark:text-indigo-400 leading-none">{score}</span>
+                        <span className="text-[10px] font-black tracking-widest uppercase text-gray-400 dark:text-slate-400">Điểm</span>
+                        <span className="text-2xl font-black text-cyan-600 dark:text-cyan-400 leading-none">{score}</span>
                     </div>
 
                     {streak > 1 && (
-                        <div className="flex items-center gap-1 px-3 py-1 bg-orange-50 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400 rounded-full font-black text-xs">
-                            🔥 x{streak}
+                        <div className="flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-full font-black text-xs shadow-md shadow-orange-500/20 animate-bounce">
+                            🚀 x{streak}
                         </div>
                     )}
                 </div>
@@ -145,62 +143,100 @@ export default function HangmanGame({ words, speak }) {
                     <button
                         onClick={useHint}
                         disabled={isWon || isLost || hintsUsed >= 2}
-                        className="px-4 py-2 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/30 dark:hover:bg-amber-900/40 text-amber-700 dark:text-amber-400 rounded-xl font-bold text-sm flex items-center gap-1.5 transition disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+                        className="px-4 py-2 bg-white dark:bg-slate-800 hover:bg-amber-50 dark:hover:bg-slate-700 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-700/50 rounded-2xl font-black text-xs flex items-center gap-1.5 transition disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed shadow-sm"
                     >
-                        <HelpCircle size={16} /> Gợi ý ({2 - hintsUsed})
+                        <HelpCircle size={15} /> Gợi ý ({2 - hintsUsed})
                     </button>
                     <button
                         onClick={nextWord}
-                        className="p-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-xl transition cursor-pointer"
+                        className="p-2.5 bg-white dark:bg-slate-800 hover:bg-cyan-50 dark:hover:bg-slate-700 text-cyan-600 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-800/50 rounded-2xl transition cursor-pointer shadow-sm active:scale-95"
                         title="Đổi từ khác"
                     >
-                        <RefreshCw size={18} />
+                        <RefreshCw size={16} />
                     </button>
                 </div>
             </div>
 
-            {/* Main Stage */}
-            <div className="bg-white dark:bg-slate-900 p-5 md:p-8 rounded-3xl shadow-sm border border-gray-200 dark:border-slate-800 transition-colors">
+            {/* Main Stage: Vector Astronaut Scene */}
+            <div className="bg-white dark:bg-slate-900 p-5 md:p-8 rounded-3xl shadow-xl border border-gray-200 dark:border-slate-800 transition-colors">
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-                    {/* Hangman SVG */}
-                    <div className="md:col-span-4 flex justify-center items-center">
-                        <svg viewBox="0 0 200 240" className="w-32 h-40 md:w-44 md:h-52 stroke-current text-slate-700 dark:text-slate-300">
-                            <line x1="20" y1="220" x2="100" y2="220" strokeWidth="6" strokeLinecap="round" />
-                            <line x1="60" y1="220" x2="60" y2="20" strokeWidth="6" strokeLinecap="round" />
-                            <line x1="60" y1="20" x2="150" y2="20" strokeWidth="6" strokeLinecap="round" />
-                            <line x1="150" y1="20" x2="150" y2="50" strokeWidth="4" strokeLinecap="round" />
-                            <line x1="60" y1="50" x2="90" y2="20" strokeWidth="4" strokeLinecap="round" />
+                    {/* Space Rescue Graphic */}
+                    <div className="md:col-span-5 flex justify-center items-center">
+                        <div className="relative w-48 h-56 bg-gradient-to-b from-slate-950 via-indigo-950 to-slate-900 rounded-3xl p-4 flex flex-col items-center justify-between border-2 border-indigo-900/60 shadow-xl overflow-hidden">
+                            {/* Stars background */}
+                            <div className="absolute inset-0 opacity-40 bg-[radial-gradient(white_1px,transparent_1px)] [background-size:12px_12px]"></div>
 
-                            {wrongGuesses >= 1 && (
-                                <circle cx="150" cy="70" r="20" strokeWidth="4" fill="none" className="text-indigo-600 dark:text-indigo-400" />
-                            )}
-                            {wrongGuesses >= 2 && (
-                                <line x1="150" y1="90" x2="150" y2="150" strokeWidth="4" strokeLinecap="round" className="text-indigo-600 dark:text-indigo-400" />
-                            )}
-                            {wrongGuesses >= 3 && (
-                                <line x1="150" y1="105" x2="120" y2="135" strokeWidth="4" strokeLinecap="round" className="text-indigo-600 dark:text-indigo-400" />
-                            )}
-                            {wrongGuesses >= 4 && (
-                                <line x1="150" y1="105" x2="180" y2="135" strokeWidth="4" strokeLinecap="round" className="text-indigo-600 dark:text-indigo-400" />
-                            )}
-                            {wrongGuesses >= 5 && (
-                                <line x1="150" y1="150" x2="125" y2="195" strokeWidth="4" strokeLinecap="round" className="text-indigo-600 dark:text-indigo-400" />
-                            )}
-                            {wrongGuesses >= 6 && (
-                                <line x1="150" y1="150" x2="175" y2="195" strokeWidth="4" strokeLinecap="round" className="text-red-500" />
-                            )}
-                        </svg>
+                            {/* Rescue Ship Top */}
+                            <div className="relative z-10 flex items-center gap-1 text-cyan-400 text-xs font-black">
+                                <Rocket size={18} className="animate-pulse text-cyan-400" /> TRẠM GIẢI CỨU
+                            </div>
+
+                            {/* Astronaut SVG */}
+                            <svg viewBox="0 0 160 160" className="w-32 h-32 relative z-10 animate-float">
+                                {/* Tether Cable */}
+                                <path 
+                                    d="M 80 0 Q 70 30, 80 50" 
+                                    fill="none" 
+                                    stroke={wrongGuesses >= 5 ? '#ef4444' : '#38bdf8'} 
+                                    strokeWidth="3" 
+                                    strokeDasharray={wrongGuesses >= 4 ? "4,4" : "none"} 
+                                />
+
+                                {/* Backpack Jetpack */}
+                                <rect x="52" y="58" width="56" height="42" rx="8" fill="#475569" stroke="#94a3b8" strokeWidth="2" />
+                                {wrongGuesses < 3 && (
+                                    <polygon points="58,100 66,114 62,100" fill="#f59e0b" className="animate-pulse" />
+                                )}
+                                {wrongGuesses < 4 && (
+                                    <polygon points="98,100 106,114 102,100" fill="#f59e0b" className="animate-pulse" />
+                                )}
+
+                                {/* Astronaut Suit Body */}
+                                <ellipse cx="80" cy="85" rx="22" ry="24" fill="#f1f5f9" stroke="#cbd5e1" strokeWidth="3" />
+
+                                {/* Helmet */}
+                                <circle cx="80" cy="52" r="22" fill="#ffffff" stroke="#94a3b8" strokeWidth="3" />
+                                <ellipse 
+                                    cx="80" 
+                                    cy="52" 
+                                    rx="14" 
+                                    ry="11" 
+                                    fill={wrongGuesses >= 6 ? '#ef4444' : isWon ? '#10b981' : '#0284c7'} 
+                                    stroke="#38bdf8" 
+                                    strokeWidth="2" 
+                                />
+
+                                {/* Arms */}
+                                <line x1="60" y1="75" x2="42" y2="90" stroke="#f1f5f9" strokeWidth="7" strokeLinecap="round" />
+                                <line x1="100" y1="75" x2="118" y2="90" stroke="#f1f5f9" strokeWidth="7" strokeLinecap="round" />
+
+                                {/* Legs */}
+                                <line x1="70" y1="105" x2="65" y2="130" stroke="#f1f5f9" strokeWidth="7" strokeLinecap="round" />
+                                <line x1="90" y1="105" x2="95" y2="130" stroke="#f1f5f9" strokeWidth="7" strokeLinecap="round" />
+                            </svg>
+
+                            {/* Status label */}
+                            <div className="relative z-10 text-[10px] font-black uppercase tracking-wider text-center">
+                                {isWon ? (
+                                    <span className="text-emerald-400">ĐÃ GIẢI CỨU THÀNH CÔNG!</span>
+                                ) : isLost ? (
+                                    <span className="text-rose-400">MẤT KẾT NỐI TÀU!</span>
+                                ) : (
+                                    <span className="text-cyan-300">CÒN {livesLeft} BÌNH OXY</span>
+                                )}
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Clues & Slots */}
-                    <div className="md:col-span-8 flex flex-col items-center md:items-start text-center md:text-left space-y-3">
+                    {/* Word Clues & 3D Letter Slots */}
+                    <div className="md:col-span-7 flex flex-col items-center md:items-start text-center md:text-left space-y-3">
                         <div>
                             {targetWord.category && (
-                                <span className="inline-block px-3 py-1 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 text-xs font-bold rounded-full mb-1">
+                                <span className="inline-block px-3 py-1 bg-gradient-to-r from-cyan-500/15 to-blue-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-800/40 text-xs font-black rounded-full mb-1.5">
                                     {targetWord.category}
                                 </span>
                             )}
-                            <h3 className="text-xl md:text-2xl font-black text-gray-800 dark:text-white leading-snug">
+                            <h3 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white leading-tight">
                                 {targetWord.vi}
                             </h3>
                             {targetWord.ipa && (isWon || isLost) && (
@@ -220,14 +256,14 @@ export default function HangmanGame({ words, speak }) {
                                 return (
                                     <div
                                         key={index}
-                                        className={`w-8 h-11 md:w-11 md:h-14 flex items-center justify-center font-black text-lg md:text-2xl rounded-xl border-b-4 transition-all ${
+                                        className={`w-9 h-12 md:w-11 md:h-14 flex items-center justify-center font-black text-xl md:text-2xl rounded-2xl border-b-4 transition-all shadow-sm ${
                                             !isAlpha
                                                 ? 'border-transparent text-gray-400'
                                                 : isLost && !isGuessed
-                                                ? 'bg-red-50 dark:bg-red-950/30 border-red-500 text-red-600 dark:text-red-400 animate-pulse'
+                                                ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-500 text-rose-600 dark:text-rose-400 animate-pulse'
                                                 : isGuessed
-                                                ? 'bg-green-50 dark:bg-green-950/30 border-green-500 text-green-700 dark:text-green-400'
-                                                : 'bg-gray-50 dark:bg-slate-800 border-indigo-400 dark:border-indigo-600 text-gray-800 dark:text-white'
+                                                ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-700 dark:text-emerald-300 scale-102'
+                                                : 'bg-gradient-to-b from-white to-gray-100 dark:from-slate-800 dark:to-slate-850 border-cyan-400 dark:border-cyan-600 text-gray-900 dark:text-white'
                                         }`}
                                     >
                                         {displayChar.toUpperCase()}
@@ -239,7 +275,7 @@ export default function HangmanGame({ words, speak }) {
                         {(isWon || isLost) && (
                             <button
                                 onClick={() => speak(targetWord.cleanEn)}
-                                className="mt-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-indigo-100 transition cursor-pointer"
+                                className="mt-2 px-4 py-2 bg-cyan-50 dark:bg-cyan-950/40 text-cyan-600 dark:text-cyan-400 rounded-2xl font-bold text-sm flex items-center gap-2 hover:bg-cyan-100 dark:hover:bg-cyan-900/50 transition cursor-pointer"
                             >
                                 <Volume2 size={18} /> Nghe phát âm: <span className="underline">{targetWord.cleanEn}</span>
                             </button>
@@ -247,60 +283,61 @@ export default function HangmanGame({ words, speak }) {
                     </div>
                 </div>
 
-                {/* Win Banner */}
+                {/* Win / Loss Banners */}
                 {isWon && (
-                    <div className="mt-6 p-4 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800/40 rounded-2xl flex flex-wrap items-center justify-between gap-3 animate-fade-in">
+                    <div className="mt-6 p-4 bg-gradient-to-r from-emerald-500/15 via-teal-500/15 to-cyan-500/15 border-2 border-emerald-500/40 rounded-2xl flex flex-wrap items-center justify-between gap-3 animate-fade-in shadow-md">
                         <div className="flex items-center gap-3">
-                            <CheckCircle2 size={28} className="text-green-500" />
+                            <CheckCircle2 size={30} className="text-emerald-500 shrink-0" />
                             <div>
-                                <h4 className="font-bold text-green-800 dark:text-green-400">Chính xác! Xuất sắc lắm!</h4>
-                                <p className="text-xs text-green-700 dark:text-green-500">Từ đúng là: <strong>{targetWord.cleanEn}</strong></p>
+                                <h4 className="font-black text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+                                    <Sparkles size={16} /> Phi hành gia an toàn trở về!
+                                </h4>
+                                <p className="text-xs text-emerald-700 dark:text-emerald-400">Từ vựng chuẩn xác: <strong>{targetWord.cleanEn}</strong></p>
                             </div>
                         </div>
                         <button
                             onClick={nextWord}
-                            className="px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-black text-sm flex items-center gap-2 shadow-md transition cursor-pointer"
+                            className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-sm flex items-center gap-2 shadow-lg shadow-emerald-600/30 transition transform hover:scale-105 active:scale-95 cursor-pointer"
                         >
-                            Từ Tiếp Theo <ArrowRight size={16} />
+                            Chuyến Bay Tiếp Theo <ArrowRight size={16} />
                         </button>
                     </div>
                 )}
 
-                {/* Loss Banner */}
                 {isLost && (
-                    <div className="mt-6 p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/40 rounded-2xl flex flex-wrap items-center justify-between gap-3 animate-fade-in">
+                    <div className="mt-6 p-4 bg-gradient-to-r from-rose-500/15 to-red-500/15 border-2 border-rose-500/40 rounded-2xl flex flex-wrap items-center justify-between gap-3 animate-fade-in shadow-md">
                         <div className="flex items-center gap-3">
-                            <XCircle size={28} className="text-red-500" />
+                            <XCircle size={30} className="text-rose-500 shrink-0" />
                             <div>
-                                <h4 className="font-bold text-red-800 dark:text-red-400">Bạn đã hết lượt đoán!</h4>
-                                <p className="text-xs text-red-700 dark:text-red-500">Từ đúng là: <strong className="uppercase">{targetWord.cleanEn}</strong></p>
+                                <h4 className="font-black text-rose-800 dark:text-rose-300">Tàu cứu hộ hết năng lượng!</h4>
+                                <p className="text-xs text-rose-700 dark:text-rose-400">Từ đúng là: <strong className="uppercase">{targetWord.cleanEn}</strong></p>
                             </div>
                         </div>
                         <button
                             onClick={nextWord}
-                            className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-black text-sm flex items-center gap-2 shadow-md transition cursor-pointer"
+                            className="px-6 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl font-black text-sm flex items-center gap-2 shadow-lg shadow-rose-600/30 transition transform hover:scale-105 active:scale-95 cursor-pointer"
                         >
-                            Thử Từ Khác <ArrowRight size={16} />
+                            Thử Lại Từ Khác <ArrowRight size={16} />
                         </button>
                     </div>
                 )}
             </div>
 
-            {/* Virtual On-Screen Keyboard */}
-            <div className="bg-white dark:bg-slate-900 p-4 md:p-6 rounded-3xl shadow-sm border border-gray-200 dark:border-slate-800">
+            {/* Virtual Cyber Keyboard */}
+            <div className="bg-white dark:bg-slate-900 p-4 md:p-6 rounded-3xl shadow-xl border border-gray-200 dark:border-slate-800">
                 <div className="grid grid-cols-7 sm:grid-cols-9 gap-1.5 md:gap-2">
                     {ALPHABET.map((char) => {
                         const lower = char.toLowerCase();
                         const isGuessed = guessedLetters.has(lower);
                         const isInTarget = targetClean.includes(lower);
 
-                        let keyClass = "h-11 md:h-12 font-black rounded-xl text-base md:text-lg transition-all flex items-center justify-center cursor-pointer shadow-sm";
+                        let keyClass = "h-11 md:h-12 font-black rounded-2xl text-base md:text-lg transition-all flex items-center justify-center cursor-pointer shadow-sm";
                         if (!isGuessed) {
-                            keyClass += " bg-gray-50 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/40 hover:text-indigo-600 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-slate-700 active:scale-95";
+                            keyClass += " bg-gradient-to-b from-white to-gray-50 dark:from-slate-800 dark:to-slate-850 hover:border-cyan-500 dark:hover:border-cyan-500 hover:text-cyan-600 text-gray-800 dark:text-gray-100 border border-gray-200 dark:border-slate-700 active:scale-90 hover:shadow-md hover:shadow-cyan-500/10";
                         } else if (isInTarget) {
-                            keyClass += " bg-green-500 text-white border border-green-600 cursor-default opacity-90 scale-95";
+                            keyClass += " bg-gradient-to-br from-emerald-500 to-teal-600 text-white border border-emerald-600 cursor-default opacity-90 scale-95 shadow-md shadow-emerald-500/20";
                         } else {
-                            keyClass += " bg-gray-200 dark:bg-slate-800/40 text-gray-400 dark:text-slate-600 border border-transparent cursor-not-allowed opacity-40";
+                            keyClass += " bg-gray-100 dark:bg-slate-800/40 text-gray-400 dark:text-slate-600 border border-transparent cursor-not-allowed opacity-30 scale-90";
                         }
 
                         return (

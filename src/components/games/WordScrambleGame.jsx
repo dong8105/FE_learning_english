@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { RefreshCw, Shuffle, HelpCircle, Volume2, CheckCircle2, ArrowRight, RotateCcw, Sparkles } from 'lucide-react';
+import { RefreshCw, Shuffle, HelpCircle, Volume2, CheckCircle2, ArrowRight, RotateCcw, Sparkles, Award } from 'lucide-react';
 
 export default function WordScrambleGame({ words, speak }) {
     const [currentWord, setCurrentWord] = useState(null);
@@ -59,7 +59,6 @@ export default function WordScrambleGame({ words, speak }) {
         nextWord();
     }, [nextWord]);
 
-    // Check win condition
     useEffect(() => {
         if (!currentWord || isSolved) return;
 
@@ -69,7 +68,7 @@ export default function WordScrambleGame({ words, speak }) {
         if (currentAnswer.length === targetClean.length && currentAnswer === targetClean) {
             setIsSolved(true);
             speak(currentWord.cleanEn);
-            setScore(s => s + 10 + Math.min(20, targetClean.length * 2));
+            setScore(s => s + 20 + Math.min(30, targetClean.length * 3));
             setStreak(st => st + 1);
         }
     }, [placedTiles, currentWord, isSolved, speak]);
@@ -157,9 +156,9 @@ export default function WordScrambleGame({ words, speak }) {
 
     if (!words || words.length === 0 || !currentWord) {
         return (
-            <div className="flex flex-col items-center justify-center p-10 bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-gray-200 dark:border-slate-800">
-                <Shuffle size={48} className="text-gray-300 dark:text-slate-600 mb-4 animate-spin" />
-                <h2 className="text-xl font-bold text-gray-600 dark:text-slate-400">Đang chuẩn bị ô chữ...</h2>
+            <div className="flex flex-col items-center justify-center p-12 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-3xl shadow-xl border border-gray-200 dark:border-slate-800">
+                <Shuffle size={56} className="text-amber-400 mb-4 animate-spin" />
+                <h2 className="text-xl font-bold text-gray-700 dark:text-slate-300">Đang chuẩn bị ô chữ...</h2>
             </div>
         );
     }
@@ -169,16 +168,22 @@ export default function WordScrambleGame({ words, speak }) {
     return (
         <div className="max-w-3xl mx-auto space-y-4 md:space-y-6 animate-fade-in pb-16">
             {/* Top Bar */}
-            <div className="flex flex-wrap items-center justify-between bg-white dark:bg-slate-900 p-4 rounded-3xl shadow-sm border border-gray-200 dark:border-slate-800 gap-4">
+            <div className="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-yellow-500/10 dark:from-amber-950/40 dark:via-orange-950/40 dark:to-yellow-950/40 p-4 md:p-5 rounded-3xl border border-amber-200/50 dark:border-amber-800/40 backdrop-blur-xl shadow-lg flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center gap-6 px-2">
-                    <div className="flex flex-col">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Điểm</span>
-                        <span className="text-2xl font-black text-indigo-600 dark:text-indigo-400 leading-none">{score}</span>
+                    {/* Score */}
+                    <div className="flex items-center gap-2.5">
+                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-yellow-500 flex items-center justify-center text-white shadow-md shadow-amber-500/20">
+                            <Award size={20} />
+                        </div>
+                        <div>
+                            <span className="text-[10px] font-black tracking-widest uppercase text-gray-400 dark:text-slate-400">Điểm</span>
+                            <p className="text-2xl font-black text-gray-900 dark:text-white leading-none">{score}</p>
+                        </div>
                     </div>
 
                     {streak > 1 && (
-                        <div className="flex items-center gap-1 px-3 py-1 bg-orange-50 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400 rounded-full font-black text-xs">
-                            🔥 x{streak}
+                        <div className="flex items-center gap-1 px-3.5 py-1.5 bg-gradient-to-r from-orange-500 to-rose-500 text-white rounded-full font-black text-xs shadow-md shadow-orange-500/20 animate-bounce">
+                            🔥 Chuỗi x{streak}!
                         </div>
                     )}
                 </div>
@@ -187,33 +192,33 @@ export default function WordScrambleGame({ words, speak }) {
                     <button
                         onClick={handleUseHint}
                         disabled={isSolved || hintsRemaining <= 0}
-                        className="px-4 py-2 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/30 dark:hover:bg-amber-900/40 text-amber-700 dark:text-amber-400 rounded-xl font-bold text-sm flex items-center gap-1.5 transition disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+                        className="px-4 py-2 bg-white dark:bg-slate-800 hover:bg-amber-50 dark:hover:bg-slate-700 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-700/50 rounded-2xl font-black text-xs flex items-center gap-1.5 transition disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed shadow-sm"
                     >
-                        <HelpCircle size={16} /> Gợi ý ({hintsRemaining})
+                        <HelpCircle size={15} /> Gợi ý ({hintsRemaining})
                     </button>
 
                     <button
                         onClick={handleShufflePool}
                         disabled={isSolved}
-                        className="p-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-xl transition cursor-pointer"
+                        className="p-2.5 bg-white dark:bg-slate-800 hover:bg-amber-50 dark:hover:bg-slate-700 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50 rounded-2xl transition cursor-pointer shadow-sm active:scale-95"
                         title="Đảo vị trí các chữ cái"
                     >
-                        <Shuffle size={18} />
+                        <Shuffle size={16} />
                     </button>
 
                     <button
                         onClick={nextWord}
-                        className="p-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-xl transition cursor-pointer"
+                        className="p-2.5 bg-white dark:bg-slate-800 hover:bg-amber-50 dark:hover:bg-slate-700 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50 rounded-2xl transition cursor-pointer shadow-sm active:scale-95"
                         title="Đổi từ khác"
                     >
-                        <RefreshCw size={18} />
+                        <RefreshCw size={16} />
                     </button>
                 </div>
             </div>
 
-            {/* Clue Card */}
-            <div className="bg-white dark:bg-slate-900 p-5 md:p-8 rounded-3xl shadow-sm border border-gray-200 dark:border-slate-800 text-center transition-colors">
-                <span className="text-[11px] font-black uppercase text-gray-400 dark:text-slate-500 tracking-wider mb-2 inline-block">
+            {/* Clue & Target Slots Card */}
+            <div className="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-3xl shadow-xl border border-gray-200 dark:border-slate-800 text-center transition-colors">
+                <span className="text-[11px] font-black uppercase text-amber-600 dark:text-amber-400 tracking-wider mb-2 inline-block px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200/50 dark:border-amber-800/30">
                     Sắp xếp các chữ cái thành từ tiếng Anh đúng
                 </span>
 
@@ -225,7 +230,7 @@ export default function WordScrambleGame({ words, speak }) {
                     </div>
                 )}
 
-                <h3 className="text-xl md:text-2xl font-black text-gray-800 dark:text-white mb-2">
+                <h3 className="text-2xl md:text-4xl font-black text-gray-900 dark:text-white tracking-tight mb-2">
                     {currentWord.vi}
                 </h3>
 
@@ -235,8 +240,8 @@ export default function WordScrambleGame({ words, speak }) {
                     </p>
                 )}
 
-                {/* Target Slots */}
-                <div className="flex flex-wrap gap-1.5 md:gap-2.5 justify-center mt-5 mb-3 min-h-[50px]">
+                {/* 3D Scrabble Target Slots */}
+                <div className="flex flex-wrap gap-2 md:gap-3 justify-center mt-6 mb-3 min-h-[56px]">
                     {[...Array(targetLength)].map((_, index) => {
                         const placed = placedTiles[index];
                         return (
@@ -244,12 +249,12 @@ export default function WordScrambleGame({ words, speak }) {
                                 key={index}
                                 onClick={() => placed && handleRemovePlaced(index)}
                                 disabled={isSolved || !placed}
-                                className={`w-10 h-12 md:w-13 md:h-15 rounded-2xl flex items-center justify-center font-black text-lg md:text-2xl transition-all shadow-sm ${
+                                className={`w-11 h-13 md:w-14 md:h-16 rounded-2xl flex items-center justify-center font-black text-xl md:text-2xl transition-all shadow-md ${
                                     isSolved
-                                        ? 'bg-green-500 text-white border-2 border-green-600 scale-105'
+                                        ? 'bg-gradient-to-tr from-emerald-500 to-teal-500 text-white border-2 border-emerald-400 scale-105 shadow-emerald-500/30'
                                         : placed
-                                        ? 'bg-indigo-600 text-white border-2 border-indigo-700 hover:bg-indigo-700 cursor-pointer active:scale-95'
-                                        : 'bg-gray-100 dark:bg-slate-800 border-2 border-dashed border-gray-300 dark:border-slate-700 text-transparent cursor-default'
+                                        ? 'bg-gradient-to-tr from-indigo-600 to-violet-600 text-white border-b-4 border-indigo-800 hover:brightness-110 cursor-pointer active:translate-y-1 active:border-b-0'
+                                        : 'bg-gray-100 dark:bg-slate-800/60 border-2 border-dashed border-gray-300 dark:border-slate-700 text-transparent cursor-default'
                                 }`}
                             >
                                 {placed ? placed.char : ''}
@@ -261,21 +266,22 @@ export default function WordScrambleGame({ words, speak }) {
                 {placedTiles.length > 0 && !isSolved && (
                     <button
                         onClick={handleClearAll}
-                        className="text-xs font-bold text-gray-400 hover:text-red-500 flex items-center gap-1 mx-auto mt-2 transition cursor-pointer"
+                        className="text-xs font-bold text-gray-400 hover:text-rose-500 flex items-center gap-1 mx-auto mt-3 transition cursor-pointer"
                     >
                         <RotateCcw size={12} /> Xóa hết để xếp lại
                     </button>
                 )}
 
+                {/* Solved Victory Banner */}
                 {isSolved && (
-                    <div className="mt-5 p-4 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800/40 rounded-2xl flex flex-wrap items-center justify-between gap-3 animate-fade-in">
+                    <div className="mt-6 p-4.5 bg-gradient-to-r from-emerald-500/15 via-teal-500/15 to-cyan-500/15 border-2 border-emerald-500/40 rounded-2xl flex flex-wrap items-center justify-between gap-3 animate-fade-in shadow-md">
                         <div className="flex items-center gap-3 text-left">
-                            <CheckCircle2 size={30} className="text-green-500 shrink-0" />
+                            <CheckCircle2 size={32} className="text-emerald-500 shrink-0" />
                             <div>
-                                <h4 className="font-bold text-green-800 dark:text-green-400 flex items-center gap-1.5">
-                                    <Sparkles size={16} /> Chính xác! Tuyệt cú mèo!
+                                <h4 className="font-black text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5 text-base">
+                                    <Sparkles size={16} /> Chính xác! Ghép từ siêu đỉnh!
                                 </h4>
-                                <p className="text-xs text-green-700 dark:text-green-500">
+                                <p className="text-xs text-emerald-700 dark:text-emerald-400">
                                     Từ vựng: <strong>{currentWord.cleanEn}</strong> ({currentWord.vi})
                                 </p>
                             </div>
@@ -284,7 +290,7 @@ export default function WordScrambleGame({ words, speak }) {
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={() => speak(currentWord.cleanEn)}
-                                className="p-2.5 bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 rounded-xl hover:bg-green-200 transition cursor-pointer"
+                                className="p-2.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 rounded-xl hover:bg-emerald-200 transition cursor-pointer shadow-sm"
                                 title="Phát âm"
                             >
                                 <Volume2 size={18} />
@@ -292,7 +298,7 @@ export default function WordScrambleGame({ words, speak }) {
 
                             <button
                                 onClick={nextWord}
-                                className="px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-black text-sm flex items-center gap-2 shadow-md transition cursor-pointer"
+                                className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-sm flex items-center gap-2 shadow-lg shadow-emerald-600/30 transition transform hover:scale-105 active:scale-95 cursor-pointer"
                             >
                                 Từ Tiếp Theo <ArrowRight size={16} />
                             </button>
@@ -301,22 +307,22 @@ export default function WordScrambleGame({ words, speak }) {
                 )}
             </div>
 
-            {/* Scrambled Letters Pool */}
+            {/* 3D Scramble Letter Tiles Pool */}
             {!isSolved && (
-                <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl shadow-sm border border-gray-200 dark:border-slate-800 text-center">
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
-                        Chọn các chữ cái bên dưới (hoặc gõ bàn phím):
+                <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-xl border border-gray-200 dark:border-slate-800 text-center">
+                    <p className="text-xs font-black uppercase text-gray-400 dark:text-slate-400 tracking-wider mb-4">
+                        Chọn các chữ cái bên dưới (hoặc gõ trực tiếp từ bàn phím):
                     </p>
-                    <div className="flex flex-wrap gap-2 md:gap-2.5 justify-center">
+                    <div className="flex flex-wrap gap-2.5 md:gap-3.5 justify-center">
                         {scrambledTiles.map((tile) => (
                             <button
                                 key={tile.id}
                                 disabled={tile.isUsed || isSolved}
                                 onClick={() => handlePickTile(tile)}
-                                className={`w-11 h-13 md:w-13 md:h-15 rounded-2xl font-black text-lg md:text-2xl transition-all shadow-sm ${
+                                className={`w-12 h-14 md:w-14 md:h-16 rounded-2xl font-black text-xl md:text-2xl transition-all shadow-md ${
                                     tile.isUsed
                                         ? 'bg-gray-100 dark:bg-slate-800/40 text-gray-300 dark:text-slate-700 border border-transparent cursor-not-allowed scale-90 opacity-25'
-                                        : 'bg-white dark:bg-slate-800 text-gray-800 dark:text-white border-2 border-gray-200 dark:border-slate-700 hover:border-indigo-500 dark:hover:border-indigo-500 hover:scale-105 active:scale-95 cursor-pointer shadow-md'
+                                        : 'bg-gradient-to-b from-white to-gray-100 dark:from-slate-800 dark:to-slate-850 text-gray-900 dark:text-white border-2 border-gray-200 dark:border-slate-700 border-b-4 border-b-gray-300 dark:border-b-slate-950 hover:border-amber-500 dark:hover:border-amber-500 hover:scale-105 active:border-b-2 active:translate-y-0.5 cursor-pointer hover:shadow-lg hover:shadow-amber-500/10'
                                 }`}
                             >
                                 {tile.char}
