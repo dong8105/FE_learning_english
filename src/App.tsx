@@ -62,10 +62,14 @@ function App() {
   });
   const [streak, setStreak] = useState(0);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isSfxMuted, setIsSfxMuted] = useState(() => audioManager.isMuted());
+  const [isSfxMuted, setIsSfxMuted] = useState(() => 
+    typeof audioManager?.isMuted === 'function' ? audioManager.isMuted() : false
+  );
 
   const handleToggleSfx = () => {
-    const nextState = audioManager.toggleMute();
+    const nextState = typeof audioManager?.toggleMute === 'function' 
+      ? audioManager.toggleMute() 
+      : !isSfxMuted;
     setIsSfxMuted(nextState);
   };
 

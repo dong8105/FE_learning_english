@@ -2,15 +2,15 @@
 
 class AudioManager {
   private ctx: AudioContext | null = null;
-  private isMuted: boolean = false;
+  private _isMuted: boolean = false;
 
   constructor() {
-    const saved = localStorage.getItem('app_sfx_muted');
-    this.isMuted = saved === 'true';
+    const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('app_sfx_muted') : null;
+    this._isMuted = saved === 'true';
   }
 
   private getContext(): AudioContext | null {
-    if (this.isMuted) return null;
+    if (this._isMuted) return null;
     if (!this.ctx) {
       const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (AudioCtx) {
@@ -23,19 +23,31 @@ class AudioManager {
     return this.ctx;
   }
 
+  public isMuted(): boolean {
+    return this._isMuted;
+  }
+
   public getIsMuted(): boolean {
-    return this.isMuted;
+    return this._isMuted;
+  }
+
+  public toggleMute(): boolean {
+    this._isMuted = !this._isMuted;
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('app_sfx_muted', this._isMuted.toString());
+    }
+    return this._isMuted;
   }
 
   public toggleMuted(): boolean {
-    this.isMuted = !this.isMuted;
-    localStorage.setItem('app_sfx_muted', this.isMuted.toString());
-    return this.isMuted;
+    return this.toggleMute();
   }
 
   public setMuted(muted: boolean): void {
-    this.isMuted = muted;
-    localStorage.setItem('app_sfx_muted', muted.toString());
+    this._isMuted = muted;
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('app_sfx_muted', muted.toString());
+    }
   }
 
   // Click sound
