@@ -115,6 +115,14 @@ const STATIC_EXAMPLE_TRANSLATIONS = {
 
 const Toeic30DayMode = ({ words = [], speak }) => {
     const { reportAiUsage } = useAiStatus();
+    const { user, token } = useAuth();
+    const userPrefix = user ? `u_${user.id}` : 'guest';
+    const PROGRESS_KEY = `${userPrefix}_toeic30_progress`;
+    const SCORES_KEY = `${userPrefix}_toeic30_scores`;
+    const STREAK_KEY = `${userPrefix}_toeic30_streak`;
+    const DATE_KEY = `${userPrefix}_toeic30_last_study_date`;
+    const QUIZZES_KEY = `${userPrefix}_toeic30_ai_quizzes`;
+    const QUIZZES_STATE_KEY = `${userPrefix}_toeic30_ai_quizzes_state`;
 
     const [progress, setProgress] = useState({});
     const [scores, setScores] = useState({});
