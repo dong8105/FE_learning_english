@@ -13,11 +13,14 @@ import { audioManager } from './utils/audioManager';
 import { AiStatusProvider } from './components/AiStatusProvider';
 import AiStatusBadge from './components/AiStatusBadge';
 import AiDashboardModal from './components/AiDashboardModal';
+import { AuthProvider } from './context/AuthContext';
+import AuthModal from './components/AuthModal';
 
 import { vocabularyApi } from './api/vocabularyApi';
 
 // Lazy loaded modes for instant initial load and code splitting
 const DashboardMode = lazy(() => import('./components/DashboardMode'));
+const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
 const FlashcardMode = lazy(() => import('./components/FlashcardMode'));
 const QuizMode = lazy(() => import('./components/QuizMode'));
 const DictationMode = lazy(() => import('./components/DictationMode'));
@@ -258,123 +261,130 @@ function App() {
   })();
 
   return (
-    <AiStatusProvider>
-      <div className="flex flex-col h-[100dvh] bg-gray-50 dark:bg-slate-950 font-sans overflow-hidden transition-colors duration-300">
-        <AiStatusBadge />
-        <AiDashboardModal />
-        <Header 
-          wordCount={words.length} 
-          onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} 
-          onOpenSettings={() => setIsSettingsOpen(true)}
-          theme={theme}
-          toggleTheme={toggleTheme}
-          streak={streak}
-          onOpenSearch={() => setIsSearchOpen(true)}
-          isSfxMuted={isSfxMuted}
-          onToggleSfx={handleToggleSfx}
-        />
-        
-        <div className="flex flex-1 overflow-hidden relative min-h-0">
-          <Sidebar 
-            activeTab={activeTab} 
-            setActiveTab={(tab) => {
-              setActiveTab(tab);
-              setIsSidebarOpen(false);
-            }} 
-            isOpen={isSidebarOpen}
-            onClose={() => setIsSidebarOpen(false)}
+    <AuthProvider>
+      <AiStatusProvider>
+        <div className="flex flex-col h-[100dvh] bg-gray-50 dark:bg-slate-950 font-sans overflow-hidden transition-colors duration-300">
+          <AiStatusBadge />
+          <AiDashboardModal />
+          <Header 
+            wordCount={words.length} 
+            onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} 
+            onOpenSettings={() => setIsSettingsOpen(true)}
+            theme={theme}
+            toggleTheme={toggleTheme}
+            streak={streak}
+            onOpenSearch={() => setIsSearchOpen(true)}
+            isSfxMuted={isSfxMuted}
+            onToggleSfx={handleToggleSfx}
+            onNavigateTab={setActiveTab}
           />
           
-          <main className="flex-1 flex flex-col overflow-hidden w-full bg-gray-50 dark:bg-slate-950 transition-colors min-h-0 pb-16 md:pb-0">
-            {activeTab !== 'dashboard' && activeTab !== 'reading' && activeTab !== 'manage' && activeTab !== 'speaking' && activeTab !== 'grammar' && activeTab !== 'recommendations' && activeTab !== 'srs' && activeTab !== 'translator' && activeTab !== 'toeic30' && activeTab !== 'ets2026' && activeTab !== 'japaneseMinna' && (
-              <UnitSelector selectedGroup={selectedGroup} onSelectGroup={setSelectedGroup} words={words} />
-            )}
+          <div className="flex flex-1 overflow-hidden relative min-h-0">
+            <Sidebar 
+              activeTab={activeTab} 
+              setActiveTab={(tab) => {
+                setActiveTab(tab);
+                setIsSidebarOpen(false);
+              }} 
+              isOpen={isSidebarOpen}
+              onClose={() => setIsSidebarOpen(false)}
+            />
             
-            <div className="flex-1 overflow-y-auto p-4 md:p-6 min-h-0">
-              <Suspense fallback={
-                <div className="flex flex-col items-center justify-center min-h-[300px] gap-3">
-                  <div className="w-10 h-10 border-4 border-blue-500/20 border-t-blue-600 rounded-full animate-spin" />
-                  <span className="text-sm font-medium text-slate-500 dark:text-slate-400 animate-pulse">
-                    Đang tải giao diện học...
-                  </span>
-                </div>
-              }>
-                {activeTab === 'dashboard' && <DashboardMode words={words} speak={speak} setActiveTab={setActiveTab} onRefreshData={handleRefreshData} />}
-                {activeTab === 'toeic30' && <Toeic30DayMode words={words} speak={speak} />}
-                {activeTab === 'toeic500' && <Toeic500Mode words={words} speak={speak} />}
-                {activeTab === 'ets2026' && <Ets2026Mode words={words} speak={speak} />}
-                {activeTab === 'japaneseMinna' && (
-                  <JapaneseMinnaMode 
-                    japaneseWords={words.filter(w => w.master_group === 'Từ Vựng Tiếng Nhật Minna No Nihongo' || w.hiragana || w.kanji || (w.sub_group && w.sub_group.includes('Bài')))} 
-                    speak={speak} 
-                    onExit={() => setActiveTab('dashboard')} 
-                  />
-                )}
-                {activeTab === 'optimal' && <OptimalLearningMode words={filteredWords} speak={speak} />}
-                {activeTab === 'sequential3' && <Sequential3StepMode words={filteredWords} speak={speak} onExit={() => setActiveTab('dashboard')} />}
-                {activeTab === 'flashcards' && <FlashcardMode words={filteredWords} speak={speak} />}
-                {activeTab === 'quiz' && <QuizMode words={filteredWords} speak={speak} />}
-                {activeTab === 'dictation' && <DictationMode words={filteredWords} speak={speak} />}
-                {activeTab === 'ipa' && <Ets2026IpaMode words={filteredWords} allWords={words} speak={speak} onExit={() => setActiveTab('dashboard')} />}
-                {activeTab === 'match' && <MatchMode words={filteredWords} speak={speak} />}
-                {activeTab === 'typing' && <TypingMode words={filteredWords} speak={speak} />}
-                {activeTab === 'related' && <RelatedWordsMode words={filteredWords} speak={speak} />}
-                {activeTab === 'recommendations' && <RecommendationsMode words={words} speak={speak} setActiveTab={setActiveTab} />}
-                {activeTab === 'srs' && <SRSMode words={words} speak={speak} />}
-                {activeTab === 'manage' && (
-                  <WordManager 
-                    words={words} 
-                    onAddWord={handleAddWord} 
-                    onDeleteWord={handleDeleteWord} 
-                    onRefreshData={handleRefreshData}
-                    speak={speak}
-                  />
-                )}
-                {activeTab === 'reading' && <ReadingMode words={words} speak={speak} />}
-                {activeTab === 'grammar' && <GrammarMode />}
-                {activeTab === 'mixed' && <MixedTestMode />}
-                {activeTab === 'mixedGame' && <MixedGameMode words={words} speak={speak} />}
-                {activeTab === 'speaking' && <SpeakingMode words={words} />}
-                {activeTab === 'translator' && <TranslatorMode speak={speak} />}
-                {activeTab === 'game_memory' && <MemoryMatchGame words={filteredWords && filteredWords.length >= 8 ? filteredWords : words} speak={speak} />}
-                {activeTab === 'game_survival' && <SurvivalGame words={filteredWords && filteredWords.length >= 4 ? filteredWords : words} speak={speak} />}
-                {activeTab === 'game_hangman' && <HangmanGame words={filteredWords && filteredWords.length >= 4 ? filteredWords : words} speak={speak} />}
-                {activeTab === 'game_falling' && <FallingWordsGame words={filteredWords && filteredWords.length >= 4 ? filteredWords : words} speak={speak} />}
-                {activeTab === 'game_scramble' && <WordScrambleGame words={filteredWords && filteredWords.length >= 4 ? filteredWords : words} speak={speak} />}
-              </Suspense>
-            </div>
-          </main>
+            <main className="flex-1 flex flex-col overflow-hidden w-full bg-gray-50 dark:bg-slate-950 transition-colors min-h-0 pb-16 md:pb-0">
+              {activeTab !== 'dashboard' && activeTab !== 'admin_dashboard' && activeTab !== 'reading' && activeTab !== 'manage' && activeTab !== 'speaking' && activeTab !== 'grammar' && activeTab !== 'recommendations' && activeTab !== 'srs' && activeTab !== 'translator' && activeTab !== 'toeic30' && activeTab !== 'ets2026' && activeTab !== 'japaneseMinna' && (
+                <UnitSelector selectedGroup={selectedGroup} onSelectGroup={setSelectedGroup} words={words} />
+              )}
+              
+              <div className="flex-1 overflow-y-auto p-4 md:p-6 min-h-0">
+                <Suspense fallback={
+                  <div className="flex flex-col items-center justify-center min-h-[300px] gap-3">
+                    <div className="w-10 h-10 border-4 border-blue-500/20 border-t-blue-600 rounded-full animate-spin" />
+                    <span className="text-sm font-medium text-slate-500 dark:text-slate-400 animate-pulse">
+                      Đang tải giao diện học...
+                    </span>
+                  </div>
+                }>
+                  {activeTab === 'dashboard' && <DashboardMode words={words} speak={speak} setActiveTab={setActiveTab} onRefreshData={handleRefreshData} />}
+                  {activeTab === 'admin_dashboard' && <AdminDashboard words={words} speak={speak} setActiveTab={setActiveTab} />}
+                  {activeTab === 'toeic30' && <Toeic30DayMode words={words} speak={speak} />}
+                  {activeTab === 'toeic500' && <Toeic500Mode words={words} speak={speak} />}
+                  {activeTab === 'ets2026' && <Ets2026Mode words={words} speak={speak} />}
+                  {activeTab === 'japaneseMinna' && (
+                    <JapaneseMinnaMode 
+                      japaneseWords={words.filter(w => w.master_group === 'Từ Vựng Tiếng Nhật Minna No Nihongo' || w.hiragana || w.kanji || (w.sub_group && w.sub_group.includes('Bài')))} 
+                      speak={speak} 
+                      onExit={() => setActiveTab('dashboard')} 
+                    />
+                  )}
+                  {activeTab === 'optimal' && <OptimalLearningMode words={filteredWords} speak={speak} />}
+                  {activeTab === 'sequential3' && <Sequential3StepMode words={filteredWords} speak={speak} onExit={() => setActiveTab('dashboard')} />}
+                  {activeTab === 'flashcards' && <FlashcardMode words={filteredWords} speak={speak} />}
+                  {activeTab === 'quiz' && <QuizMode words={filteredWords} speak={speak} />}
+                  {activeTab === 'dictation' && <DictationMode words={filteredWords} speak={speak} />}
+                  {activeTab === 'ipa' && <Ets2026IpaMode words={filteredWords} allWords={words} speak={speak} onExit={() => setActiveTab('dashboard')} />}
+                  {activeTab === 'match' && <MatchMode words={filteredWords} speak={speak} />}
+                  {activeTab === 'typing' && <TypingMode words={filteredWords} speak={speak} />}
+                  {activeTab === 'related' && <RelatedWordsMode words={filteredWords} speak={speak} />}
+                  {activeTab === 'recommendations' && <RecommendationsMode words={words} speak={speak} setActiveTab={setActiveTab} />}
+                  {activeTab === 'srs' && <SRSMode words={words} speak={speak} />}
+                  {activeTab === 'manage' && (
+                    <WordManager 
+                      words={words} 
+                      onAddWord={handleAddWord} 
+                      onDeleteWord={handleDeleteWord} 
+                      onRefreshData={handleRefreshData}
+                      speak={speak}
+                    />
+                  )}
+                  {activeTab === 'reading' && <ReadingMode words={words} speak={speak} />}
+                  {activeTab === 'grammar' && <GrammarMode />}
+                  {activeTab === 'mixed' && <MixedTestMode />}
+                  {activeTab === 'mixedGame' && <MixedGameMode words={words} speak={speak} />}
+                  {activeTab === 'speaking' && <SpeakingMode words={words} />}
+                  {activeTab === 'translator' && <TranslatorMode speak={speak} />}
+                  {activeTab === 'game_memory' && <MemoryMatchGame words={filteredWords && filteredWords.length >= 8 ? filteredWords : words} speak={speak} />}
+                  {activeTab === 'game_survival' && <SurvivalGame words={filteredWords && filteredWords.length >= 4 ? filteredWords : words} speak={speak} />}
+                  {activeTab === 'game_hangman' && <HangmanGame words={filteredWords && filteredWords.length >= 4 ? filteredWords : words} speak={speak} />}
+                  {activeTab === 'game_falling' && <FallingWordsGame words={filteredWords && filteredWords.length >= 4 ? filteredWords : words} speak={speak} />}
+                  {activeTab === 'game_scramble' && <WordScrambleGame words={filteredWords && filteredWords.length >= 4 ? filteredWords : words} speak={speak} />}
+                </Suspense>
+              </div>
+            </main>
+          </div>
+
+          {/* Global Search Modal (Ctrl + K) */}
+          <GlobalSearchModal 
+            isOpen={isSearchOpen}
+            onClose={() => setIsSearchOpen(false)}
+            words={words}
+            speak={speak}
+          />
+
+          {/* Auth Modal (Login / Register) */}
+          <AuthModal />
+
+          {/* Mobile Bottom Navigation */}
+          <BottomNav 
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            onOpenSearch={() => setIsSearchOpen(true)}
+          />
+
+          <VoiceSettings 
+            isOpen={isSettingsOpen} 
+            onClose={() => setIsSettingsOpen(false)} 
+            voices={voices}
+            selectedVoice={selectedVoice}
+            setSelectedVoice={setSelectedVoice}
+            speechRate={speechRate}
+            setSpeechRate={setSpeechRate}
+            globalRandomizeVoice={globalRandomizeVoice}
+            setGlobalRandomizeVoice={setGlobalRandomizeVoice}
+          />
+          <ToastContainer position="bottom-right" aria-label="Notifications" />
         </div>
-
-        {/* Global Search Modal (Ctrl + K) */}
-        <GlobalSearchModal 
-          isOpen={isSearchOpen}
-          onClose={() => setIsSearchOpen(false)}
-          words={words}
-          speak={speak}
-        />
-
-        {/* Mobile Bottom Navigation */}
-        <BottomNav 
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          onOpenSearch={() => setIsSearchOpen(true)}
-        />
-
-        <VoiceSettings 
-          isOpen={isSettingsOpen} 
-          onClose={() => setIsSettingsOpen(false)} 
-          voices={voices}
-          selectedVoice={selectedVoice}
-          setSelectedVoice={setSelectedVoice}
-          speechRate={speechRate}
-          setSpeechRate={setSpeechRate}
-          globalRandomizeVoice={globalRandomizeVoice}
-          setGlobalRandomizeVoice={setGlobalRandomizeVoice}
-        />
-        <ToastContainer position="bottom-right" aria-label="Notifications" />
-      </div>
-    </AiStatusProvider>
+      </AiStatusProvider>
+    </AuthProvider>
   );
 }
 

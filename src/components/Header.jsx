@@ -1,5 +1,6 @@
-import React from 'react';
-import { BookOpen, Menu, Settings, Moon, Sun, Flame, Search, Volume2, VolumeX } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { BookOpen, Menu, Settings, Moon, Sun, Flame, Search, Volume2, VolumeX, LogIn, LogOut, ShieldCheck, User as UserIcon } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export default function Header({ 
     wordCount, 
@@ -10,8 +11,24 @@ export default function Header({
     streak,
     onOpenSearch,
     isSfxMuted,
-    onToggleSfx
+    onToggleSfx,
+    onNavigateTab
 }) {
+    const { user, isAdmin, logout, openAuthModal } = useAuth();
+    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+    const userMenuRef = useRef(null);
+
+    // Close user dropdown on outside click
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+                setIsUserMenuOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
     return (
         <header className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-md sticky top-0 z-40 shadow-sm dark:shadow-slate-800/50 border-b border-slate-200/70 dark:border-slate-800 transition-colors">
             <div className="px-3 sm:px-4 h-16 flex items-center justify-between gap-2">
@@ -110,6 +127,77 @@ export default function Header({
                     >
                         <Settings size={19} />
                     </button>
+
+                    {/* Auth Login / User Profile Dropdown */}
+                    {user ? (
+                        <div className="relative" ref={userMenuRef}>
+                            <button
+                                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                                className={`flex items-center gap-1.5 p-1 sm:px-2.5 sm:py-1 rounded-xl transition-all border ${
+                                    isAdmin 
+                                        ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/60 text-amber-700 dark:text-amber-300' 
+                                        : 'bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800/60 text-blue-700 dark:text-blue-300'
+                                }`}
+                                title={user.name || user.username}
+                            >
+                                <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-black text-xs ${
+                                    isAdmin ? 'bg-amber-500 text-slate-950' : 'bg-blue-600 text-white'
+                                }`}>
+                                    {isAdmin ? '👑' : (user.name ? user.name.charAt(0).toUpperCase() : 'U')}
+                                </div>
+                                <span className="text-xs font-bold hidden sm:inline truncate max-w-[90px]">
+                                    {user.name || user.username}
+                                </span>
+                            </button>
+
+                            {/* Dropdown Menu */}
+                            {isUserMenuOpen && (
+                                <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200/80 dark:border-slate-800 py-2 z-50 animate-fade-in text-xs">
+                                    <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800">
+                                        <div className="font-black text-slate-800 dark:text-white truncate">
+                                            {user.name || user.username}
+                                        </div>
+                                        <div className="text-[11px] text-slate-400 font-mono">
+                                            @{user.username} {isAdmin ? '• Quản trị viên' : ''}
+                                        </div>
+                                    </div>
+
+                                    {isAdmin && onNavigateTab && (
+                                        <button
+                                            onClick={() => {
+                                                onNavigateTab('admin_dashboard');
+                                                setIsUserMenuOpen(false);
+                                            }}
+                                            className="w-full text-left px-4 py-2.5 text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 font-bold flex items-center gap-2 transition-colors"
+                                        >
+                                            <ShieldCheck size={16} />
+                                            <span>Admin Dashboard</span>
+                                        </button>
+                                    )}
+
+                                    <button
+                                        onClick={() => {
+                                            logout();
+                                            setIsUserMenuOpen(false);
+                                        }}
+                                        className="w-full text-left px-4 py-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-bold flex items-center gap-2 transition-colors"
+                                    >
+                                        <LogOut size={16} />
+                                        <span>Đăng Xuất</span>
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <button
+                            onClick={openAuthModal}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-500/20 transition-all"
+                            title="Đăng nhập tài khoản"
+                        >
+                            <LogIn size={15} />
+                            <span className="hidden sm:inline">Đăng nhập</span>
+                        </button>
+                    )}
                 </div>
             </div>
         </header>

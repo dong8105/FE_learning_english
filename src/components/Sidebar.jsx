@@ -23,10 +23,13 @@ import {
     Heart,
     LayoutGrid,
     CloudRain,
-    HelpCircle
+    HelpCircle,
+    ShieldCheck
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export default function Sidebar({ activeTab, setActiveTab, isOpen, onClose }) {
+    const { isAdmin } = useAuth();
     
     const SidebarButton = ({ id, icon: Icon, label }) => (
         <button
@@ -65,6 +68,39 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, onClose }) {
                         <X size={20} />
                     </button>
                 </div>
+
+                {/* Admin Exclusive Navigation Section */}
+                {isAdmin && (
+                    <div className="p-3 bg-amber-50/80 dark:bg-amber-950/40 rounded-2xl border border-amber-200 dark:border-amber-800/60 shadow-xs">
+                        <h2 className="text-[11px] font-black text-amber-700 dark:text-amber-300 uppercase tracking-wider mb-2 px-1 flex items-center gap-1.5">
+                            <ShieldCheck size={15} /> Quản Trị Viên (Admin)
+                        </h2>
+                        <div className="flex flex-col gap-1">
+                            <button
+                                onClick={() => setActiveTab('admin_dashboard')}
+                                className={`flex items-center gap-2.5 px-3 py-2 rounded-xl font-bold text-xs transition-all w-full text-left ${
+                                    activeTab === 'admin_dashboard'
+                                        ? 'bg-amber-500 text-slate-950 shadow-xs'
+                                        : 'text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/50'
+                                }`}
+                            >
+                                <ShieldCheck size={16} />
+                                <span>Admin Dashboard</span>
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('manage')}
+                                className={`flex items-center gap-2.5 px-3 py-2 rounded-xl font-bold text-xs transition-all w-full text-left ${
+                                    activeTab === 'manage'
+                                        ? 'bg-amber-500 text-slate-950 shadow-xs'
+                                        : 'text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/50'
+                                }`}
+                            >
+                                <BrainCircuit size={16} />
+                                <span>Quản Lý Từ Vựng</span>
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 <div>
                     <h2 className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-3 px-2">
