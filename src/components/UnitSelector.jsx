@@ -1,9 +1,12 @@
 import { Filter, BookOpen, Layers, Star, FolderTree, ChevronDown } from "lucide-react"
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 
 const UnitSelector = ({ selectedGroup, onSelectGroup, words = [] }) => {
     // 1. Khóa học (Units 1-12)
-    const basicUnits = Array.from({ length: 12 }, (_, i) => i + 1);
+    const basicUnits = useMemo(() => {
+        const set = new Set(words.filter(w => typeof w.unit === 'number' && w.unit >= 1 && w.unit <= 12).map(w => w.unit));
+        return Array.from(set).sort((a, b) => a - b);
+    }, [words]);
     
     // 2. Hàng ngày (Units >= 13)
     const extraTopicsList = useMemo(() => {
@@ -51,6 +54,12 @@ const UnitSelector = ({ selectedGroup, onSelectGroup, words = [] }) => {
 
     const currentMode = selectedGroup?.type || 'all';
 
+    useEffect(() => {
+        if (currentMode === 'unit' && basicUnits.length === 0) {
+            onSelectGroup({ type: 'all' });
+        }
+    }, [currentMode, basicUnits.length, onSelectGroup]);
+
     return (
         <div className="bg-white dark:bg-slate-900 px-6 py-4 border-b border-gray-150 dark:border-slate-800/80 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all duration-300 shadow-sm">
             <div className="flex items-center gap-3">
@@ -76,16 +85,18 @@ const UnitSelector = ({ selectedGroup, onSelectGroup, words = [] }) => {
                     >
                         <Star size={13} /> Tất cả
                     </button>
-                    <button 
-                        onClick={() => onSelectGroup({ type: 'unit', id: 1 })}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center gap-1.5 ${
-                            currentMode === 'unit' 
-                                ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm' 
-                                : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
-                        }`}
-                    >
-                        <BookOpen size={13} /> Khóa học
-                    </button>
+                    {basicUnits.length > 0 && (
+                        <button 
+                            onClick={() => onSelectGroup({ type: 'unit', id: basicUnits[0] || 1 })}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center gap-1.5 ${
+                                currentMode === 'unit' 
+                                    ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm' 
+                                    : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
+                            }`}
+                        >
+                            <BookOpen size={13} /> Khóa học
+                        </button>
+                    )}
                     <button 
                         onClick={() => onSelectGroup({ type: 'daily', id: extraTopicsList[0]?.id || 13 })}
                         className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center gap-1.5 ${
@@ -115,11 +126,11 @@ const UnitSelector = ({ selectedGroup, onSelectGroup, words = [] }) => {
                 </div>
 
                 {/* Sub selectors */}
-                {currentMode === 'unit' && (
+                {currentMode === 'unit' && basicUnits.length > 0 && (
                     <div className="relative animate-fade-in">
                         <select
                             className="appearance-none pl-3 pr-8 py-1.5 bg-blue-50/50 dark:bg-blue-900/10 border border-blue-200/50 dark:border-blue-800/40 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/30 text-blue-700 dark:text-blue-400 text-xs font-bold cursor-pointer min-w-[150px] shadow-sm transition-all"
-                            value={selectedGroup.id || 1}
+                            value={selectedGroup.id || basicUnits[0]}
                             onChange={(e) => onSelectGroup({ type: 'unit', id: parseInt(e.target.value, 10) })}
                         >
                             {basicUnits.map(unit => (
