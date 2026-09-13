@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, Trophy, Clock, Target, Sparkles, CheckCircle2, Flame, Award } from 'lucide-react';
+import { audioManager } from '../../utils/audioManager';
 
 export default function MemoryMatchGame({ words, speak }) {
     const [cards, setCards] = useState([]);
@@ -60,6 +61,7 @@ export default function MemoryMatchGame({ words, speak }) {
 
     const handleWin = useCallback(() => {
         setIsFinished(true);
+        audioManager.playVictory();
         const finalTime = Math.floor((Date.now() - (startTime || Date.now())) / 1000);
         if (!bestTime || finalTime < bestTime) {
             setBestTime(finalTime);
@@ -73,6 +75,7 @@ export default function MemoryMatchGame({ words, speak }) {
         if (matchedIds.includes(cards[index].wordId)) return;
         if (flippedIndexes.length >= 2) return;
 
+        audioManager.playClick();
         const newFlipped = [...flippedIndexes, index];
         setFlippedIndexes(newFlipped);
         
@@ -87,6 +90,7 @@ export default function MemoryMatchGame({ words, speak }) {
 
             if (firstCard.wordId === secondCard.wordId) {
                 // Correct Match
+                audioManager.playCorrect();
                 setTimeout(() => {
                     setCombo(c => c + 1);
                     setScore(s => s + 50 + (combo + 1) * 15);
@@ -102,6 +106,7 @@ export default function MemoryMatchGame({ words, speak }) {
                 }, 400);
             } else {
                 // No match
+                audioManager.playWrong();
                 setTimeout(() => {
                     setCombo(0);
                     setFlippedIndexes([]);

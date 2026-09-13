@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Heart, Trophy, Timer, Volume2, CheckCircle2, XCircle, RotateCcw, Zap, Flame, Award } from 'lucide-react';
+import { audioManager } from '../../utils/audioManager';
 
 const QUESTION_TIME = 6;
 
@@ -40,6 +41,7 @@ export default function SurvivalGame({ words, speak }) {
     const proceedNext = useCallback((currentRemainingLives) => {
         if (currentRemainingLives <= 0) {
             setIsGameOver(true);
+            audioManager.playGameOver();
             setScore(finalScore => {
                 if (finalScore > highScore) {
                     setHighScore(finalScore);
@@ -113,6 +115,7 @@ export default function SurvivalGame({ words, speak }) {
         if (isAnswering || isGameOver) return;
         if (timerRef.current) clearInterval(timerRef.current);
 
+        audioManager.playWrong();
         setIsAnswering(true);
         setSelectedOption('TIMEOUT');
         setStreak(0);
@@ -137,12 +140,19 @@ export default function SurvivalGame({ words, speak }) {
 
         if (isCorrect) {
             speak(currentQ.target.en);
-            setStreak(st => st + 1);
-            setScore(s => s + 10 + (streak + 1) * 2);
+            const nextStreak = streak + 1;
+            setStreak(nextStreak);
+            setScore(s => s + 10 + nextStreak * 2);
+            if (nextStreak % 5 === 0) {
+                audioManager.playStreak();
+            } else {
+                audioManager.playCorrect();
+            }
             setTimeout(() => {
                 proceedNext(lives);
             }, 600);
         } else {
+            audioManager.playWrong();
             setStreak(0);
             setLives(prevLives => {
                 const nextLives = prevLives - 1;

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Heart, Trophy, Zap, Volume2, RotateCcw, Play, Pause, AlertCircle, Sparkles, Crosshair } from 'lucide-react';
+import { audioManager } from '../../utils/audioManager';
 
 export default function FallingWordsGame({ words, speak }) {
     const [score, setScore] = useState(0);
@@ -82,11 +83,13 @@ export default function FallingWordsGame({ words, speak }) {
             });
 
             if (reachedBottomCount > 0) {
+                audioManager.playWrong();
                 setCombo(0);
                 setLives(prevLives => {
                     const nextLives = Math.max(0, prevLives - reachedBottomCount);
                     if (nextLives <= 0) {
                         setIsGameOver(true);
+                        audioManager.playGameOver();
                         setScore(finalScore => {
                             if (finalScore > highScore) {
                                 setHighScore(finalScore);
@@ -121,12 +124,19 @@ export default function FallingWordsGame({ words, speak }) {
             const matched = fallingWords[matchedIndex];
             speak(matched.word.cleanEn);
 
-            setDestroyedWord({ x: matched.x, y: matched.y, text: matched.word.cleanEn, combo: combo + 1 });
+            const nextCombo = combo + 1;
+            if (nextCombo % 5 === 0) {
+                audioManager.playStreak();
+            } else {
+                audioManager.playCorrect();
+            }
+
+            setDestroyedWord({ x: matched.x, y: matched.y, text: matched.word.cleanEn, combo: nextCombo });
             setTimeout(() => setDestroyedWord(null), 650);
 
             const points = 10 + combo * 3;
             setScore(s => s + points);
-            setCombo(c => c + 1);
+            setCombo(nextCombo);
 
             setFallingWords(prev => prev.filter((_, idx) => idx !== matchedIndex));
             setInputValue('');
