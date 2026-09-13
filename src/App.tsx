@@ -333,6 +333,7 @@ function AppContent() {
       <AiStatusBadge />
       <AiDashboardModal />
       <Header 
+        activeTab={activeTab}
         wordCount={words.length} 
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} 
         onOpenSettings={() => setIsSettingsOpen(true)}
@@ -346,14 +347,18 @@ function AppContent() {
       />
       
       <div className="flex flex-1 overflow-hidden relative min-h-0">
-        <Sidebar 
-          activeTab={activeTab} 
-          setActiveTab={handleNavigateTab} 
-          isOpen={isSidebarOpen}
-          onClose={() => setIsSidebarOpen(false)}
-        />
+        {activeTab !== 'home' && activeTab !== 'login' && (
+          <Sidebar 
+            activeTab={activeTab} 
+            setActiveTab={handleNavigateTab} 
+            isOpen={isSidebarOpen}
+            onClose={() => setIsSidebarOpen(false)}
+          />
+        )}
         
-        <main className="flex-1 flex flex-col overflow-hidden w-full bg-gray-50 dark:bg-slate-950 transition-colors min-h-0 pb-16 md:pb-0">
+        <main className={`flex-1 flex flex-col overflow-hidden w-full bg-gray-50 dark:bg-slate-950 transition-colors min-h-0 ${
+          activeTab === 'home' || activeTab === 'login' ? 'pb-20 md:pb-6' : 'pb-16 md:pb-0'
+        }`}>
           {routeState.status === 'not_found' && (
             <div className="flex-1 overflow-y-auto p-4 md:p-6 min-h-0">
               <NotFound404
@@ -456,6 +461,14 @@ function AppContent() {
         activeTab={activeTab}
         setActiveTab={handleNavigateTab}
         onOpenSearch={() => setIsSearchOpen(true)}
+        onToggleSidebar={() => {
+          if (activeTab === 'home' || activeTab === 'login') {
+            handleNavigateTab('dashboard');
+            setIsSidebarOpen(true);
+          } else {
+            setIsSidebarOpen(prev => !prev);
+          }
+        }}
       />
 
       <VoiceSettings 

@@ -3,6 +3,7 @@ import { BookOpen, Menu, Settings, Moon, Sun, Flame, Search, Volume2, VolumeX, L
 import { useAuth } from '../context/AuthContext';
 
 export default function Header({ 
+    activeTab,
     wordCount, 
     onToggleSidebar, 
     onOpenSettings, 
@@ -34,13 +35,15 @@ export default function Header({
             <div className="px-3 sm:px-4 h-16 flex items-center justify-between gap-2">
                 {/* Left: Menu toggle + Logo */}
                 <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                    <button 
-                        onClick={onToggleSidebar}
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg md:hidden text-gray-600 dark:text-slate-400 transition-colors"
-                        aria-label="Toggle Menu"
-                    >
-                        <Menu size={22} />
-                    </button>
+                    {activeTab !== 'home' && (
+                        <button 
+                            onClick={onToggleSidebar}
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg md:hidden text-gray-600 dark:text-slate-400 transition-colors"
+                            aria-label="Toggle Menu"
+                        >
+                            <Menu size={22} />
+                        </button>
+                    )}
                     <div 
                         onClick={() => onNavigateTab && onNavigateTab('home')}
                         className="flex items-center gap-2 text-blue-700 dark:text-blue-400 select-none cursor-pointer group"
@@ -58,6 +61,36 @@ export default function Header({
                             </span>
                         </div>
                     </div>
+
+                    {/* Top Desktop Navigation Links When on Home Page */}
+                    {activeTab === 'home' && onNavigateTab && (
+                        <nav className="hidden md:flex items-center gap-1 sm:gap-1.5 ml-2">
+                            <button
+                                onClick={() => onNavigateTab('dashboard')}
+                                className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all flex items-center gap-1.5"
+                            >
+                                <span>🚀 Bàn Học</span>
+                            </button>
+                            <button
+                                onClick={() => onNavigateTab('toeic30')}
+                                className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all flex items-center gap-1.5"
+                            >
+                                <span>📅 TOEIC 30 Ngày</span>
+                            </button>
+                            <button
+                                onClick={() => onNavigateTab('grammar')}
+                                className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all flex items-center gap-1.5"
+                            >
+                                <span>✍️ Ngữ Pháp</span>
+                            </button>
+                            <button
+                                onClick={() => onNavigateTab('game_survival')}
+                                className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all flex items-center gap-1.5"
+                            >
+                                <span>🎮 Trò Chơi</span>
+                            </button>
+                        </nav>
+                    )}
                 </div>
 
                 {/* Center: Quick Search Trigger Button */}
