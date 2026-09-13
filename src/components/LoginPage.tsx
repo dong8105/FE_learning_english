@@ -60,7 +60,9 @@ export default function LoginPage({ onNavigate, initialMode = 'login' }: LoginPa
         audioManager.playCorrect();
       }
       toast.success(`Chào mừng ${role === 'admin' ? 'Quản Trị Viên' : 'Học Viên'} đăng nhập thành công!`);
-      onNavigate(role === 'admin' ? 'admin_dashboard' : 'dashboard');
+      const targetTab = sessionStorage.getItem('redirectAfterLogin') || (role === 'admin' ? 'admin_dashboard' : 'dashboard');
+      sessionStorage.removeItem('redirectAfterLogin');
+      onNavigate(targetTab);
     } else {
       if (audioManager && typeof audioManager.playWrong === 'function') {
         audioManager.playWrong();
@@ -90,7 +92,9 @@ export default function LoginPage({ onNavigate, initialMode = 'login' }: LoginPa
         audioManager.playCorrect();
       }
       toast.success('Đăng nhập thành công!');
-      onNavigate('dashboard');
+      const targetTab = sessionStorage.getItem('redirectAfterLogin') || 'dashboard';
+      sessionStorage.removeItem('redirectAfterLogin');
+      onNavigate(targetTab);
     } else {
       if (audioManager && typeof audioManager.playWrong === 'function') {
         audioManager.playWrong();
@@ -133,7 +137,9 @@ export default function LoginPage({ onNavigate, initialMode = 'login' }: LoginPa
         audioManager.playCorrect();
       }
       toast.success('Tạo tài khoản thành công! Đã tự động đăng nhập.');
-      onNavigate('dashboard');
+      const targetTab = sessionStorage.getItem('redirectAfterLogin') || 'dashboard';
+      sessionStorage.removeItem('redirectAfterLogin');
+      onNavigate(targetTab);
     } else {
       if (audioManager && typeof audioManager.playWrong === 'function') {
         audioManager.playWrong();
@@ -259,12 +265,10 @@ export default function LoginPage({ onNavigate, initialMode = 'login' }: LoginPa
           <ArrowLeft size={16} />
           <span>Về Trang Chủ</span>
         </button>
-        <button
-          onClick={() => onNavigate('dashboard')}
-          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-        >
-          <span>Học ngay không cần đăng nhập →</span>
-        </button>
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/60 border border-amber-200/80 dark:border-amber-900/60 text-[11px] font-bold text-amber-700 dark:text-amber-400">
+          <Lock size={12} />
+          <span>Bắt buộc đăng nhập để học</span>
+        </div>
       </div>
 
       {/* Main Auth Card */}
@@ -274,7 +278,7 @@ export default function LoginPage({ onNavigate, initialMode = 'login' }: LoginPa
 
         <div className="p-6 sm:p-8">
           {/* Header Title & Icon */}
-          <div className="flex items-center gap-3.5 mb-6">
+          <div className="flex items-center gap-3.5 mb-5">
             <div className="p-3 bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 rounded-2xl border border-blue-100 dark:border-blue-900/50 shadow-sm">
               <ShieldCheck size={28} />
             </div>
@@ -285,6 +289,15 @@ export default function LoginPage({ onNavigate, initialMode = 'login' }: LoginPa
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 Đăng nhập để đồng bộ tiến độ và lưu giữ chuỗi ngày học
               </p>
+            </div>
+          </div>
+
+          {/* Mandatory Login Info Alert */}
+          <div className="mb-5 p-3 rounded-2xl bg-gradient-to-r from-amber-50/90 to-orange-50/80 dark:from-amber-950/40 dark:to-orange-950/30 border border-amber-200/80 dark:border-amber-900/50 flex items-start gap-2.5 text-xs text-amber-900 dark:text-amber-200">
+            <Lock size={15} className="shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+            <div className="leading-relaxed">
+              <span className="font-bold">Quy định hệ thống: </span>
+              Bắt buộc đăng nhập tài khoản để vào bàn học, làm bài tập và đồng bộ tiến độ học tập cá nhân.
             </div>
           </div>
 

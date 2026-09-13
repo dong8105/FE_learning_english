@@ -1,5 +1,5 @@
 import React, { useState, useEffect, Suspense, lazy, useMemo, useCallback } from 'react';
-import { ToastContainer } from 'react-toastify';
+import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 import Header from './components/Header';
@@ -65,10 +65,17 @@ function AppContent() {
     'game_memory', 'game_survival', 'game_hangman', 'game_falling', 'game_scramble'
   ]), []);
 
-  // Router resolution logic with 403 / 404 checks
+  // Router resolution logic with 403 / 404 / Auth checks
   const resolveRoute = useCallback((pathname: string) => {
     let clean = pathname.replace(/^\//, '').trim().toLowerCase();
-    if (!clean) return { status: 'ok' as const, tab: 'dashboard' };
+    
+    // Support root path '/'
+    if (!clean) {
+      if (!user) {
+        return { status: 'ok' as const, tab: 'home' };
+      }
+      return { status: 'ok' as const, tab: 'dashboard' };
+    }
     
     // Support /home
     if (clean === 'home') {
@@ -84,6 +91,14 @@ function AppContent() {
       clean = 'admin_dashboard';
     }
 
+    // 🔒 BẮT BUỘC ĐĂNG NHẬP: Người dùng phải đăng nhập trước khi vào bất kỳ chế độ học tập nào
+    if (!user) {
+      if (VALID_TABS.has(clean) || clean === 'admin_dashboard') {
+        sessionStorage.setItem('redirectAfterLogin', clean);
+      }
+      return { status: 'ok' as const, tab: 'login', requiredAuth: true };
+    }
+
     // Check permission for admin-only routes
     if (clean === 'admin_dashboard' || clean === 'manage') {
       if (!isAdmin) {
@@ -97,7 +112,7 @@ function AppContent() {
     }
 
     return { status: 'not_found' as const, tab: clean };
-  }, [isAdmin, VALID_TABS]);
+  }, [user, isAdmin, VALID_TABS]);
 
   const [routeState, setRouteState] = useState(() => resolveRoute(window.location.pathname));
   const [activeTab, setActiveTab] = useState(() => routeState.tab);
@@ -109,22 +124,43 @@ function AppContent() {
       setRouteState(res);
       if (res.status === 'ok') {
         setActiveTab(res.tab);
+        if (res.requiredAuth) {
+          window.history.replaceState(null, '', '/login');
+        }
       }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, [resolveRoute]);
 
-  // Re-verify route when admin status changes (login / logout)
+  // Re-verify route when user or admin status changes (login / logout)
   useEffect(() => {
     const res = resolveRoute(window.location.pathname);
     setRouteState(res);
     if (res.status === 'ok') {
       setActiveTab(res.tab);
+      if (res.requiredAuth) {
+        window.history.replaceState(null, '', '/login');
+      }
+    } else if (res.status === 'forbidden') {
+      setActiveTab('dashboard');
+      window.history.replaceState(null, '', '/');
     }
-  }, [isAdmin, resolveRoute]);
+  }, [user, isAdmin, resolveRoute]);
 
   const handleNavigateTab = (tab: string) => {
+    // 🔒 Bắt buộc đăng nhập để bắt đầu học
+    if (!user && tab !== 'home' && tab !== 'login') {
+      toast.warning('Vui lòng đăng nhập để bắt đầu học và lưu tiến độ!');
+      sessionStorage.setItem('redirectAfterLogin', tab);
+      window.history.pushState(null, '', '/login');
+      const res = resolveRoute('/login');
+      setRouteState(res);
+      setActiveTab('login');
+      setIsSidebarOpen(false);
+      return;
+    }
+
     let targetUrl = `/${tab}`;
     if (tab === 'dashboard') targetUrl = '/';
     else if (tab === 'admin_dashboard') targetUrl = '/admin';

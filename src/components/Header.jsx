@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { BookOpen, Menu, Settings, Moon, Sun, Flame, Search, Volume2, VolumeX, LogIn, LogOut, ShieldCheck, User as UserIcon } from 'lucide-react';
+import { BookOpen, Menu, Settings, Moon, Sun, Flame, Search, Volume2, VolumeX, LogIn, LogOut, ShieldCheck, User as UserIcon, Lock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function Header({ 
@@ -68,26 +68,34 @@ export default function Header({
                             <button
                                 onClick={() => onNavigateTab('dashboard')}
                                 className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all flex items-center gap-1.5"
+                                title={!user ? "Yêu cầu đăng nhập để học" : "Vào Bàn Học"}
                             >
                                 <span>🚀 Bàn Học</span>
+                                {!user && <Lock size={12} className="text-amber-500 opacity-80" />}
                             </button>
                             <button
                                 onClick={() => onNavigateTab('toeic30')}
                                 className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all flex items-center gap-1.5"
+                                title={!user ? "Yêu cầu đăng nhập để học" : "Lộ Trình TOEIC 30 Ngày"}
                             >
                                 <span>📅 TOEIC 30 Ngày</span>
+                                {!user && <Lock size={12} className="text-amber-500 opacity-80" />}
                             </button>
                             <button
                                 onClick={() => onNavigateTab('grammar')}
                                 className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all flex items-center gap-1.5"
+                                title={!user ? "Yêu cầu đăng nhập để học" : "Ngữ Pháp Chuyên Sâu"}
                             >
                                 <span>✍️ Ngữ Pháp</span>
+                                {!user && <Lock size={12} className="text-amber-500 opacity-80" />}
                             </button>
                             <button
                                 onClick={() => onNavigateTab('game_survival')}
                                 className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all flex items-center gap-1.5"
+                                title={!user ? "Yêu cầu đăng nhập để chơi" : "Trò Chơi Ôn Tập"}
                             >
                                 <span>🎮 Trò Chơi</span>
+                                {!user && <Lock size={12} className="text-amber-500 opacity-80" />}
                             </button>
                         </nav>
                     )}

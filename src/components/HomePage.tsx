@@ -20,11 +20,13 @@ import {
   Heart,
   TrendingUp,
   Cpu,
-  Star
+  Star,
+  Lock
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useVisibility } from '../context/VisibilityContext';
 import { audioManager } from '../utils/audioManager';
+import { toast } from 'react-toastify';
 
 interface HomePageProps {
   wordCount?: number;
@@ -39,6 +41,12 @@ export default function HomePage({ wordCount = 4650, onNavigate, speak }: HomePa
   const handleAction = (tab: string) => {
     if (audioManager && typeof audioManager.playClick === 'function') {
       audioManager.playClick();
+    }
+    if (!user && tab !== 'home' && tab !== 'login') {
+      toast.info('Bạn cần đăng nhập tài khoản để bắt đầu học và lưu tiến độ!');
+      sessionStorage.setItem('redirectAfterLogin', tab);
+      onNavigate('login');
+      return;
     }
     onNavigate(tab);
   };
@@ -78,13 +86,24 @@ export default function HomePage({ wordCount = 4650, onNavigate, speak }: HomePa
 
           {/* Welcome User Banner or CTA Buttons */}
           <div className="pt-2 flex flex-wrap items-center gap-3 sm:gap-4">
-            <button
-              onClick={() => handleAction('dashboard')}
-              className="px-6 py-3.5 bg-white hover:bg-blue-50 text-blue-700 hover:text-blue-800 font-black text-sm rounded-2xl shadow-lg shadow-black/10 active:scale-95 transition-all flex items-center gap-2"
-            >
-              <span>🚀 Vào Bàn Học Ngay</span>
-              <ArrowRight size={18} />
-            </button>
+            {!user ? (
+              <button
+                onClick={() => handleAction('login')}
+                className="px-6 py-3.5 bg-white hover:bg-blue-50 text-blue-700 hover:text-blue-800 font-black text-sm rounded-2xl shadow-lg shadow-black/10 active:scale-95 transition-all flex items-center gap-2"
+              >
+                <LogIn size={18} />
+                <span>Đăng Nhập Để Bắt Đầu Học</span>
+                <ArrowRight size={18} />
+              </button>
+            ) : (
+              <button
+                onClick={() => handleAction('dashboard')}
+                className="px-6 py-3.5 bg-white hover:bg-blue-50 text-blue-700 hover:text-blue-800 font-black text-sm rounded-2xl shadow-lg shadow-black/10 active:scale-95 transition-all flex items-center gap-2"
+              >
+                <span>🚀 Vào Bàn Học Ngay</span>
+                <ArrowRight size={18} />
+              </button>
+            )}
 
             {showToeic30 && (
               <button
@@ -93,18 +112,11 @@ export default function HomePage({ wordCount = 4650, onNavigate, speak }: HomePa
               >
                 <Calendar size={18} className="text-amber-300" />
                 <span>Lộ Trình TOEIC 30 Ngày</span>
+                {!user && <Lock size={14} className="text-amber-300 ml-0.5 opacity-80" />}
               </button>
             )}
 
-            {!user ? (
-              <button
-                onClick={() => handleAction('login')}
-                className="px-5 py-3.5 bg-slate-900/40 hover:bg-slate-900/60 backdrop-blur-md text-white font-bold text-sm rounded-2xl border border-white/20 active:scale-95 transition-all flex items-center gap-2"
-              >
-                <LogIn size={18} />
-                <span>Đăng Nhập / Tạo Tài Khoản</span>
-              </button>
-            ) : (
+            {user && (
               <div className="flex items-center gap-2.5 px-4 py-2 bg-white/20 backdrop-blur-md rounded-2xl border border-white/25">
                 <div className="w-8 h-8 rounded-xl bg-white text-blue-700 font-black flex items-center justify-center text-xs">
                   {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
@@ -120,6 +132,15 @@ export default function HomePage({ wordCount = 4650, onNavigate, speak }: HomePa
               </div>
             )}
           </div>
+
+          {!user && (
+            <div className="flex items-center gap-2 text-xs text-blue-100/90 font-medium pt-1">
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-400 text-slate-900 font-black text-[10px] shrink-0">
+                !
+              </span>
+              <span>Bắt buộc đăng nhập tài khoản để vào bàn học, làm bài tập và theo dõi lộ trình</span>
+            </div>
+          )}
         </div>
       </section>
 
