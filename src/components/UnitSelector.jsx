@@ -1,5 +1,11 @@
-import { Filter, BookOpen, Layers, Star, FolderTree, ChevronDown } from "lucide-react"
+import { Filter, BookOpen, Layers, Star, FolderTree, ChevronDown, Target } from "lucide-react"
 import { useState, useMemo, useEffect } from "react"
+
+const isSpecialTopicGroup = (name) => {
+    if (!name) return false;
+    const specialKeywords = ['toeic', 'ets', 'minna', 'ielts', 'chuyên đề', 'chuyen de', 'bài học'];
+    return specialKeywords.some(kw => name.toLowerCase().includes(kw));
+};
 
 const UnitSelector = ({ selectedGroup, onSelectGroup, words = [] }) => {
     // 1. Khóa học (Units 1-12)
@@ -33,26 +39,51 @@ const UnitSelector = ({ selectedGroup, onSelectGroup, words = [] }) => {
         return list;
     }, [words]);
 
-    // 3. Nhóm tổng (Master Groups)
-    // Map: master_group -> Set(sub_group)
-    const masterGroupsMap = useMemo(() => {
-        const map = new Map();
+    // 3. Phân loại Chuyên đề & Nhóm tổng
+    const { specialGroupsMap, masterGroupsMap } = useMemo(() => {
+        const specialMap = new Map();
+        const masterMap = new Map();
+
         words.forEach(w => {
             if (w.master_group) {
-                if (!map.has(w.master_group)) {
-                    map.set(w.master_group, new Set());
+                const targetMap = isSpecialTopicGroup(w.master_group) ? specialMap : masterMap;
+                if (!targetMap.has(w.master_group)) {
+                    targetMap.set(w.master_group, new Set());
                 }
                 if (w.sub_group) {
-                    map.get(w.master_group).add(w.sub_group);
+                    targetMap.get(w.master_group).add(w.sub_group);
                 }
             }
         });
-        return map;
+        return { specialGroupsMap: specialMap, masterGroupsMap: masterMap };
     }, [words]);
 
-    const masterGroupNames = Array.from(masterGroupsMap.keys()).sort();
+    const preferredSpecialOrder = [
+        '600 Từ Vựng TOEIC',
+        'Từ Vựng ETS 2026',
+        '500 Từ Vựng TOEIC Mất Gốc',
+        'Từ Vựng Tiếng Nhật Minna No Nihongo'
+    ];
+
+    const specialGroupNames = useMemo(() => {
+        const names = Array.from(specialGroupsMap.keys());
+        names.sort((a, b) => {
+            const idxA = preferredSpecialOrder.indexOf(a);
+            const idxB = preferredSpecialOrder.indexOf(b);
+            if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+            if (idxA !== -1) return -1;
+            if (idxB !== -1) return 1;
+            return a.localeCompare(b);
+        });
+        return names;
+    }, [specialGroupsMap]);
+
+    const masterGroupNames = useMemo(() => {
+        return Array.from(masterGroupsMap.keys()).sort();
+    }, [masterGroupsMap]);
 
     const currentMode = selectedGroup?.type || 'all';
+    const activeSpecialName = selectedGroup.specialName || specialGroupNames[0] || '';
 
     useEffect(() => {
         if (currentMode === 'unit' && basicUnits.length === 0) {
@@ -85,6 +116,26 @@ const UnitSelector = ({ selectedGroup, onSelectGroup, words = [] }) => {
                     >
                         <Star size={13} /> Tất cả
                     </button>
+
+                    {specialGroupNames.length > 0 && (
+                        <button 
+                            onClick={() => {
+                                onSelectGroup({ 
+                                    type: 'chuyende', 
+                                    specialName: activeSpecialName || specialGroupNames[0], 
+                                    subName: '' 
+                                });
+                            }}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center gap-1.5 ${
+                                currentMode === 'chuyende' 
+                                    ? 'bg-white dark:bg-slate-700 text-purple-600 dark:text-purple-400 shadow-sm' 
+                                    : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
+                            }`}
+                        >
+                            <Target size={13} /> Chuyên đề
+                        </button>
+                    )}
+
                     {basicUnits.length > 0 && (
                         <button 
                             onClick={() => onSelectGroup({ type: 'unit', id: basicUnits[0] || 1 })}
@@ -97,6 +148,7 @@ const UnitSelector = ({ selectedGroup, onSelectGroup, words = [] }) => {
                             <BookOpen size={13} /> Khóa học
                         </button>
                     )}
+
                     <button 
                         onClick={() => onSelectGroup({ type: 'daily', id: extraTopicsList[0]?.id || 13 })}
                         className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center gap-1.5 ${
@@ -107,12 +159,13 @@ const UnitSelector = ({ selectedGroup, onSelectGroup, words = [] }) => {
                     >
                         <Layers size={13} /> Hàng ngày
                     </button>
+
                     <button 
                         onClick={() => {
                             if (masterGroupNames.length > 0) {
-                                onSelectGroup({ type: 'master', masterName: masterGroupNames[0] });
+                                onSelectGroup({ type: 'master', masterName: masterGroupNames[0], subName: '' });
                             } else {
-                                onSelectGroup({ type: 'master', masterName: '' });
+                                onSelectGroup({ type: 'master', masterName: '', subName: '' });
                             }
                         }}
                         className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center gap-1.5 ${
@@ -126,6 +179,53 @@ const UnitSelector = ({ selectedGroup, onSelectGroup, words = [] }) => {
                 </div>
 
                 {/* Sub selectors */}
+                {currentMode === 'chuyende' && (
+                    <div className="flex gap-2 animate-fade-in flex-wrap items-center">
+                        {specialGroupNames.length === 0 ? (
+                            <div className="py-1 px-3 text-gray-400 dark:text-slate-500 text-xs italic">
+                                Chưa có chuyên đề nào.
+                            </div>
+                        ) : (
+                            <>
+                                <div className="relative">
+                                    <select
+                                        className="appearance-none pl-3 pr-8 py-1.5 bg-purple-50/50 dark:bg-purple-900/10 border border-purple-200/50 dark:border-purple-800/40 rounded-xl outline-none focus:ring-2 focus:ring-purple-500/30 text-purple-700 dark:text-purple-300 text-xs font-bold cursor-pointer min-w-[170px] shadow-sm transition-all"
+                                        value={activeSpecialName}
+                                        onChange={(e) => onSelectGroup({ type: 'chuyende', specialName: e.target.value, subName: '' })}
+                                    >
+                                        {specialGroupNames.map(name => (
+                                            <option key={name} value={name} className="bg-white dark:bg-slate-800 font-medium">
+                                                {name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-purple-500 pointer-events-none" />
+                                </div>
+
+                                {activeSpecialName && specialGroupsMap.get(activeSpecialName)?.size > 0 && (
+                                    <div className="relative">
+                                        <select
+                                            className="appearance-none pl-3 pr-8 py-1.5 bg-violet-50/50 dark:bg-violet-900/10 border border-violet-200/50 dark:border-violet-800/40 rounded-xl outline-none focus:ring-2 focus:ring-violet-500/30 text-violet-700 dark:text-violet-300 text-xs font-bold cursor-pointer min-w-[180px] max-w-[280px] truncate shadow-sm transition-all"
+                                            value={selectedGroup.subName || ''}
+                                            onChange={(e) => onSelectGroup({ type: 'chuyende', specialName: activeSpecialName, subName: e.target.value })}
+                                        >
+                                            <option value="" className="bg-white dark:bg-slate-800 font-medium">
+                                                Tất cả bài ({specialGroupsMap.get(activeSpecialName)?.size} bài)
+                                            </option>
+                                            {Array.from(specialGroupsMap.get(activeSpecialName)).sort((a, b) => a.localeCompare(b, undefined, { numeric: true })).map(sub => (
+                                                <option key={sub} value={sub} className="bg-white dark:bg-slate-800 font-medium">
+                                                    {sub}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-violet-500 pointer-events-none" />
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </div>
+                )}
+
                 {currentMode === 'unit' && basicUnits.length > 0 && (
                     <div className="relative animate-fade-in">
                         <select
@@ -210,3 +310,4 @@ const UnitSelector = ({ selectedGroup, onSelectGroup, words = [] }) => {
     )
 }
 export default UnitSelector
+

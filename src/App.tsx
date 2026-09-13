@@ -254,6 +254,14 @@ function App() {
     if (selectedGroup.type === 'daily') {
       return words.filter(w => w.unit === selectedGroup.id);
     }
+    if (selectedGroup.type === 'chuyende' || selectedGroup.type === 'special') {
+      const targetSpecial = selectedGroup.specialName;
+      if (!targetSpecial) return words;
+      return words.filter(w => 
+        w.master_group === targetSpecial && 
+        (!selectedGroup.subName || w.sub_group === selectedGroup.subName)
+      );
+    }
     if (selectedGroup.type === 'master') {
       return words.filter(w => w.master_group === selectedGroup.masterName && (!selectedGroup.subName || w.sub_group === selectedGroup.subName));
     }

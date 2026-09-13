@@ -17,11 +17,18 @@ export default function DashboardMode({ words, speak, setActiveTab, onRefreshDat
 
     // Distribution Stats
     const distribution = useMemo(() => {
-        const dist = { units: 0, daily: 0, master: 0 };
+        const isSpecialTopicGroup = (name) => {
+            if (!name) return false;
+            const specialKeywords = ['toeic', 'ets', 'minna', 'ielts', 'chuyên đề', 'chuyen de', 'bài học'];
+            return specialKeywords.some(kw => name.toLowerCase().includes(kw));
+        };
+
+        const dist = { units: 0, daily: 0, chuyende: 0, master: 0 };
         words.forEach(w => {
-            if (w.master_group) dist.master++;
+            if (isSpecialTopicGroup(w.master_group)) dist.chuyende++;
+            else if (w.master_group) dist.master++;
             else if (w.unit >= 13) dist.daily++;
-            else dist.units++;
+            else if (w.unit >= 1) dist.units++;
         });
         return dist;
     }, [words]);
@@ -241,15 +248,28 @@ export default function DashboardMode({ words, speak, setActiveTab, onRefreshDat
                         <BarChart2 className="text-emerald-500" /> Phân loại Từ vựng
                     </h2>
                     <div className="space-y-5">
-                        <div>
-                            <div className="flex justify-between text-sm font-bold mb-1.5">
-                                <span className="text-gray-700 dark:text-gray-300">Khóa học (Unit)</span>
-                                <span className="text-emerald-500">{distribution.units}</span>
+                        {distribution.chuyende > 0 && (
+                            <div>
+                                <div className="flex justify-between text-sm font-bold mb-1.5">
+                                    <span className="text-gray-700 dark:text-gray-300">Chuyên đề (TOEIC, ETS, Minna...)</span>
+                                    <span className="text-purple-500 font-bold">{distribution.chuyende}</span>
+                                </div>
+                                <div className="h-2.5 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                    <div className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full transition-all" style={{ width: `${totalWords ? (distribution.chuyende / totalWords) * 100 : 0}%` }}></div>
+                                </div>
                             </div>
-                            <div className="h-2.5 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: `${totalWords ? (distribution.units / totalWords) * 100 : 0}%` }}></div>
+                        )}
+                        {distribution.units > 0 && (
+                            <div>
+                                <div className="flex justify-between text-sm font-bold mb-1.5">
+                                    <span className="text-gray-700 dark:text-gray-300">Khóa học (Unit)</span>
+                                    <span className="text-emerald-500">{distribution.units}</span>
+                                </div>
+                                <div className="h-2.5 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                    <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: `${totalWords ? (distribution.units / totalWords) * 100 : 0}%` }}></div>
+                                </div>
                             </div>
-                        </div>
+                        )}
                         <div>
                             <div className="flex justify-between text-sm font-bold mb-1.5">
                                 <span className="text-gray-700 dark:text-gray-300">Chủ đề Hàng ngày</span>
