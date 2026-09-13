@@ -66,8 +66,17 @@ export default function AuthModal() {
 
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!regUsername || !regPassword) {
+    const trimmedUser = regUsername.trim();
+    if (!trimmedUser || !regPassword) {
       setErrorMsg('Vui lòng điền tên đăng nhập và mật khẩu');
+      return;
+    }
+    if (!/^[a-zA-Z0-9_]{3,30}$/.test(trimmedUser)) {
+      setErrorMsg('Tên đăng nhập phải từ 3 đến 30 ký tự, chỉ gồm chữ cái, chữ số và dấu gạch dưới (_)');
+      return;
+    }
+    if (regPassword.length < 6) {
+      setErrorMsg('Mật khẩu phải có độ dài tối thiểu 6 ký tự');
       return;
     }
     if (regPassword !== regConfirmPassword) {

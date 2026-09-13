@@ -8,12 +8,13 @@ import UnitSelector from './components/UnitSelector';
 import VoiceSettings from './components/VoiceSettings';
 import GlobalSearchModal from './components/GlobalSearchModal';
 import BottomNav from './components/BottomNav';
+import NotFound404 from './components/NotFound404';
 import { audioManager } from './utils/audioManager';
 
 import { AiStatusProvider } from './components/AiStatusProvider';
 import AiStatusBadge from './components/AiStatusBadge';
 import AiDashboardModal from './components/AiDashboardModal';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { VisibilityProvider } from './context/VisibilityContext';
 import AuthModal from './components/AuthModal';
 
@@ -49,9 +50,84 @@ const HangmanGame = lazy(() => import('./components/games/HangmanGame'));
 const FallingWordsGame = lazy(() => import('./components/games/FallingWordsGame'));
 const WordScrambleGame = lazy(() => import('./components/games/WordScrambleGame'));
 
-function App() {
+function AppContent() {
+  const { user, isAdmin, openAuthModal, getUserStorageKey } = useAuth();
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
-  const [activeTab, setActiveTab] = useState('dashboard');
+  
+  // Valid registered tab names
+  const VALID_TABS = useMemo(() => new Set([
+    'dashboard', 'admin_dashboard', 'toeic30', 'toeic500', 'ets2026', 'japaneseMinna',
+    'optimal', 'sequential3', 'flashcards', 'quiz', 'dictation', 'ipa',
+    'match', 'typing', 'related', 'recommendations', 'srs', 'manage',
+    'reading', 'grammar', 'mixed', 'speaking',
+    'game_memory', 'game_survival', 'game_hangman', 'game_falling', 'game_scramble'
+  ]), []);
+
+  // Router resolution logic with 403 / 404 checks
+  const resolveRoute = useCallback((pathname: string) => {
+    let clean = pathname.replace(/^\//, '').trim().toLowerCase();
+    if (!clean) return { status: 'ok' as const, tab: 'dashboard' };
+    
+    // Explicitly block /home or unrecognized routes to 404
+    if (clean === 'home') {
+      return { status: 'not_found' as const, tab: 'home' };
+    }
+
+    if (clean === 'admin' || clean === 'admindashboard') {
+      clean = 'admin_dashboard';
+    }
+
+    // Check permission for admin-only routes
+    if (clean === 'admin_dashboard' || clean === 'manage') {
+      if (!isAdmin) {
+        return { status: 'forbidden' as const, tab: clean };
+      }
+      return { status: 'ok' as const, tab: clean };
+    }
+
+    if (VALID_TABS.has(clean)) {
+      return { status: 'ok' as const, tab: clean };
+    }
+
+    return { status: 'not_found' as const, tab: clean };
+  }, [isAdmin, VALID_TABS]);
+
+  const [routeState, setRouteState] = useState(() => resolveRoute(window.location.pathname));
+  const [activeTab, setActiveTab] = useState(() => routeState.tab);
+
+  // Sync state on browser Back / Forward
+  useEffect(() => {
+    const handlePopState = () => {
+      const res = resolveRoute(window.location.pathname);
+      setRouteState(res);
+      if (res.status === 'ok') {
+        setActiveTab(res.tab);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [resolveRoute]);
+
+  // Re-verify route when admin status changes (login / logout)
+  useEffect(() => {
+    const res = resolveRoute(window.location.pathname);
+    setRouteState(res);
+    if (res.status === 'ok') {
+      setActiveTab(res.tab);
+    }
+  }, [isAdmin, resolveRoute]);
+
+  const handleNavigateTab = (tab: string) => {
+    const targetUrl = tab === 'dashboard' ? '/' : `/${tab === 'admin_dashboard' ? 'admin' : tab}`;
+    window.history.pushState(null, '', targetUrl);
+    const res = resolveRoute(targetUrl);
+    setRouteState(res);
+    if (res.status === 'ok') {
+      setActiveTab(res.tab);
+    }
+    setIsSidebarOpen(false);
+  };
+
   const [selectedGroup, setSelectedGroup] = useState({ type: 'all' });
   const [words, setWords] = useState([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -61,7 +137,7 @@ function App() {
   const [speechRate, setSpeechRate] = useState(0.8);
   const [globalRandomizeVoice, setGlobalRandomizeVoice] = useState(() => {
     const saved = localStorage.getItem('globalRandomizeVoice');
-    return saved !== null ? JSON.parse(saved) : true; // Default is true for TOEIC
+    return saved !== null ? JSON.parse(saved) : true;
   });
   const [streak, setStreak] = useState(0);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -88,10 +164,14 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Isolated streak tracking per user
   useEffect(() => {
     const today = new Date().toDateString();
-    const lastActive = localStorage.getItem('lastActiveDate');
-    let currentStreak = parseInt(localStorage.getItem('streakCount') || '0', 10);
+    const streakKey = getUserStorageKey('streakCount');
+    const dateKey = getUserStorageKey('lastActiveDate');
+
+    const lastActive = localStorage.getItem(dateKey);
+    let currentStreak = parseInt(localStorage.getItem(streakKey) || '0', 10);
 
     if (lastActive !== today) {
       if (lastActive) {
@@ -105,11 +185,11 @@ function App() {
       } else {
         currentStreak = 1;
       }
-      localStorage.setItem('lastActiveDate', today);
-      localStorage.setItem('streakCount', currentStreak.toString());
+      localStorage.setItem(dateKey, today);
+      localStorage.setItem(streakKey, currentStreak.toString());
     }
     setStreak(currentStreak);
-  }, []);
+  }, [user?.id, getUserStorageKey]);
 
   const fetchWords = async () => {
     let data = [];
@@ -123,12 +203,87 @@ function App() {
       const localData = await import('./data/data.json');
       data = localData.default || localData;
     }
-    setWords(data);
+
+    if (Array.isArray(data)) {
+      setWords(data);
+    }
   };
 
   useEffect(() => {
     fetchWords();
   }, []);
+
+  const handleRefreshData = useCallback(async () => {
+    await fetchWords();
+  }, []);
+
+  const handleAddWord = useCallback(async (newWord) => {
+    try {
+      await vocabularyApi.addWord(newWord);
+    } catch (e) {
+      console.error('Failed to add word to API, updating local state only:', e);
+    }
+    setWords(prev => [newWord, ...prev]);
+  }, []);
+
+  const handleDeleteWord = useCallback(async (id) => {
+    try {
+      await vocabularyApi.deleteWord(id);
+    } catch (e) {
+      console.error('Failed to delete word from API, updating local state only:', e);
+    }
+    setWords(prev => prev.filter(w => w.id !== id));
+  }, []);
+
+  // Voice synthesis initialization
+  useEffect(() => {
+    const updateVoices = () => {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        const availableVoices = window.speechSynthesis.getVoices();
+        const englishVoices = availableVoices.filter(v => v.lang.includes('en'));
+        setVoices(englishVoices.length > 0 ? englishVoices : availableVoices);
+        if (englishVoices.length > 0 && !selectedVoice) {
+          const defaultVoice = englishVoices.find(v => v.name.includes('Google') || v.name.includes('Natural')) || englishVoices[0];
+          setSelectedVoice(defaultVoice.name);
+        }
+      }
+    };
+
+    updateVoices();
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.onvoiceschanged = updateVoices;
+    }
+  }, [selectedVoice]);
+
+  const speak = useCallback((text, rate = null, lang = 'en-US') => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = rate !== null ? rate : speechRate;
+      utterance.lang = lang;
+
+      if (globalRandomizeVoice && voices.length > 1) {
+        const randomVoice = voices[Math.floor(Math.random() * voices.length)];
+        utterance.voice = randomVoice;
+      } else if (selectedVoice) {
+        const voice = voices.find(v => v.name === selectedVoice);
+        if (voice) utterance.voice = voice;
+      }
+
+      window.speechSynthesis.speak(utterance);
+    }
+  }, [speechRate, voices, globalRandomizeVoice, selectedVoice]);
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+    if (newTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  };
 
   useEffect(() => {
     if (theme === 'dark') {
@@ -136,116 +291,9 @@ function App() {
     } else {
       document.documentElement.classList.remove('dark');
     }
-    localStorage.setItem('theme', theme);
   }, [theme]);
 
-  useEffect(() => {
-    localStorage.setItem('globalRandomizeVoice', JSON.stringify(globalRandomizeVoice));
-  }, [globalRandomizeVoice]);
-
-  const toggleTheme = () => {
-    setTheme(prev => prev === 'light' ? 'dark' : 'light');
-  };
-
-  useEffect(() => {
-    let isMounted = true;
-    const loadVoices = () => {
-      if (!isMounted) return;
-      const availableVoices = window.speechSynthesis.getVoices();
-      if (availableVoices.length === 0) return;
-
-      const englishVoices = availableVoices.filter(v => v.lang.startsWith('en'));
-      setVoices(englishVoices.length > 0 ? englishVoices : availableVoices);
-
-      setSelectedVoice(prev => {
-        if (prev) return prev;
-        const defaultVoice = englishVoices.find(v => v.name.includes('Google') || v.name.includes('Microsoft')) || englishVoices[0] || availableVoices[0];
-        return defaultVoice ? defaultVoice.voiceURI : '';
-      });
-    };
-
-    loadVoices();
-    if (window.speechSynthesis.onvoiceschanged !== undefined) {
-      window.speechSynthesis.onvoiceschanged = loadVoices;
-    }
-    return () => { isMounted = false; };
-  }, []);
-
-  const speak = useCallback((text, e, lang = 'en-US') => {
-    if (e) e.stopPropagation();
-    window.speechSynthesis.cancel();
-    
-    // Clean up text by removing parentheses and their contents (e.g. "(v,n)", "(v)", "(adj)")
-    let cleanText = text || '';
-    if (typeof cleanText === 'string') {
-      cleanText = cleanText.replace(/\(.*?\)/g, '').trim();
-    }
-    
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.rate = speechRate;
-
-    const targetLang = lang === 'en' ? 'en-US' : lang === 'vi' ? 'vi-VN' : lang === 'ja' ? 'ja-JP' : lang;
-
-    if (targetLang.startsWith('ja')) {
-      // JAPANESE VOICE SELECTION
-      utterance.lang = 'ja-JP';
-      const jaVoices = voices.filter(v => v.lang === 'ja-JP' || v.lang.startsWith('ja') || v.name.toLowerCase().includes('japanese'));
-      if (jaVoices.length > 0) {
-        const goodJaVoice = jaVoices.find(v => v.name.includes('Google') || v.name.includes('Microsoft') || v.name.includes('Kyoko') || v.name.includes('Nanami') || v.name.includes('Otoya') || v.name.includes('Keita'));
-        utterance.voice = goodJaVoice || jaVoices[0];
-      }
-    } else if (targetLang.startsWith('vi')) {
-      // VIETNAMESE VOICE SELECTION
-      utterance.lang = 'vi-VN';
-      const viVoices = voices.filter(v => v.lang === 'vi-VN' || v.lang.startsWith('vi') || v.name.toLowerCase().includes('vietnamese'));
-      if (viVoices.length > 0) {
-        utterance.voice = viVoices[0];
-      }
-    } else if (globalRandomizeVoice && targetLang.startsWith('en')) {
-      // ENGLISH TOEIC RANDOM ACCENT SELECTION
-      const toeicLangs = ['en-US', 'en-GB', 'en-AU', 'en-CA'];
-      const availableAccents = toeicLangs.filter(acc => 
-        voices.some(v => v.lang === acc || v.lang.startsWith(acc))
-      );
-      if (availableAccents.length > 0) {
-        const randomLang = availableAccents[Math.floor(Math.random() * availableAccents.length)];
-        utterance.lang = randomLang;
-        const matchingVoices = voices.filter(v => v.lang === randomLang || v.lang.startsWith(randomLang));
-        const goodVoices = matchingVoices.filter(v => v.name.includes('Google') || v.name.includes('Microsoft'));
-        const pool = goodVoices.length > 0 ? goodVoices : matchingVoices;
-        utterance.voice = pool[Math.floor(Math.random() * pool.length)];
-      } else {
-        utterance.lang = 'en-US';
-      }
-    } else {
-      // ENGLISH DEFAULT / SELECTED VOICE SELECTION
-      utterance.lang = targetLang;
-      if (selectedVoice && targetLang.startsWith('en')) {
-        const voice = voices.find(v => v.voiceURI === selectedVoice);
-        if (voice) utterance.voice = voice;
-      }
-    }
-
-    setTimeout(() => {
-      window.speechSynthesis.speak(utterance);
-    }, 40);
-  }, [speechRate, voices, globalRandomizeVoice, selectedVoice]);
-
-  const handleAddWord = useCallback(async (newWord) => {
-    const wordWithId = { ...newWord, id: Date.now().toString() };
-    await vocabularyApi.addWord(wordWithId);
-    fetchWords();
-  }, []);
-
-  const handleDeleteWord = useCallback(async (id) => {
-    await vocabularyApi.deleteWord(id);
-    fetchWords();
-  }, []);
-
-  const handleRefreshData = useCallback(() => {
-    fetchWords();
-  }, []);
-
+  // Memoize filteredWords to prevent lag
   const filteredWords = useMemo(() => {
     if (selectedGroup.type === 'all') return words;
     if (selectedGroup.type === 'unit') {
@@ -269,41 +317,58 @@ function App() {
   }, [words, selectedGroup]);
 
   return (
-    <AuthProvider>
-      <VisibilityProvider>
-        <AiStatusProvider>
-          <div className="flex flex-col h-[100dvh] bg-gray-50 dark:bg-slate-950 font-sans overflow-hidden transition-colors duration-300">
-            <AiStatusBadge />
-            <AiDashboardModal />
-            <Header 
-              wordCount={words.length} 
-              onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} 
-              onOpenSettings={() => setIsSettingsOpen(true)}
-              theme={theme}
-              toggleTheme={toggleTheme}
-              streak={streak}
-              onOpenSearch={() => setIsSearchOpen(true)}
-              isSfxMuted={isSfxMuted}
-              onToggleSfx={handleToggleSfx}
-              onNavigateTab={setActiveTab}
-            />
-            
-            <div className="flex flex-1 overflow-hidden relative min-h-0">
-              <Sidebar 
-                activeTab={activeTab} 
-                setActiveTab={(tab) => {
-                  setActiveTab(tab);
-                  setIsSidebarOpen(false);
-                }} 
-                isOpen={isSidebarOpen}
-                onClose={() => setIsSidebarOpen(false)}
+    <div className="flex flex-col h-[100dvh] bg-gray-50 dark:bg-slate-950 font-sans overflow-hidden transition-colors duration-300">
+      <AiStatusBadge />
+      <AiDashboardModal />
+      <Header 
+        wordCount={words.length} 
+        onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} 
+        onOpenSettings={() => setIsSettingsOpen(true)}
+        theme={theme}
+        toggleTheme={toggleTheme}
+        streak={streak}
+        onOpenSearch={() => setIsSearchOpen(true)}
+        isSfxMuted={isSfxMuted}
+        onToggleSfx={handleToggleSfx}
+        onNavigateTab={handleNavigateTab}
+      />
+      
+      <div className="flex flex-1 overflow-hidden relative min-h-0">
+        <Sidebar 
+          activeTab={activeTab} 
+          setActiveTab={handleNavigateTab} 
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
+        />
+        
+        <main className="flex-1 flex flex-col overflow-hidden w-full bg-gray-50 dark:bg-slate-950 transition-colors min-h-0 pb-16 md:pb-0">
+          {routeState.status === 'not_found' && (
+            <div className="flex-1 overflow-y-auto p-4 md:p-6 min-h-0">
+              <NotFound404
+                mode="not_found"
+                path={window.location.pathname}
+                onGoHome={() => handleNavigateTab('dashboard')}
               />
-              
-              <main className="flex-1 flex flex-col overflow-hidden w-full bg-gray-50 dark:bg-slate-950 transition-colors min-h-0 pb-16 md:pb-0">
-                {activeTab !== 'dashboard' && activeTab !== 'admin_dashboard' && activeTab !== 'reading' && activeTab !== 'manage' && activeTab !== 'speaking' && activeTab !== 'grammar' && activeTab !== 'recommendations' && activeTab !== 'srs' && activeTab !== 'toeic30' && activeTab !== 'ets2026' && activeTab !== 'japaneseMinna' && (
-                  <UnitSelector selectedGroup={selectedGroup} onSelectGroup={setSelectedGroup} words={words} />
-                )}
-              
+            </div>
+          )}
+
+          {routeState.status === 'forbidden' && (
+            <div className="flex-1 overflow-y-auto p-4 md:p-6 min-h-0">
+              <NotFound404
+                mode="forbidden"
+                path={window.location.pathname}
+                onGoHome={() => handleNavigateTab('dashboard')}
+                onLoginAdmin={openAuthModal}
+              />
+            </div>
+          )}
+
+          {routeState.status === 'ok' && (
+            <>
+              {activeTab !== 'dashboard' && activeTab !== 'admin_dashboard' && activeTab !== 'reading' && activeTab !== 'manage' && activeTab !== 'speaking' && activeTab !== 'grammar' && activeTab !== 'recommendations' && activeTab !== 'srs' && activeTab !== 'toeic30' && activeTab !== 'ets2026' && activeTab !== 'japaneseMinna' && (
+                <UnitSelector selectedGroup={selectedGroup} onSelectGroup={setSelectedGroup} words={words} />
+              )}
+            
               <div className="flex-1 overflow-y-auto p-4 md:p-6 min-h-0">
                 <Suspense fallback={
                   <div className="flex flex-col items-center justify-center min-h-[300px] gap-3">
@@ -313,8 +378,8 @@ function App() {
                     </span>
                   </div>
                 }>
-                  {activeTab === 'dashboard' && <DashboardMode words={words} speak={speak} setActiveTab={setActiveTab} onRefreshData={handleRefreshData} />}
-                  {activeTab === 'admin_dashboard' && <AdminDashboard words={words} speak={speak} setActiveTab={setActiveTab} />}
+                  {activeTab === 'dashboard' && <DashboardMode words={words} speak={speak} setActiveTab={handleNavigateTab} onRefreshData={handleRefreshData} />}
+                  {activeTab === 'admin_dashboard' && <AdminDashboard words={words} speak={speak} setActiveTab={handleNavigateTab} />}
                   {activeTab === 'toeic30' && <Toeic30DayMode words={words} speak={speak} />}
                   {activeTab === 'toeic500' && <Toeic500Mode words={words} speak={speak} />}
                   {activeTab === 'ets2026' && <Ets2026Mode words={words} speak={speak} />}
@@ -322,19 +387,19 @@ function App() {
                     <JapaneseMinnaMode 
                       japaneseWords={words.filter(w => w.master_group === 'Từ Vựng Tiếng Nhật Minna No Nihongo' || w.hiragana || w.kanji || (w.sub_group && w.sub_group.includes('Bài')))} 
                       speak={speak} 
-                      onExit={() => setActiveTab('dashboard')} 
+                      onExit={() => handleNavigateTab('dashboard')} 
                     />
                   )}
                   {activeTab === 'optimal' && <OptimalLearningMode words={filteredWords} speak={speak} />}
-                  {activeTab === 'sequential3' && <Sequential3StepMode words={filteredWords} speak={speak} onExit={() => setActiveTab('dashboard')} />}
+                  {activeTab === 'sequential3' && <Sequential3StepMode words={filteredWords} speak={speak} onExit={() => handleNavigateTab('dashboard')} />}
                   {activeTab === 'flashcards' && <FlashcardMode words={filteredWords} speak={speak} />}
                   {activeTab === 'quiz' && <QuizMode words={filteredWords} speak={speak} />}
                   {activeTab === 'dictation' && <DictationMode words={filteredWords} speak={speak} />}
-                  {activeTab === 'ipa' && <Ets2026IpaMode words={filteredWords} allWords={words} speak={speak} onExit={() => setActiveTab('dashboard')} />}
+                  {activeTab === 'ipa' && <Ets2026IpaMode words={filteredWords} allWords={words} speak={speak} onExit={() => handleNavigateTab('dashboard')} />}
                   {activeTab === 'match' && <MatchMode words={filteredWords} speak={speak} />}
                   {activeTab === 'typing' && <TypingMode words={filteredWords} speak={speak} />}
                   {activeTab === 'related' && <RelatedWordsMode words={filteredWords} speak={speak} />}
-                  {activeTab === 'recommendations' && <RecommendationsMode words={words} speak={speak} setActiveTab={setActiveTab} />}
+                  {activeTab === 'recommendations' && <RecommendationsMode words={words} speak={speak} setActiveTab={handleNavigateTab} />}
                   {activeTab === 'srs' && <SRSMode words={words} speak={speak} />}
                   {activeTab === 'manage' && (
                     <WordManager 
@@ -348,53 +413,61 @@ function App() {
                   {activeTab === 'reading' && <ReadingMode words={words} speak={speak} />}
                   {activeTab === 'grammar' && <GrammarMode />}
                   {activeTab === 'mixed' && <MixedTestMode />}
-                  {activeTab === 'mixedGame' && <MixedGameMode words={words} speak={speak} />}
-                  {activeTab === 'speaking' && <SpeakingMode words={words} />}
-                  {activeTab === 'game_memory' && <MemoryMatchGame words={filteredWords && filteredWords.length >= 8 ? filteredWords : words} speak={speak} />}
-                  {activeTab === 'game_survival' && <SurvivalGame words={filteredWords && filteredWords.length >= 4 ? filteredWords : words} speak={speak} />}
-                  {activeTab === 'game_hangman' && <HangmanGame words={filteredWords && filteredWords.length >= 4 ? filteredWords : words} speak={speak} />}
-                  {activeTab === 'game_falling' && <FallingWordsGame words={filteredWords && filteredWords.length >= 4 ? filteredWords : words} speak={speak} />}
-                  {activeTab === 'game_scramble' && <WordScrambleGame words={filteredWords && filteredWords.length >= 4 ? filteredWords : words} speak={speak} />}
+                  {activeTab === 'speaking' && <SpeakingMode words={filteredWords} />}
+                  {activeTab === 'game_memory' && <MemoryMatchGame words={filteredWords} />}
+                  {activeTab === 'game_survival' && <SurvivalGame words={filteredWords} />}
+                  {activeTab === 'game_hangman' && <HangmanGame words={filteredWords} />}
+                  {activeTab === 'game_falling' && <FallingWordsGame words={filteredWords} />}
+                  {activeTab === 'game_scramble' && <WordScrambleGame words={filteredWords} />}
                 </Suspense>
               </div>
-            </main>
-          </div>
+            </>
+          )}
+        </main>
+      </div>
 
-          {/* Global Search Modal (Ctrl + K) */}
-          <GlobalSearchModal 
-            isOpen={isSearchOpen}
-            onClose={() => setIsSearchOpen(false)}
-            words={words}
-            speak={speak}
-          />
+      {/* Global Search Modal (Ctrl + K) */}
+      <GlobalSearchModal 
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        words={words}
+        speak={speak}
+      />
 
-          {/* Auth Modal (Login / Register) */}
-          <AuthModal />
+      {/* Auth Modal (Login / Register) */}
+      <AuthModal />
 
-          {/* Mobile Bottom Navigation */}
-          <BottomNav 
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            onOpenSearch={() => setIsSearchOpen(true)}
-          />
+      {/* Mobile Bottom Navigation */}
+      <BottomNav 
+        activeTab={activeTab}
+        setActiveTab={handleNavigateTab}
+        onOpenSearch={() => setIsSearchOpen(true)}
+      />
 
-          <VoiceSettings 
-            isOpen={isSettingsOpen} 
-            onClose={() => setIsSettingsOpen(false)} 
-            voices={voices}
-            selectedVoice={selectedVoice}
-            setSelectedVoice={setSelectedVoice}
-            speechRate={speechRate}
-            setSpeechRate={setSpeechRate}
-            globalRandomizeVoice={globalRandomizeVoice}
-            setGlobalRandomizeVoice={setGlobalRandomizeVoice}
-          />
-          <ToastContainer position="bottom-right" aria-label="Notifications" />
-        </div>
-      </AiStatusProvider>
+      <VoiceSettings 
+        isOpen={isSettingsOpen} 
+        onClose={() => setIsSettingsOpen(false)} 
+        voices={voices}
+        selectedVoice={selectedVoice}
+        setSelectedVoice={setSelectedVoice}
+        speechRate={speechRate}
+        setSpeechRate={setSpeechRate}
+        globalRandomizeVoice={globalRandomizeVoice}
+        setGlobalRandomizeVoice={setGlobalRandomizeVoice}
+      />
+      <ToastContainer position="bottom-right" aria-label="Notifications" />
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <VisibilityProvider>
+        <AiStatusProvider>
+          <AppContent />
+        </AiStatusProvider>
       </VisibilityProvider>
     </AuthProvider>
   );
 }
-
-export default App;

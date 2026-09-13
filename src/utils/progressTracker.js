@@ -1,7 +1,17 @@
-const PROGRESS_KEY = 'vocab_app_progress';
+const getProgressKey = () => {
+    try {
+        const savedUser = localStorage.getItem('engmaster_user');
+        if (savedUser) {
+            const user = JSON.parse(savedUser);
+            if (user?.id) return `u_${user.id}_vocab_app_progress`;
+        }
+    } catch {}
+    return 'guest_vocab_app_progress';
+};
 
 export const getProgress = () => {
-    const data = localStorage.getItem(PROGRESS_KEY);
+    const key = getProgressKey();
+    const data = localStorage.getItem(key);
     const parsed = data ? JSON.parse(data) : {};
     if (!parsed.words) parsed.words = {};
     if (!parsed.grammar) parsed.grammar = {};
@@ -10,7 +20,22 @@ export const getProgress = () => {
 };
 
 export const saveProgress = (progress) => {
-    localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
+    const key = getProgressKey();
+    localStorage.setItem(key, JSON.stringify(progress));
+
+    try {
+        const token = localStorage.getItem('engmaster_token');
+        if (token) {
+            fetch('http://localhost:5000/api/progress/vocab', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ data: progress })
+            }).catch(() => {});
+        }
+    } catch {}
 };
 
 export const recordWordResult = (wordId, isCorrect) => {

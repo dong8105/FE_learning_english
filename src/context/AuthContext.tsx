@@ -18,7 +18,21 @@ export interface AuthContextType {
   login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
   register: (username: string, password: string, name?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
+  getUserStorageKey: (baseKey: string) => string;
+  getAuthHeaders: () => Record<string, string>;
 }
+
+export const getUserStorageKey = (baseKey: string, currentUser?: User | null): string => {
+  let u = currentUser;
+  if (!u) {
+    try {
+      const saved = localStorage.getItem('engmaster_user');
+      if (saved) u = JSON.parse(saved);
+    } catch {}
+  }
+  const prefix = u ? `u_${u.id}` : 'guest';
+  return `${prefix}_${baseKey}`;
+};
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -165,6 +179,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setToken(null);
     localStorage.removeItem('engmaster_user');
     localStorage.removeItem('engmaster_token');
+    window.dispatchEvent(new CustomEvent('engmaster_auth_changed', { detail: { user: null } }));
+  };
+
+  const getAuthHeaders = (): Record<string, string> => {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
   };
 
   return (
@@ -176,9 +201,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isAuthModalOpen,
         openAuthModal: () => setIsAuthModalOpen(true),
         closeAuthModal: () => setIsAuthModalOpen(false),
-        login,
-        register,
+        login: async (u, p) => {
+          const res = await login(u, p);
+          if (res.success) {
+            window.dispatchEvent(new CustomEvent('engmaster_auth_changed', { detail: { username: u } }));
+          }
+          return res;
+        },
+        register: async (u, p, n) => {
+          const res = await register(u, p, n);
+          if (res.success) {
+            window.dispatchEvent(new CustomEvent('engmaster_auth_changed', { detail: { username: u } }));
+          }
+          return res;
+        },
         logout,
+        getUserStorageKey: (baseKey: string) => getUserStorageKey(baseKey, user),
+        getAuthHeaders,
       }}
     >
       {children}

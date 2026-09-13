@@ -14,6 +14,7 @@ import QuizMode from './QuizMode';
 import TypingMode from './TypingMode';
 import GrammarMode from './GrammarMode';
 import { useAiStatus } from "./AiStatusProvider";
+import { useAuth } from '../context/AuthContext';
 
 const STATIC_EXAMPLE_TRANSLATIONS = {
     "The meeting is scheduled for Monday.": "Cuộc họp được lên lịch vào thứ Hai.",
@@ -139,16 +140,47 @@ const Toeic30DayMode = ({ words = [], speak }) => {
 
     const [showGrammarDrill, setShowGrammarDrill] = useState(false);
 
-    // Load progress and streak from localStorage
+    // Load progress and streak from localStorage (isolated per user) & sync with MySQL
     useEffect(() => {
-        const storedProgress = localStorage.getItem('toeic30_progress');
-        const storedScores = localStorage.getItem('toeic30_scores');
-        if (storedProgress) setProgress(JSON.parse(storedProgress));
-        if (storedScores) setScores(JSON.parse(storedScores));
+        const storedProgress = localStorage.getItem(PROGRESS_KEY);
+        const storedScores = localStorage.getItem(SCORES_KEY);
+        setProgress(storedProgress ? JSON.parse(storedProgress) : {});
+        setScores(storedScores ? JSON.parse(storedScores) : {});
 
-        const savedStreak = localStorage.getItem('toeic30_streak') || '0';
+        const savedStreak = localStorage.getItem(STREAK_KEY) || '0';
         setStreak(parseInt(savedStreak, 10));
-    }, []);
+
+        // Sync with backend database if user is logged in
+        if (token) {
+            fetch('http://localhost:5000/api/progress/toeic30', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            .then(res => res.ok ? res.json() : null)
+            .then(resData => {
+                if (resData && resData.data) {
+                    const serverProgress = resData.data.progress || {};
+                    const serverScores = resData.data.scores || {};
+                    const serverStreak = resData.data.streak || 0;
+
+                    setProgress(prev => {
+                        const merged = { ...prev, ...serverProgress };
+                        localStorage.setItem(PROGRESS_KEY, JSON.stringify(merged));
+                        return merged;
+                    });
+                    setScores(prev => {
+                        const merged = { ...prev, ...serverScores };
+                        localStorage.setItem(SCORES_KEY, JSON.stringify(merged));
+                        return merged;
+                    });
+                    if (serverStreak > 0) {
+                        setStreak(serverStreak);
+                        localStorage.setItem(STREAK_KEY, serverStreak.toString());
+                    }
+                }
+            })
+            .catch(() => {});
+        }
+    }, [user?.id, token, PROGRESS_KEY, SCORES_KEY, STREAK_KEY]);
 
     // Reset slide contextual training state when day or sub-tab changes
     useEffect(() => {
@@ -176,55 +208,86 @@ const Toeic30DayMode = ({ words = [], speak }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [contextIndex, selectedDay, vocabSubTab]);
 
-    // Save progress to localStorage helper
+    // Save progress to user-scoped localStorage & sync to MySQL
     const saveProgress = (dayNum, isCompleted, quizScoreStr = null) => {
         const newProgress = { ...progress, [dayNum]: isCompleted };
         setProgress(newProgress);
-        localStorage.setItem('toeic30_progress', JSON.stringify(newProgress));
+        localStorage.setItem(PROGRESS_KEY, JSON.stringify(newProgress));
 
+        let updatedScores = scores;
         if (quizScoreStr) {
-            const newScores = { ...scores, [dayNum]: quizScoreStr };
-            setScores(newScores);
-            localStorage.setItem('toeic30_scores', JSON.stringify(newScores));
+            updatedScores = { ...scores, [dayNum]: quizScoreStr };
+            setScores(updatedScores);
+            localStorage.setItem(SCORES_KEY, JSON.stringify(updatedScores));
         }
 
         // Update streak
+        let currentStreakVal = streak;
         if (isCompleted && !progress[dayNum]) {
             const today = new Date().toDateString();
-            const lastStudyDate = localStorage.getItem('toeic30_last_study_date');
-            let newStreak = streak;
+            const lastStudyDate = localStorage.getItem(DATE_KEY);
 
             if (lastStudyDate !== today) {
                 if (lastStudyDate) {
                     const yesterday = new Date();
                     yesterday.setDate(yesterday.getDate() - 1);
                     if (lastStudyDate === yesterday.toDateString()) {
-                        newStreak += 1;
+                        currentStreakVal += 1;
                     } else {
-                        newStreak = 1;
+                        currentStreakVal = 1;
                     }
                 } else {
-                    newStreak = 1;
+                    currentStreakVal = 1;
                 }
-                localStorage.setItem('toeic30_last_study_date', today);
-                localStorage.setItem('toeic30_streak', newStreak.toString());
-                setStreak(newStreak);
+                localStorage.setItem(DATE_KEY, today);
+                localStorage.setItem(STREAK_KEY, currentStreakVal.toString());
+                setStreak(currentStreakVal);
             }
+        }
+
+        // Sync to MySQL if user is logged in
+        if (token) {
+            fetch('http://localhost:5000/api/progress/toeic30', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    data: {
+                        progress: newProgress,
+                        scores: updatedScores,
+                        streak: currentStreakVal
+                    }
+                })
+            }).catch(() => {});
         }
     };
 
-    // Reset all progress
+    // Reset all progress for current user
     const handleResetAllProgress = () => {
         if (window.confirm("Bạn có chắc chắn muốn đặt lại toàn bộ tiến trình ôn thi TOEIC 30 ngày?")) {
             setProgress({});
             setScores({});
             setStreak(0);
-            localStorage.removeItem('toeic30_progress');
-            localStorage.removeItem('toeic30_scores');
-            localStorage.removeItem('toeic30_streak');
-            localStorage.removeItem('toeic30_last_study_date');
-            localStorage.removeItem('toeic30_ai_quizzes');
-            localStorage.removeItem('toeic30_ai_quizzes_state');
+            localStorage.removeItem(PROGRESS_KEY);
+            localStorage.removeItem(SCORES_KEY);
+            localStorage.removeItem(STREAK_KEY);
+            localStorage.removeItem(DATE_KEY);
+            localStorage.removeItem(QUIZZES_KEY);
+            localStorage.removeItem(QUIZZES_STATE_KEY);
+
+            if (token) {
+                fetch('http://localhost:5000/api/progress/toeic30', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ data: { progress: {}, scores: {}, streak: 0 } })
+                }).catch(() => {});
+            }
+
             toast.info("Đã đặt lại tiến độ học tập!");
         }
     };
@@ -252,13 +315,13 @@ const Toeic30DayMode = ({ words = [], speak }) => {
         setShowGrammarDrill(false);
 
         // Load cached AI quiz for this day if exists
-        const storedQuizzes = localStorage.getItem('toeic30_ai_quizzes');
+        const storedQuizzes = localStorage.getItem(QUIZZES_KEY);
         const quizzesMap = storedQuizzes ? JSON.parse(storedQuizzes) : {};
         if (quizzesMap[day.day]) {
             setQuizData(quizzesMap[day.day]);
             
             // Load state
-            const storedStates = localStorage.getItem('toeic30_ai_quizzes_state');
+            const storedStates = localStorage.getItem(QUIZZES_STATE_KEY);
             const statesMap = storedStates ? JSON.parse(storedStates) : {};
             if (statesMap[day.day]) {
                 setUserAnswers(statesMap[day.day].userAnswers || {});
@@ -419,20 +482,20 @@ const Toeic30DayMode = ({ words = [], speak }) => {
             const parsed = JSON.parse(data.text);
             
             // Save to cached quizzes
-            const storedQuizzes = localStorage.getItem('toeic30_ai_quizzes');
+            const storedQuizzes = localStorage.getItem(QUIZZES_KEY);
             const quizzesMap = storedQuizzes ? JSON.parse(storedQuizzes) : {};
             quizzesMap[selectedDay.day] = parsed;
-            localStorage.setItem('toeic30_ai_quizzes', JSON.stringify(quizzesMap));
+            localStorage.setItem(QUIZZES_KEY, JSON.stringify(quizzesMap));
             
             // Save empty state to state map
-            const storedStates = localStorage.getItem('toeic30_ai_quizzes_state');
+            const storedStates = localStorage.getItem(QUIZZES_STATE_KEY);
             const statesMap = storedStates ? JSON.parse(storedStates) : {};
             statesMap[selectedDay.day] = {
                 userAnswers: {},
                 showQuizResults: false,
                 quizScore: 0
             };
-            localStorage.setItem('toeic30_ai_quizzes_state', JSON.stringify(statesMap));
+            localStorage.setItem(QUIZZES_STATE_KEY, JSON.stringify(statesMap));
 
             setQuizData(parsed);
             toast.success("Đã khởi tạo đề thi luyện tập bằng AI!");
@@ -450,14 +513,14 @@ const Toeic30DayMode = ({ words = [], speak }) => {
         setUserAnswers(newAnswers);
 
         // Save state to localStorage
-        const storedStates = localStorage.getItem('toeic30_ai_quizzes_state');
+        const storedStates = localStorage.getItem(QUIZZES_STATE_KEY);
         const statesMap = storedStates ? JSON.parse(storedStates) : {};
         statesMap[selectedDay.day] = {
             userAnswers: newAnswers,
             showQuizResults: showQuizResults,
             quizScore: quizScore
         };
-        localStorage.setItem('toeic30_ai_quizzes_state', JSON.stringify(statesMap));
+        localStorage.setItem(QUIZZES_STATE_KEY, JSON.stringify(statesMap));
     };
 
     const handleSubmitQuiz = () => {
@@ -482,14 +545,14 @@ const Toeic30DayMode = ({ words = [], speak }) => {
         saveProgress(selectedDay.day, true, scoreStr);
 
         // Save state to localStorage
-        const storedStates = localStorage.getItem('toeic30_ai_quizzes_state');
+        const storedStates = localStorage.getItem(QUIZZES_STATE_KEY);
         const statesMap = storedStates ? JSON.parse(storedStates) : {};
         statesMap[selectedDay.day] = {
             userAnswers: userAnswers,
             showQuizResults: true,
             quizScore: score
         };
-        localStorage.setItem('toeic30_ai_quizzes_state', JSON.stringify(statesMap));
+        localStorage.setItem(QUIZZES_STATE_KEY, JSON.stringify(statesMap));
 
         toast.success(`Nộp bài thành công! Bạn đúng ${scoreStr} câu.`);
     };
