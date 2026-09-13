@@ -21,6 +21,8 @@ import AuthModal from './components/AuthModal';
 import { vocabularyApi } from './api/vocabularyApi';
 
 // Lazy loaded modes for instant initial load and code splitting
+const HomePage = lazy(() => import('./components/HomePage'));
+const LoginPage = lazy(() => import('./components/LoginPage'));
 const DashboardMode = lazy(() => import('./components/DashboardMode'));
 const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
 const FlashcardMode = lazy(() => import('./components/FlashcardMode'));
@@ -56,7 +58,7 @@ function AppContent() {
   
   // Valid registered tab names
   const VALID_TABS = useMemo(() => new Set([
-    'dashboard', 'admin_dashboard', 'toeic30', 'toeic500', 'ets2026', 'japaneseMinna',
+    'home', 'login', 'dashboard', 'admin_dashboard', 'toeic30', 'toeic500', 'ets2026', 'japaneseMinna',
     'optimal', 'sequential3', 'flashcards', 'quiz', 'dictation', 'ipa',
     'match', 'typing', 'related', 'recommendations', 'srs', 'manage',
     'reading', 'grammar', 'mixed', 'speaking',
@@ -68,9 +70,14 @@ function AppContent() {
     let clean = pathname.replace(/^\//, '').trim().toLowerCase();
     if (!clean) return { status: 'ok' as const, tab: 'dashboard' };
     
-    // Explicitly block /home or unrecognized routes to 404
+    // Support /home
     if (clean === 'home') {
-      return { status: 'not_found' as const, tab: 'home' };
+      return { status: 'ok' as const, tab: 'home' };
+    }
+
+    // Support /login and aliases
+    if (clean === 'login' || clean === 'register' || clean === 'signin' || clean === 'signup' || clean === 'auth') {
+      return { status: 'ok' as const, tab: 'login' };
     }
 
     if (clean === 'admin' || clean === 'admindashboard') {
@@ -118,7 +125,12 @@ function AppContent() {
   }, [isAdmin, resolveRoute]);
 
   const handleNavigateTab = (tab: string) => {
-    const targetUrl = tab === 'dashboard' ? '/' : `/${tab === 'admin_dashboard' ? 'admin' : tab}`;
+    let targetUrl = `/${tab}`;
+    if (tab === 'dashboard') targetUrl = '/';
+    else if (tab === 'admin_dashboard') targetUrl = '/admin';
+    else if (tab === 'home') targetUrl = '/home';
+    else if (tab === 'login') targetUrl = '/login';
+
     window.history.pushState(null, '', targetUrl);
     const res = resolveRoute(targetUrl);
     setRouteState(res);
@@ -347,7 +359,7 @@ function AppContent() {
               <NotFound404
                 mode="not_found"
                 path={window.location.pathname}
-                onGoHome={() => handleNavigateTab('dashboard')}
+                onGoHome={() => handleNavigateTab('home')}
               />
             </div>
           )}
@@ -357,7 +369,7 @@ function AppContent() {
               <NotFound404
                 mode="forbidden"
                 path={window.location.pathname}
-                onGoHome={() => handleNavigateTab('dashboard')}
+                onGoHome={() => handleNavigateTab('home')}
                 onLoginAdmin={openAuthModal}
               />
             </div>
@@ -365,7 +377,7 @@ function AppContent() {
 
           {routeState.status === 'ok' && (
             <>
-              {activeTab !== 'dashboard' && activeTab !== 'admin_dashboard' && activeTab !== 'reading' && activeTab !== 'manage' && activeTab !== 'speaking' && activeTab !== 'grammar' && activeTab !== 'recommendations' && activeTab !== 'srs' && activeTab !== 'toeic30' && activeTab !== 'ets2026' && activeTab !== 'japaneseMinna' && (
+              {activeTab !== 'home' && activeTab !== 'login' && activeTab !== 'dashboard' && activeTab !== 'admin_dashboard' && activeTab !== 'reading' && activeTab !== 'manage' && activeTab !== 'speaking' && activeTab !== 'grammar' && activeTab !== 'recommendations' && activeTab !== 'srs' && activeTab !== 'toeic30' && activeTab !== 'ets2026' && activeTab !== 'japaneseMinna' && (
                 <UnitSelector selectedGroup={selectedGroup} onSelectGroup={setSelectedGroup} words={words} />
               )}
             
@@ -374,10 +386,12 @@ function AppContent() {
                   <div className="flex flex-col items-center justify-center min-h-[300px] gap-3">
                     <div className="w-10 h-10 border-4 border-blue-500/20 border-t-blue-600 rounded-full animate-spin" />
                     <span className="text-sm font-medium text-slate-500 dark:text-slate-400 animate-pulse">
-                      Đang tải giao diện học...
+                      Đang tải giao diện...
                     </span>
                   </div>
                 }>
+                  {activeTab === 'home' && <HomePage wordCount={words.length} onNavigate={handleNavigateTab} speak={speak} />}
+                  {activeTab === 'login' && <LoginPage onNavigate={handleNavigateTab} />}
                   {activeTab === 'dashboard' && <DashboardMode words={words} speak={speak} setActiveTab={handleNavigateTab} onRefreshData={handleRefreshData} />}
                   {activeTab === 'admin_dashboard' && <AdminDashboard words={words} speak={speak} setActiveTab={handleNavigateTab} />}
                   {activeTab === 'toeic30' && <Toeic30DayMode words={words} speak={speak} />}

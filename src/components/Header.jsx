@@ -41,12 +41,16 @@ export default function Header({
                     >
                         <Menu size={22} />
                     </button>
-                    <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400 select-none">
-                        <div className="p-1.5 bg-blue-50 dark:bg-blue-950/60 rounded-xl border border-blue-100 dark:border-blue-900/50 shadow-sm">
+                    <div 
+                        onClick={() => onNavigateTab && onNavigateTab('home')}
+                        className="flex items-center gap-2 text-blue-700 dark:text-blue-400 select-none cursor-pointer group"
+                        title="Về Trang Chủ"
+                    >
+                        <div className="p-1.5 bg-blue-50 dark:bg-blue-950/60 rounded-xl border border-blue-100 dark:border-blue-900/50 shadow-sm group-hover:scale-105 transition-transform">
                             <BookOpen size={22} className="text-blue-600 dark:text-blue-400 fill-blue-600/20" />
                         </div>
                         <div className="flex flex-col">
-                            <h1 className="text-lg md:text-xl font-black tracking-tight leading-none text-slate-800 dark:text-white">
+                            <h1 className="text-lg md:text-xl font-black tracking-tight leading-none text-slate-800 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                                 EngMaster
                             </h1>
                             <span className="text-[10px] font-semibold tracking-wider text-blue-600 dark:text-blue-400 uppercase hidden sm:inline">
@@ -162,13 +166,38 @@ export default function Header({
                                         </div>
                                     </div>
 
+                                    {onNavigateTab && (
+                                        <>
+                                            <button
+                                                onClick={() => {
+                                                    onNavigateTab('home');
+                                                    setIsUserMenuOpen(false);
+                                                }}
+                                                className="w-full text-left px-4 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-bold flex items-center gap-2 transition-colors"
+                                            >
+                                                <span>🏠 Trang Chủ</span>
+                                            </button>
+
+                                            <button
+                                                onClick={() => {
+                                                    onNavigateTab('login');
+                                                    setIsUserMenuOpen(false);
+                                                }}
+                                                className="w-full text-left px-4 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-bold flex items-center gap-2 transition-colors"
+                                            >
+                                                <UserIcon size={15} />
+                                                <span>Thông Tin Tài Khoản</span>
+                                            </button>
+                                        </>
+                                    )}
+
                                     {isAdmin && onNavigateTab && (
                                         <button
                                             onClick={() => {
                                                 onNavigateTab('admin_dashboard');
                                                 setIsUserMenuOpen(false);
                                             }}
-                                            className="w-full text-left px-4 py-2.5 text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 font-bold flex items-center gap-2 transition-colors"
+                                            className="w-full text-left px-4 py-2 text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 font-bold flex items-center gap-2 transition-colors"
                                         >
                                             <ShieldCheck size={16} />
                                             <span>Admin Dashboard</span>
@@ -190,7 +219,7 @@ export default function Header({
                         </div>
                     ) : (
                         <button
-                            onClick={openAuthModal}
+                            onClick={() => onNavigateTab ? onNavigateTab('login') : openAuthModal()}
                             className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-500/20 transition-all"
                             title="Đăng nhập tài khoản"
                         >

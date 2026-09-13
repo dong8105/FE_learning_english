@@ -24,13 +24,16 @@ import {
     CloudRain,
     HelpCircle,
     ShieldCheck,
-    Target
+    Target,
+    Home,
+    LogIn,
+    User as UserIcon
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useVisibility } from '../context/VisibilityContext';
 
 export default function Sidebar({ activeTab, setActiveTab, isOpen, onClose }) {
-    const { isAdmin } = useAuth();
+    const { user, isAdmin } = useAuth();
     const { isTopicVisible, isSectionVisible } = useVisibility();
     
     const SidebarButton = ({ id, icon: Icon, label }) => (
@@ -120,7 +123,8 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, onClose }) {
                         Học Tập & Tổng Quan
                     </h2>
                     <div className="flex flex-col gap-1">
-                        <SidebarButton id="dashboard" icon={LayoutDashboard} label="Tổng quan" />
+                        <SidebarButton id="home" icon={Home} label="Trang Chủ" />
+                        <SidebarButton id="dashboard" icon={LayoutDashboard} label="Bàn học từ vựng" />
                         <SidebarButton id="recommendations" icon={TrendingUp} label="Đề xuất ôn tập" />
                         <SidebarButton id="srs" icon={BrainCircuit} label="Ôn tập ngắt quãng (SRS)" />
                     </div>
@@ -274,6 +278,15 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, onClose }) {
                         </div>
                     </div>
                 )}
+
+                {/* 7. Tài Khoản & Đăng Nhập */}
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <SidebarButton 
+                        id="login" 
+                        icon={user ? UserIcon : LogIn} 
+                        label={user ? (user.name || user.username) : 'Đăng Nhập / Đăng Ký'} 
+                    />
+                </div>
             </aside>
         </>
     );
