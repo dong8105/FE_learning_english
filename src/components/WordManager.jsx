@@ -1,5 +1,5 @@
 import { FileJson, Plus, Search, Trash2, Volume2, Database, UploadCloud, Save, FolderTree, BookOpen } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { toast } from "react-toastify";
 import { vocabularyApi } from "../api/vocabularyApi";
 
@@ -117,10 +117,27 @@ const WordManager = ({ words, onAddWord, onDeleteWord, onRefreshData, speak }) =
         }
     }
 
-    const filteredWords = words.filter(w =>
-        (w.en && w.en.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (w.vi && w.vi.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 30;
+
+    const filteredWords = useMemo(() => {
+        const q = searchTerm.trim().toLowerCase();
+        if (!q) return words;
+        return words.filter(w =>
+            (w.en && w.en.toLowerCase().includes(q)) ||
+            (w.vi && w.vi.toLowerCase().includes(q))
+        );
+    }, [words, searchTerm]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm]);
+
+    const totalPages = Math.ceil(filteredWords.length / pageSize) || 1;
+    const paginatedWords = useMemo(() => {
+        const start = (currentPage - 1) * pageSize;
+        return filteredWords.slice(start, start + pageSize);
+    }, [filteredWords, currentPage]);
 
     return (
         <div className="max-w-6xl mx-auto space-y-6 animate-fade-in pb-10">
@@ -314,7 +331,7 @@ const WordManager = ({ words, onAddWord, onDeleteWord, onRefreshData, speak }) =
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
-                            {filteredWords.map((word) => (
+                            {paginatedWords.map((word) => (
                                 <tr key={word.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors group">
                                     <td className="px-4 py-4">
                                         <div className="flex items-center gap-3">
@@ -361,6 +378,34 @@ const WordManager = ({ words, onAddWord, onDeleteWord, onRefreshData, speak }) =
                         </tbody>
                     </table>
                 </div>
+
+                {/* Pagination Controls */}
+                {filteredWords.length > pageSize && (
+                    <div className="px-6 py-3.5 border-t border-gray-150 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-500 dark:text-slate-400 bg-gray-50/50 dark:bg-slate-800/30">
+                        <div>
+                            Hiển thị <span className="font-bold text-gray-700 dark:text-white">{(currentPage - 1) * pageSize + 1} - {Math.min(filteredWords.length, currentPage * pageSize)}</span> trong tổng số <span className="font-bold text-gray-700 dark:text-white">{filteredWords.length.toLocaleString()}</span> từ
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={currentPage === 1}
+                                className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed font-semibold transition-colors"
+                            >
+                                Trang trước
+                            </button>
+                            <span className="font-bold px-2 text-gray-700 dark:text-white">
+                                {currentPage} / {totalPages}
+                            </span>
+                            <button
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                disabled={currentPage === totalPages}
+                                className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed font-semibold transition-colors"
+                            >
+                                Trang sau
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -97,14 +97,33 @@ export default function DashboardMode({ words, speak, setActiveTab, onRefreshDat
     const unlearnedWordsCount = totalWords - learnedWordsCount;
     const learnedPercentage = totalWords === 0 ? 0 : Math.round((learnedWordsCount / totalWords) * 100);
 
-    const filteredWords = words.filter(word => {
-        const matchesSearch = word.en.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                              word.vi.toLowerCase().includes(searchTerm.toLowerCase());
-        if (!matchesSearch) return false;
-        if (filterStatus === 'learned') return learnedWordsList.has(word.id);
-        if (filterStatus === 'unlearned') return !learnedWordsList.has(word.id);
-        return true;
-    });
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 30;
+
+    const filteredWords = useMemo(() => {
+        const q = searchTerm.trim().toLowerCase();
+        return words.filter(word => {
+            if (q) {
+                const matchesSearch = (word.en && word.en.toLowerCase().includes(q)) || 
+                                      (word.vi && word.vi.toLowerCase().includes(q));
+                if (!matchesSearch) return false;
+            }
+            if (filterStatus === 'learned') return learnedWordsList.has(word.id);
+            if (filterStatus === 'unlearned') return !learnedWordsList.has(word.id);
+            return true;
+        });
+    }, [words, searchTerm, filterStatus, learnedWordsList]);
+
+    // Reset page to 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, filterStatus]);
+
+    const totalPages = Math.ceil(filteredWords.length / pageSize) || 1;
+    const paginatedWords = useMemo(() => {
+        const start = (currentPage - 1) * pageSize;
+        return filteredWords.slice(start, start + pageSize);
+    }, [filteredWords, currentPage]);
 
     const handleSavePlan = (e) => {
         e.preventDefault();
@@ -316,7 +335,7 @@ export default function DashboardMode({ words, speak, setActiveTab, onRefreshDat
                                     </td>
                                 </tr>
                             ) : (
-                                filteredWords.map((word) => {
+                                paginatedWords.map((word) => {
                                     const isLearned = learnedWordsList.has(word.id);
                                     return (
                                         <tr key={word.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors group">
@@ -358,6 +377,34 @@ export default function DashboardMode({ words, speak, setActiveTab, onRefreshDat
                         </tbody>
                     </table>
                 </div>
+
+                {/* Pagination Controls */}
+                {filteredWords.length > pageSize && (
+                    <div className="px-6 py-3.5 border-t border-gray-150 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-500 dark:text-slate-400 bg-gray-50/50 dark:bg-slate-800/30">
+                        <div>
+                            Hiển thị <span className="font-bold text-gray-700 dark:text-white">{(currentPage - 1) * pageSize + 1} - {Math.min(filteredWords.length, currentPage * pageSize)}</span> trong tổng số <span className="font-bold text-gray-700 dark:text-white">{filteredWords.length.toLocaleString()}</span> từ
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={currentPage === 1}
+                                className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed font-semibold transition-colors"
+                            >
+                                Trang trước
+                            </button>
+                            <span className="font-bold px-2 text-gray-700 dark:text-white">
+                                {currentPage} / {totalPages}
+                            </span>
+                            <button
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                disabled={currentPage === totalPages}
+                                className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed font-semibold transition-colors"
+                            >
+                                Trang sau
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             <AICreateWordModal 

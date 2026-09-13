@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useDeferredValue } from 'react';
 import { Search, X, Volume2, Sparkles, BookOpen, Layers, ArrowRight, CornerDownLeft } from 'lucide-react';
 import { audioManager } from '../utils/audioManager';
 
@@ -32,14 +32,15 @@ export default function GlobalSearchModal({
   speak,
 }: GlobalSearchModalProps) {
   const [query, setQuery] = useState('');
+  const deferredQuery = useDeferredValue(query);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
   // Filter words (limit to top 30 for super fast rendering)
   const filteredWords = useMemo(() => {
-    if (!query.trim()) return words.slice(0, 20);
-    const q = query.trim().toLowerCase();
+    if (!deferredQuery.trim()) return words.slice(0, 20);
+    const q = deferredQuery.trim().toLowerCase();
     return words
       .filter(w => 
         (w.en && w.en.toLowerCase().includes(q)) ||
@@ -47,7 +48,7 @@ export default function GlobalSearchModal({
         (w.category && w.category.toLowerCase().includes(q))
       )
       .slice(0, 40);
-  }, [words, query]);
+  }, [words, deferredQuery]);
 
   // Focus input when opened
   useEffect(() => {
@@ -61,7 +62,7 @@ export default function GlobalSearchModal({
   // Reset selected index when query changes
   useEffect(() => {
     setSelectedIndex(0);
-  }, [query]);
+  }, [deferredQuery]);
 
   // Keyboard navigation inside modal
   useEffect(() => {

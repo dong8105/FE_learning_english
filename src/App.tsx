@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect, Suspense, lazy, useMemo, useCallback } from 'react';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -171,7 +171,7 @@ function App() {
     return () => { isMounted = false; };
   }, []);
 
-  const speak = (text, e, lang = 'en-US') => {
+  const speak = useCallback((text, e, lang = 'en-US') => {
     if (e) e.stopPropagation();
     window.speechSynthesis.cancel();
     
@@ -229,24 +229,24 @@ function App() {
     setTimeout(() => {
       window.speechSynthesis.speak(utterance);
     }, 40);
-  };
+  }, [speechRate, voices, globalRandomizeVoice, selectedVoice]);
 
-  const handleAddWord = async (newWord) => {
+  const handleAddWord = useCallback(async (newWord) => {
     const wordWithId = { ...newWord, id: Date.now().toString() };
     await vocabularyApi.addWord(wordWithId);
     fetchWords();
-  };
+  }, []);
 
-  const handleDeleteWord = async (id) => {
+  const handleDeleteWord = useCallback(async (id) => {
     await vocabularyApi.deleteWord(id);
     fetchWords();
-  };
+  }, []);
 
-  const handleRefreshData = () => {
+  const handleRefreshData = useCallback(() => {
     fetchWords();
-  };
+  }, []);
 
-  const filteredWords = (() => {
+  const filteredWords = useMemo(() => {
     if (selectedGroup.type === 'all') return words;
     if (selectedGroup.type === 'unit') {
       return words.filter(w => w.unit === selectedGroup.id);
@@ -258,7 +258,7 @@ function App() {
       return words.filter(w => w.master_group === selectedGroup.masterName && (!selectedGroup.subName || w.sub_group === selectedGroup.subName));
     }
     return words;
-  })();
+  }, [words, selectedGroup]);
 
   return (
     <AuthProvider>

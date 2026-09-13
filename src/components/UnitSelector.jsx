@@ -6,26 +6,29 @@ const UnitSelector = ({ selectedGroup, onSelectGroup, words = [] }) => {
     const basicUnits = Array.from({ length: 12 }, (_, i) => i + 1);
     
     // 2. Hàng ngày (Units >= 13)
-    const uniqueUnits = [...new Set(words.map(w => w.unit))].filter(u => typeof u === 'number');
-    const extraTopicsList = [
-        { id: 13, name: "Động vật" },
-        { id: 14, name: "Tính từ" },
-        { id: 15, name: "Thời tiết & Kỳ nghỉ" },
-        { id: 16, name: "Thiên nhiên & Tính từ" },
-        { id: 17, name: "Đồ vật & Tiền tệ" },
-        { id: 18, name: "Trang phục & Ngoại hình" },
-        { id: 19, name: "Giao thông & Hoạt động" },
-        { id: 20, name: "Địa điểm & Tính từ" },
-        { id: 21, name: "Nghề nghiệp" }
-    ];
-    const extraTopicIds = new Set(extraTopicsList.map(t => t.id));
-    uniqueUnits.forEach(u => {
-        if (u >= 13 && !extraTopicIds.has(u)) {
-            extraTopicsList.push({ id: u, name: `Chủ đề ${u - 12}` });
-            extraTopicIds.add(u);
-        }
-    });
-    extraTopicsList.sort((a, b) => a.id - b.id);
+    const extraTopicsList = useMemo(() => {
+        const uniqueUnits = [...new Set(words.map(w => w.unit))].filter(u => typeof u === 'number');
+        const list = [
+            { id: 13, name: "Động vật" },
+            { id: 14, name: "Tính từ" },
+            { id: 15, name: "Thời tiết & Kỳ nghỉ" },
+            { id: 16, name: "Thiên nhiên & Tính từ" },
+            { id: 17, name: "Đồ vật & Tiền tệ" },
+            { id: 18, name: "Trang phục & Ngoại hình" },
+            { id: 19, name: "Giao thông & Hoạt động" },
+            { id: 20, name: "Địa điểm & Tính từ" },
+            { id: 21, name: "Nghề nghiệp" }
+        ];
+        const extraTopicIds = new Set(list.map(t => t.id));
+        uniqueUnits.forEach(u => {
+            if (u >= 13 && !extraTopicIds.has(u)) {
+                list.push({ id: u, name: `Chủ đề ${u - 12}` });
+                extraTopicIds.add(u);
+            }
+        });
+        list.sort((a, b) => a.id - b.id);
+        return list;
+    }, [words]);
 
     // 3. Nhóm tổng (Master Groups)
     // Map: master_group -> Set(sub_group)
