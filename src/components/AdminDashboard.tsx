@@ -39,7 +39,7 @@ interface AdminDashboardProps {
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export default function AdminDashboard({ words, setActiveTab }: AdminDashboardProps) {
-  const { user } = useAuth();
+  const { user, getAuthHeaders } = useAuth();
   const [activeSubTab, setActiveSubTab] = useState<'overview' | 'users' | 'backup' | 'settings' | 'visibility'>('overview');
   const [serverMetrics, setServerMetrics] = useState<any>(null);
   const [usersList, setUsersList] = useState<User[]>([]);
@@ -55,10 +55,17 @@ export default function AdminDashboard({ words, setActiveTab }: AdminDashboardPr
   const { settings: visibilitySettings, updateSettings: updateVisibilitySettings } = useVisibility();
   const [localVisibility, setLocalVisibility] = useState(visibilitySettings);
   const [savingVisibility, setSavingVisibility] = useState(false);
+  const [selectedVisibilityUser, setSelectedVisibilityUser] = useState<string>('global');
+  const [customUsersList, setCustomUsersList] = useState<string[]>([]);
+  const [hasCustomSettings, setHasCustomSettings] = useState(false);
+  const [loadingUserVisibility, setLoadingUserVisibility] = useState(false);
+  const [revertingVisibility, setRevertingVisibility] = useState(false);
 
   useEffect(() => {
-    setLocalVisibility(visibilitySettings);
-  }, [visibilitySettings]);
+    if (selectedVisibilityUser === 'global') {
+      setLocalVisibility(visibilitySettings);
+    }
+  }, [visibilitySettings, selectedVisibilityUser]);
 
   const SPECIAL_TOPICS_LIST = [
     { key: '600 Từ Vựng TOEIC', title: '600 Từ Vựng TOEIC Căn Bản', desc: 'Bộ từ vựng cốt lõi phân theo 50 chủ đề kinh điển của TOEIC' },
@@ -101,12 +108,76 @@ export default function AdminDashboard({ words, setActiveTab }: AdminDashboardPr
     });
   };
 
+  // Fetch list of user IDs who have custom visibility overrides
+  const fetchCustomUsers = async () => {
+    try {
+      const headers = getAuthHeaders();
+      const res = await fetch(`${API_BASE_URL}/api/admin/visibility/custom-users`, { headers });
+      if (res.ok) {
+        const data = await res.json();
+        setCustomUsersList(data.customUserIds || []);
+      }
+    } catch (err) {
+      console.error('Error fetching custom users list:', err);
+    }
+  };
+
+  // Switch between Global Default and a specific student
+  const handleSelectVisibilityUser = async (targetId: string) => {
+    setSelectedVisibilityUser(targetId);
+    if (targetId === 'global') {
+      setLocalVisibility(visibilitySettings);
+      setHasCustomSettings(false);
+      return;
+    }
+
+    setLoadingUserVisibility(true);
+    try {
+      const headers = getAuthHeaders();
+      const res = await fetch(`${API_BASE_URL}/api/admin/users/${targetId}/visibility`, { headers });
+      if (res.ok) {
+        const data = await res.json();
+        setLocalVisibility({
+          hiddenTopics: Array.isArray(data.settings?.hiddenTopics) ? data.settings.hiddenTopics : [],
+          showGrammar: data.settings?.showGrammar !== false,
+          showGames: data.settings?.showGames !== false,
+        });
+        setHasCustomSettings(data.hasCustom || false);
+      }
+    } catch (err) {
+      toast.error('Không thể tải cấu hình của học viên');
+    } finally {
+      setLoadingUserVisibility(false);
+    }
+  };
+
   const handleSaveVisibility = async () => {
     setSavingVisibility(true);
     try {
-      await updateVisibilitySettings(localVisibility);
-      audioManager.playSuccess();
-      toast.success("Đã cập nhật quyền hiển thị thành công!");
+      if (selectedVisibilityUser === 'global') {
+        await updateVisibilitySettings(localVisibility);
+        audioManager.playSuccess();
+        toast.success("Đã cập nhật cấu hình hiển thị mặc định chung thành công!");
+      } else {
+        const headers = getAuthHeaders();
+        const res = await fetch(`${API_BASE_URL}/api/admin/users/${selectedVisibilityUser}/visibility`, {
+          method: 'POST',
+          headers: {
+            ...headers,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(localVisibility),
+        });
+        if (!res.ok) throw new Error('Failed to save user visibility');
+
+        audioManager.playSuccess();
+        setHasCustomSettings(true);
+        if (!customUsersList.includes(selectedVisibilityUser)) {
+          setCustomUsersList(prev => [...prev, selectedVisibilityUser]);
+        }
+        const targetUser = usersList.find(u => u.id === selectedVisibilityUser);
+        toast.success(`Đã lưu cấu hình riêng cho học viên ${targetUser?.name || targetUser?.username || ''}!`);
+      }
     } catch {
       toast.error("Lỗi khi lưu cấu hình hiển thị!");
     } finally {
@@ -114,10 +185,41 @@ export default function AdminDashboard({ words, setActiveTab }: AdminDashboardPr
     }
   };
 
+  const handleResetUserVisibility = async () => {
+    if (selectedVisibilityUser === 'global') return;
+    const targetUser = usersList.find(u => u.id === selectedVisibilityUser);
+    const targetName = targetUser?.name || targetUser?.username || 'học viên';
+
+    if (!window.confirm(`Bạn có chắc chắn muốn hủy cấu hình riêng của "${targetName}" để đưa về dùng cấu hình mặc định chung không?`)) {
+      return;
+    }
+
+    setRevertingVisibility(true);
+    try {
+      const headers = getAuthHeaders();
+      const res = await fetch(`${API_BASE_URL}/api/admin/users/${selectedVisibilityUser}/visibility`, {
+        method: 'DELETE',
+        headers,
+      });
+      if (!res.ok) throw new Error('Failed to reset user visibility');
+
+      audioManager.playSuccess();
+      setHasCustomSettings(false);
+      setCustomUsersList(prev => prev.filter(id => id !== selectedVisibilityUser));
+      setLocalVisibility(visibilitySettings);
+      toast.success(`Đã hoàn tác về cấu hình mặc định chung cho học viên ${targetName}!`);
+    } catch (err) {
+      toast.error('Lỗi khi khôi phục cấu hình mặc định');
+    } finally {
+      setRevertingVisibility(false);
+    }
+  };
+
   const fetchServerMetrics = async () => {
     setLoadingMetrics(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/admin/metrics`);
+      const headers = getAuthHeaders();
+      const res = await fetch(`${API_BASE_URL}/api/admin/metrics`, { headers });
       if (res.ok) {
         const data = await res.json();
         setServerMetrics(data.metrics);
@@ -144,7 +246,8 @@ export default function AdminDashboard({ words, setActiveTab }: AdminDashboardPr
   const fetchUsers = async () => {
     setLoadingUsers(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/admin/users`);
+      const headers = getAuthHeaders();
+      const res = await fetch(`${API_BASE_URL}/api/admin/users`, { headers });
       if (res.ok) {
         const data = await res.json();
         setUsersList(data);
@@ -166,7 +269,15 @@ export default function AdminDashboard({ words, setActiveTab }: AdminDashboardPr
   useEffect(() => {
     fetchServerMetrics();
     fetchUsers();
+    fetchCustomUsers();
   }, [words.length]);
+
+  useEffect(() => {
+    if (activeSubTab === 'visibility') {
+      fetchCustomUsers();
+      if (usersList.length === 0) fetchUsers();
+    }
+  }, [activeSubTab]);
 
   // Export database as JSON
   const handleExportJSON = () => {
@@ -273,18 +384,28 @@ export default function AdminDashboard({ words, setActiveTab }: AdminDashboardPr
 
     audioManager.playClick();
     try {
+      const headers = getAuthHeaders();
       const res = await fetch(`${API_BASE_URL}/api/admin/users/${id}`, {
         method: 'DELETE',
+        headers,
       });
       if (res.ok) {
         toast.success(`Đã xóa tài khoản ${username}`);
+        setCustomUsersList(prev => prev.filter(uid => uid !== id));
+        if (selectedVisibilityUser === id) {
+          handleSelectVisibilityUser('global');
+        }
         fetchUsers();
       } else {
         throw new Error();
       }
     } catch {
       setUsersList(prev => prev.filter(u => u.id !== id));
-      toast.success(`Đã xóa tài khoản ${username}`);
+      setCustomUsersList(prev => prev.filter(uid => uid !== id));
+      if (selectedVisibilityUser === id) {
+        handleSelectVisibilityUser('global');
+      }
+      toast.success(`Đã xóa tài khoản ${username} khỏi giao diện`);
     }
   };
 
@@ -778,18 +899,97 @@ export default function AdminDashboard({ words, setActiveTab }: AdminDashboardPr
                 </h3>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Chủ động bật/tắt hiển thị các chuyên đề và các phân khu chức năng cho học viên thường. Tài khoản Quản trị viên (Admin) luôn xem được toàn bộ.
+                Chủ động cấu hình bật/tắt hiển thị chuyên đề và phân khu chức năng theo mặc định chung toàn hệ thống, hoặc thiết lập cấu hình hiển thị độc lập cho từng học viên. Tài khoản Quản trị viên (Admin) luôn xem được toàn bộ.
               </p>
             </div>
+          </div>
 
-            <button
-              onClick={handleSaveVisibility}
-              disabled={savingVisibility}
-              className="flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-500/20 transition-all disabled:opacity-50"
-            >
-              <Save size={16} className={savingVisibility ? 'animate-spin' : ''} />
-              <span>{savingVisibility ? 'Đang lưu...' : 'Lưu Cấu Hình Hiển Thị'}</span>
-            </button>
+          {/* Target User Selector Card */}
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                  <Users size={15} className="text-blue-600 dark:text-blue-400" />
+                  <span>Chọn đối tượng áp dụng cấu hình hiển thị:</span>
+                </label>
+                <div className="flex flex-wrap items-center gap-3">
+                  <select
+                    value={selectedVisibilityUser}
+                    onChange={(e) => handleSelectVisibilityUser(e.target.value)}
+                    className="px-4 py-2.5 text-xs font-bold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none dark:text-white min-w-[280px]"
+                  >
+                    <option value="global">🌐 Cấu hình mặc định chung (Tất cả học viên)</option>
+                    <optgroup label="Từng học viên cụ thể">
+                      {usersList
+                        .filter(u => u.role !== 'admin')
+                        .map(u => {
+                          const isCustom = customUsersList.includes(u.id);
+                          return (
+                            <option key={u.id} value={u.id}>
+                              👤 {u.name || u.username} ({u.username}) {isCustom ? '⭐ [Đã có cấu hình riêng]' : '— [Dùng mặc định]'}
+                            </option>
+                          );
+                        })}
+                    </optgroup>
+                  </select>
+
+                  {/* Status Badge */}
+                  {selectedVisibilityUser === 'global' ? (
+                    <span className="px-3 py-1.5 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 text-xs font-bold rounded-xl border border-blue-200 dark:border-blue-800/40 flex items-center gap-1.5">
+                      <span>🌐 Đang cấu hình Mặc định chung cho toàn hệ thống</span>
+                    </span>
+                  ) : hasCustomSettings ? (
+                    <span className="px-3 py-1.5 bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 text-xs font-bold rounded-xl border border-amber-200 dark:border-amber-800/40 flex items-center gap-1.5">
+                      <Sparkles size={14} className="text-amber-500" />
+                      <span>Đang áp dụng cấu hình riêng cho học viên này</span>
+                    </span>
+                  ) : (
+                    <span className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-medium rounded-xl border border-slate-200 dark:border-slate-700 flex items-center gap-1.5">
+                      <span>ℹ️ Học viên này đang kế thừa cấu hình mặc định chung</span>
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2.5">
+                {selectedVisibilityUser !== 'global' && hasCustomSettings && (
+                  <button
+                    type="button"
+                    onClick={handleResetUserVisibility}
+                    disabled={revertingVisibility}
+                    className="flex items-center gap-1.5 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl transition-all disabled:opacity-50"
+                    title="Hủy cấu hình riêng và đưa về cấu hình chung"
+                  >
+                    <RefreshCw size={14} className={revertingVisibility ? 'animate-spin' : ''} />
+                    <span>Đặt lại về mặc định</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleSaveVisibility}
+                  disabled={savingVisibility || loadingUserVisibility}
+                  className="flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-500/20 transition-all disabled:opacity-50"
+                >
+                  <Save size={16} className={savingVisibility ? 'animate-spin' : ''} />
+                  <span>
+                    {savingVisibility
+                      ? 'Đang lưu...'
+                      : selectedVisibilityUser === 'global'
+                        ? 'Lưu Cấu Hình Mặc Định'
+                        : 'Lưu Riêng Cho Học Viên Này'}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            {loadingUserVisibility && (
+              <div className="text-xs text-blue-600 dark:text-blue-400 animate-pulse font-semibold flex items-center gap-2 pt-1">
+                <RefreshCw size={12} className="animate-spin" />
+                <span>Đang tải cấu hình hiển thị của học viên...</span>
+              </div>
+            )}
           </div>
 
           {/* Section 1: Chuyên đề học tập */}

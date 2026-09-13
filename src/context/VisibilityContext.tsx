@@ -11,6 +11,7 @@ interface VisibilityContextType {
   settings: VisibilitySettings;
   loading: boolean;
   updateSettings: (newSettings: Partial<VisibilitySettings>) => Promise<boolean>;
+  refetchSettings: () => Promise<void>;
   isTopicVisible: (topicNameOrId: string) => boolean;
   isSectionVisible: (sectionKey: 'grammar' | 'games') => boolean;
 }
@@ -27,7 +28,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const VisibilityContext = createContext<VisibilityContextType | undefined>(undefined);
 
 export const VisibilityProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAdmin } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [settings, setSettings] = useState<VisibilitySettings>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -39,10 +40,15 @@ export const VisibilityProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   });
   const [loading, setLoading] = useState(false);
 
-  // Fetch settings from Backend API
+  // Fetch settings from Backend API with optional auth token
   const fetchSettings = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/settings/visibility`);
+      const token = localStorage.getItem('engmaster_token');
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      const res = await fetch(`${API_BASE_URL}/api/settings/visibility`, { headers });
       if (res.ok) {
         const data = await res.json();
         const merged: VisibilitySettings = {
@@ -61,7 +67,14 @@ export const VisibilityProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   useEffect(() => {
     fetchSettings();
-  }, []);
+    const handleAuthChange = () => {
+      fetchSettings();
+    };
+    window.addEventListener('engmaster_auth_changed', handleAuthChange);
+    return () => {
+      window.removeEventListener('engmaster_auth_changed', handleAuthChange);
+    };
+  }, [user?.id, isAdmin]);
 
   const updateSettings = async (newPartial: Partial<VisibilitySettings>): Promise<boolean> => {
     const updated: VisibilitySettings = {
@@ -72,9 +85,14 @@ export const VisibilityProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
 
     try {
+      const token = localStorage.getItem('engmaster_token');
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
       const res = await fetch(`${API_BASE_URL}/api/settings/visibility`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(updated),
       });
       if (!res.ok) {
@@ -108,6 +126,7 @@ export const VisibilityProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       settings,
       loading,
       updateSettings,
+      refetchSettings: fetchSettings,
       isTopicVisible,
       isSectionVisible
     }}>
