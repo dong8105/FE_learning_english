@@ -24,57 +24,57 @@ export default function BottomNav({
   };
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-gray-200/80 dark:border-slate-800/80 px-2 py-1 shadow-lg">
-      <div className="flex items-center justify-around max-w-md mx-auto">
+    <nav className="md:hidden fixed bottom-3 left-2 right-2 max-w-md mx-auto z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/80 rounded-2xl shadow-xl shadow-slate-900/10 dark:shadow-black/40 px-2 py-1.5 transition-all">
+      <div className="flex items-center justify-between">
         {/* Trang chủ */}
         <button
           onClick={() => handleTabClick('home')}
-          className={`flex flex-col items-center py-1.5 px-2 rounded-2xl transition-all ${
+          className={`flex flex-col items-center py-1 px-2.5 rounded-xl transition-all active:scale-90 ${
             activeTab === 'home'
-              ? 'text-indigo-600 dark:text-indigo-400 font-bold scale-105'
-              : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
+              ? 'text-blue-600 dark:text-blue-400 bg-blue-50/80 dark:bg-blue-950/60 font-bold shadow-xs'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
-          <Home size={20} className={activeTab === 'home' ? 'stroke-[2.5]' : ''} />
+          <Home size={18} className={activeTab === 'home' ? 'stroke-[2.5]' : ''} />
           <span className="text-[10px] mt-0.5">Trang chủ</span>
         </button>
 
         {/* Bàn học (Dashboard) */}
         <button
           onClick={() => handleTabClick('dashboard')}
-          className={`flex flex-col items-center py-1.5 px-2 rounded-2xl transition-all ${
+          className={`flex flex-col items-center py-1 px-2.5 rounded-xl transition-all active:scale-90 ${
             activeTab === 'dashboard'
-              ? 'text-indigo-600 dark:text-indigo-400 font-bold scale-105'
-              : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
+              ? 'text-blue-600 dark:text-blue-400 bg-blue-50/80 dark:bg-blue-950/60 font-bold shadow-xs'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
-          <LayoutDashboard size={20} className={activeTab === 'dashboard' ? 'stroke-[2.5]' : ''} />
+          <LayoutDashboard size={18} className={activeTab === 'dashboard' ? 'stroke-[2.5]' : ''} />
           <span className="text-[10px] mt-0.5">Bàn học</span>
         </button>
 
         {/* Học tập */}
         <button
           onClick={() => handleTabClick(isStudyActive ? activeTab : 'flashcards')}
-          className={`flex flex-col items-center py-1.5 px-3 rounded-2xl transition-all ${
+          className={`flex flex-col items-center py-1 px-2.5 rounded-xl transition-all active:scale-90 ${
             isStudyActive
-              ? 'text-indigo-600 dark:text-indigo-400 font-bold scale-105'
-              : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
+              ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50/80 dark:bg-indigo-950/60 font-bold shadow-xs'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
-          <BookOpen size={20} className={isStudyActive ? 'stroke-[2.5]' : ''} />
+          <BookOpen size={18} className={isStudyActive ? 'stroke-[2.5]' : ''} />
           <span className="text-[10px] mt-0.5">Học từ</span>
         </button>
 
         {/* Trò chơi */}
         <button
           onClick={() => handleTabClick(isGameActive ? activeTab : 'game_survival')}
-          className={`flex flex-col items-center py-1.5 px-3 rounded-2xl transition-all ${
+          className={`flex flex-col items-center py-1 px-2.5 rounded-xl transition-all active:scale-90 ${
             isGameActive
-              ? 'text-violet-600 dark:text-violet-400 font-bold scale-105'
-              : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
+              ? 'text-violet-600 dark:text-violet-400 bg-violet-50/80 dark:bg-violet-950/60 font-bold shadow-xs'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
-          <Gamepad2 size={20} className={isGameActive ? 'stroke-[2.5]' : ''} />
+          <Gamepad2 size={18} className={isGameActive ? 'stroke-[2.5]' : ''} />
           <span className="text-[10px] mt-0.5">Trò chơi</span>
         </button>
 
@@ -84,9 +84,9 @@ export default function BottomNav({
             audioManager.playClick();
             onOpenSearch();
           }}
-          className="flex flex-col items-center py-1.5 px-3 rounded-2xl text-gray-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all"
+          className="flex flex-col items-center py-1 px-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 active:scale-90 transition-all"
         >
-          <Search size={20} />
+          <Search size={18} />
           <span className="text-[10px] mt-0.5">Tra từ</span>
         </button>
 
@@ -94,11 +94,11 @@ export default function BottomNav({
         <button
           onClick={() => {
             audioManager.playClick();
-            onToggleSidebar();
+            onToggleSidebar?.();
           }}
-          className="flex flex-col items-center py-1.5 px-3 rounded-2xl text-gray-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all"
+          className="flex flex-col items-center py-1 px-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 active:scale-90 transition-all"
         >
-          <Menu size={20} />
+          <Menu size={18} />
           <span className="text-[10px] mt-0.5">Menu</span>
         </button>
       </div>

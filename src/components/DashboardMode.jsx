@@ -151,45 +151,45 @@ export default function DashboardMode({ words, speak, setActiveTab, onRefreshDat
 
     return (
         <div className="space-y-6 animate-fade-in pb-10">
-            {/* Stats Cards */}
+            {/* Stats Cards (Modern Glass Cards) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl border-2 border-blue-500 shadow-sm flex items-center gap-4">
-                    <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center text-blue-500 shrink-0">
-                        <BookAIcon size={24} />
+                <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex items-center gap-4">
+                    <div className="w-12 h-12 bg-blue-50 dark:bg-blue-950/60 rounded-2xl flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0 shadow-xs">
+                        <BookAIcon size={24} className="stroke-[2.5]" />
                     </div>
                     <div>
-                        <p className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider">Tổng</p>
-                        <p className="text-2xl font-black text-gray-800 dark:text-white leading-none">{totalWords}</p>
+                        <p className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">Tổng số từ</p>
+                        <p className="text-2xl sm:text-3xl font-black text-slate-800 dark:text-white leading-none mt-1 tracking-tight">{totalWords.toLocaleString()}</p>
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl border-2 border-green-500 shadow-sm flex items-center gap-4">
-                    <div className="w-12 h-12 bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center text-green-500 shrink-0">
-                        <CheckCircle2 size={24} />
+                <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex items-center gap-4">
+                    <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-950/60 rounded-2xl flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 shadow-xs">
+                        <CheckCircle2 size={24} className="stroke-[2.5]" />
                     </div>
                     <div>
-                        <p className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider">Thuộc</p>
-                        <p className="text-2xl font-black text-gray-800 dark:text-white leading-none">{learnedWordsCount}</p>
+                        <p className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">Đã thuộc</p>
+                        <p className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400 leading-none mt-1 tracking-tight">{learnedWordsCount.toLocaleString()}</p>
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl border-2 border-orange-500 shadow-sm flex items-center gap-4">
-                    <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/50 rounded-full flex items-center justify-center text-orange-500 shrink-0">
-                        <Clock size={24} />
+                <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex items-center gap-4">
+                    <div className="w-12 h-12 bg-amber-50 dark:bg-amber-950/60 rounded-2xl flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0 shadow-xs">
+                        <Clock size={24} className="stroke-[2.5]" />
                     </div>
                     <div>
-                        <p className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider">Chưa</p>
-                        <p className="text-2xl font-black text-gray-800 dark:text-white leading-none">{unlearnedWordsCount}</p>
+                        <p className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">Chưa thuộc</p>
+                        <p className="text-2xl sm:text-3xl font-black text-amber-600 dark:text-amber-400 leading-none mt-1 tracking-tight">{unlearnedWordsCount.toLocaleString()}</p>
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl border-2 border-purple-500 shadow-sm flex items-center gap-4">
-                    <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/50 rounded-full flex items-center justify-center text-purple-500 shrink-0">
-                        <Percent size={24} />
+                <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex items-center gap-4">
+                    <div className="w-12 h-12 bg-purple-50 dark:bg-purple-950/60 rounded-2xl flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0 shadow-xs">
+                        <Percent size={24} className="stroke-[2.5]" />
                     </div>
                     <div>
-                        <p className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider">% Thuộc</p>
-                        <p className="text-2xl font-black text-gray-800 dark:text-white leading-none">{learnedPercentage}%</p>
+                        <p className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">Tỷ lệ nhớ</p>
+                        <p className="text-2xl sm:text-3xl font-black text-purple-600 dark:text-purple-400 leading-none mt-1 tracking-tight">{learnedPercentage}%</p>
                     </div>
                 </div>
             </div>
@@ -197,94 +197,105 @@ export default function DashboardMode({ words, speak, setActiveTab, onRefreshDat
             {/* Daily Plan & Distribution */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Daily Study Plan */}
-                <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm">
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-lg font-bold flex items-center gap-2 text-gray-800 dark:text-gray-100">
-                            <Target className="text-rose-500" /> Mục tiêu Hôm nay
+                <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-4">
+                    <div className="flex justify-between items-center">
+                        <h2 className="text-base sm:text-lg font-black flex items-center gap-2 text-slate-800 dark:text-white">
+                            <Target className="text-rose-500" size={20} /> Mục tiêu Hôm nay
                         </h2>
-                        <button onClick={() => setIsStudyPlanModalOpen(true)} className="p-2 text-gray-400 hover:text-blue-500 transition">
-                            <Settings size={20} />
+                        <button 
+                            onClick={() => setIsStudyPlanModalOpen(true)} 
+                            className="p-2 text-slate-400 hover:text-blue-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition"
+                            title="Tùy chỉnh kế hoạch"
+                        >
+                            <Settings size={18} />
                         </button>
                     </div>
                     <div className="space-y-4">
-                        <div className="flex justify-between text-sm font-medium">
-                            <span className="text-gray-600 dark:text-slate-400">Tiến độ ({studyPlan.completedCount} / {studyPlan.targetCount} từ)</span>
-                            <span className="text-blue-500">{Math.min(100, Math.round((studyPlan.completedCount / studyPlan.targetCount) * 100))}%</span>
+                        <div className="flex justify-between text-xs sm:text-sm font-bold">
+                            <span className="text-slate-600 dark:text-slate-400">Tiến độ ({studyPlan.completedCount} / {studyPlan.targetCount} từ)</span>
+                            <span className="text-blue-600 dark:text-blue-400 font-extrabold">{Math.min(100, Math.round((studyPlan.completedCount / studyPlan.targetCount) * 100))}%</span>
                         </div>
-                        <div className="h-3 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                            <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (studyPlan.completedCount / studyPlan.targetCount) * 100)}%` }}></div>
+                        <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-0.5">
+                            <div className="h-full bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (studyPlan.completedCount / studyPlan.targetCount) * 100)}%` }}></div>
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-slate-400 italic mb-2">
-                            <Calendar size={14} /> Nhóm mục tiêu: {studyPlan.targetGroup.type === 'all' ? 'Tất cả từ vựng' : (studyPlan.targetGroup.type === 'unit' ? 'Khóa học' : 'Tùy chọn')}
+                        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                            <Calendar size={13} /> Nhóm mục tiêu: <span className="font-semibold text-slate-700 dark:text-slate-300">{studyPlan.targetGroup.type === 'all' ? 'Tất cả từ vựng' : (studyPlan.targetGroup.type === 'unit' ? 'Khóa học' : 'Tùy chọn')}</span>
                         </div>
 
                         {/* Streak 7 Days */}
-                        <div className="pt-2 pb-4">
+                        <div className="pt-2 pb-2">
                             <div className="flex justify-between items-center mb-3">
-                                <span className="text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
-                                    <Flame size={16} className="text-orange-500" /> Chuỗi 7 ngày qua
+                                <span className="text-xs font-black uppercase tracking-wider text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
+                                    <Flame size={15} className="text-amber-500 fill-amber-500" /> Chuỗi 7 ngày qua
                                 </span>
                             </div>
-                            <div className="flex justify-between gap-1">
+                            <div className="flex justify-between gap-1.5">
                                 {last7Days.map((day, idx) => (
                                     <div key={idx} className="flex flex-col items-center gap-1.5">
-                                        <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-xs font-bold transition-all ${day.isActive ? 'bg-orange-500 text-white shadow-md shadow-orange-500/30' : 'bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-slate-500'} ${day.isToday && !day.isActive ? 'border-2 border-orange-500/50' : ''}`}>
-                                            {day.isActive ? <Flame size={14} className="fill-white" /> : <div className="w-2 h-2 rounded-full bg-gray-300 dark:bg-slate-600"></div>}
+                                        <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center text-xs font-bold transition-all ${
+                                            day.isActive 
+                                                ? 'bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-md shadow-orange-500/25 ring-2 ring-amber-400/30' 
+                                                : 'bg-slate-100 dark:bg-slate-800/80 text-slate-400 dark:text-slate-500'
+                                        } ${day.isToday && !day.isActive ? 'border-2 border-amber-500/60 ring-2 ring-amber-400/20' : ''}`}>
+                                            {day.isActive ? <Flame size={15} className="fill-white" /> : <div className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600"></div>}
                                         </div>
-                                        <span className={`text-[10px] md:text-xs font-medium ${day.isToday ? 'text-orange-500 font-bold' : 'text-gray-500 dark:text-slate-400'}`}>{day.dayName}</span>
+                                        <span className={`text-[11px] font-bold ${day.isToday ? 'text-amber-500 font-extrabold' : 'text-slate-500 dark:text-slate-400'}`}>{day.dayName}</span>
                                     </div>
                                 ))}
                             </div>
                         </div>
-                        <button onClick={startStudySession} className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition shadow-md hover:shadow-blue-200 dark:hover:shadow-none">
+                        <button 
+                            onClick={startStudySession} 
+                            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold py-3 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 active:scale-98 transition-all"
+                        >
                             <PlayCircle size={18} /> Bắt đầu Ôn tập
                         </button>
                     </div>
                 </div>
 
                 {/* Vocabulary Distribution */}
-                <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm">
-                    <h2 className="text-lg font-bold flex items-center gap-2 mb-6 text-gray-800 dark:text-gray-100">
-                        <BarChart2 className="text-emerald-500" /> Phân loại Từ vựng
+                <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm">
+                    <h2 className="text-base sm:text-lg font-black flex items-center gap-2 mb-6 text-slate-800 dark:text-white">
+                        <BarChart2 className="text-emerald-500" size={20} /> Phân loại Từ vựng
                     </h2>
                     <div className="space-y-5">
                         {distribution.chuyende > 0 && (
                             <div>
-                                <div className="flex justify-between text-sm font-bold mb-1.5">
-                                    <span className="text-gray-700 dark:text-gray-300">Chuyên đề (TOEIC, ETS, Minna...)</span>
-                                    <span className="text-purple-500 font-bold">{distribution.chuyende}</span>
+                                <div className="flex justify-between text-xs sm:text-sm font-bold mb-1.5">
+                                    <span className="text-slate-700 dark:text-slate-300">Chuyên đề (TOEIC, ETS, Minna...)</span>
+                                    <span className="text-purple-600 dark:text-purple-400 font-extrabold">{distribution.chuyende.toLocaleString()}</span>
                                 </div>
-                                <div className="h-2.5 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                <div className="h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-0.5">
                                     <div className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full transition-all" style={{ width: `${totalWords ? (distribution.chuyende / totalWords) * 100 : 0}%` }}></div>
                                 </div>
                             </div>
                         )}
                         {distribution.units > 0 && (
                             <div>
-                                <div className="flex justify-between text-sm font-bold mb-1.5">
-                                    <span className="text-gray-700 dark:text-gray-300">Khóa học (Unit)</span>
-                                    <span className="text-emerald-500">{distribution.units}</span>
+                                <div className="flex justify-between text-xs sm:text-sm font-bold mb-1.5">
+                                    <span className="text-slate-700 dark:text-slate-300">Khóa học (Unit)</span>
+                                    <span className="text-emerald-600 dark:text-emerald-400 font-extrabold">{distribution.units.toLocaleString()}</span>
                                 </div>
-                                <div className="h-2.5 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                <div className="h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-0.5">
                                     <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: `${totalWords ? (distribution.units / totalWords) * 100 : 0}%` }}></div>
                                 </div>
                             </div>
                         )}
                         <div>
-                            <div className="flex justify-between text-sm font-bold mb-1.5">
-                                <span className="text-gray-700 dark:text-gray-300">Chủ đề Hàng ngày</span>
-                                <span className="text-indigo-500">{distribution.daily}</span>
+                            <div className="flex justify-between text-xs sm:text-sm font-bold mb-1.5">
+                                <span className="text-slate-700 dark:text-slate-300">Chủ đề Hàng ngày</span>
+                                <span className="text-indigo-600 dark:text-indigo-400 font-extrabold">{distribution.daily.toLocaleString()}</span>
                             </div>
-                            <div className="h-2.5 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                            <div className="h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-0.5">
                                 <div className="h-full bg-indigo-500 rounded-full transition-all" style={{ width: `${totalWords ? (distribution.daily / totalWords) * 100 : 0}%` }}></div>
                             </div>
                         </div>
                         <div>
-                            <div className="flex justify-between text-sm font-bold mb-1.5">
-                                <span className="text-gray-700 dark:text-gray-300">Nhóm Mở rộng (Master)</span>
-                                <span className="text-amber-500">{distribution.master}</span>
+                            <div className="flex justify-between text-xs sm:text-sm font-bold mb-1.5">
+                                <span className="text-slate-700 dark:text-slate-300">Nhóm Mở rộng (Master)</span>
+                                <span className="text-amber-600 dark:text-amber-400 font-extrabold">{distribution.master.toLocaleString()}</span>
                             </div>
-                            <div className="h-2.5 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                            <div className="h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-0.5">
                                 <div className="h-full bg-amber-500 rounded-full transition-all" style={{ width: `${totalWords ? (distribution.master / totalWords) * 100 : 0}%` }}></div>
                             </div>
                         </div>
@@ -293,20 +304,20 @@ export default function DashboardMode({ words, speak, setActiveTab, onRefreshDat
             </div>
 
             {/* Actions Bar */}
-            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
-                <div className="flex w-full md:w-auto gap-4">
-                    <div className="relative flex-1 md:w-64">
-                        <Search className="absolute left-3 top-3 text-gray-400 dark:text-slate-500" size={18} />
+            <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl p-4 sm:p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
+                <div className="flex w-full md:w-auto gap-3">
+                    <div className="relative flex-1 md:w-72">
+                        <Search className="absolute left-3.5 top-3 text-slate-400 dark:text-slate-500" size={17} />
                         <input
                             type="text"
-                            placeholder="Tìm từ..."
-                            className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white transition-colors"
+                            placeholder="Tìm kiếm từ vựng (Anh / Việt)..."
+                            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-2xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:text-white transition-all"
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
                         />
                     </div>
                     <select
-                        className="bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white cursor-pointer transition-colors"
+                        className="bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:text-white cursor-pointer transition-all"
                         value={filterStatus}
                         onChange={e => setFilterStatus(e.target.value)}
                     >
@@ -319,29 +330,29 @@ export default function DashboardMode({ words, speak, setActiveTab, onRefreshDat
                 <div className="flex w-full md:w-auto gap-3">
                     <button 
                         onClick={() => setIsAiModalOpen(true)}
-                        className="flex-1 md:flex-none bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition shadow-sm"
+                        className="flex-1 md:flex-none bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95"
                     >
                         <Sparkles size={16} /> Thêm từ với AI
                     </button>
                     <button 
                         onClick={() => setActiveTab('manage')}
-                        className="flex-1 md:flex-none bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition shadow-sm"
+                        className="flex-1 md:flex-none bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95"
                     >
-                        <Layers size={16} /> Thêm nhiều từ
+                        <Layers size={16} /> Quản lý từ vựng
                     </button>
                 </div>
             </div>
 
-            {/* Table */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm overflow-hidden">
+            {/* Table (Glass Container) */}
+            <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="bg-gray-50 dark:bg-slate-800/50 border-b border-gray-200 dark:border-slate-800">
-                                <th className="px-6 py-4 text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-wider">Từ vựng</th>
-                                <th className="px-6 py-4 text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-wider">Nghĩa</th>
-                                <th className="px-6 py-4 text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-wider">Loại từ</th>
-                                <th className="px-6 py-4 text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-wider text-center">Thuộc</th>
+                            <tr className="bg-slate-50/80 dark:bg-slate-800/60 border-b border-slate-200/80 dark:border-slate-800">
+                                <th className="px-6 py-4 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">Từ vựng</th>
+                                <th className="px-6 py-4 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">Nghĩa</th>
+                                <th className="px-6 py-4 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">Loại từ</th>
+                                <th className="px-6 py-4 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider text-center">Thuộc</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 dark:divide-slate-800">

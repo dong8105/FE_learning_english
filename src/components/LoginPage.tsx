@@ -151,7 +151,7 @@ export default function LoginPage({ onNavigate, initialMode = 'login' }: LoginPa
   // 1. IF ALREADY LOGGED IN: DISPLAY USER PROFILE CARD
   if (user) {
     return (
-      <div className="max-w-xl mx-auto py-8 px-4 animate-fade-in space-y-6">
+      <div className="max-w-xl mx-auto py-8 sm:py-12 px-4 animate-fade-in space-y-6">
         {/* Navigation Breadcrumb */}
         <div className="flex items-center justify-between">
           <button
@@ -170,25 +170,25 @@ export default function LoginPage({ onNavigate, initialMode = 'login' }: LoginPa
           </button>
         </div>
 
-        {/* Profile Card */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-200/80 dark:border-slate-800 overflow-hidden">
+        {/* Profile Card (Modern Glass) */}
+        <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl rounded-3xl shadow-2xl shadow-blue-500/5 dark:shadow-black/60 border border-slate-200/80 dark:border-slate-800/80 overflow-hidden">
           <div className="h-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600" />
           
           <div className="p-6 sm:p-8 space-y-6">
             <div className="flex items-center gap-4">
-              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center font-black text-2xl shadow-md ${
+              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center font-black text-2xl shadow-lg ring-4 ${
                 isAdmin 
-                  ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400' 
-                  : 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400'
+                  ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400 ring-amber-500/20' 
+                  : 'bg-gradient-to-br from-blue-600 to-indigo-600 text-white ring-blue-500/20'
               }`}>
                 {user.name ? user.name.charAt(0).toUpperCase() : user.username.charAt(0).toUpperCase()}
               </div>
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-xl font-black text-slate-900 dark:text-white">
+                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
                     {user.name || user.username}
                   </h2>
-                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold shadow-xs ${
                     isAdmin 
                       ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' 
                       : 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
@@ -202,15 +202,15 @@ export default function LoginPage({ onNavigate, initialMode = 'login' }: LoginPa
               </div>
             </div>
 
-            <div className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-2 text-xs">
+            <div className="p-4 bg-slate-50/80 dark:bg-slate-800/60 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 space-y-2.5 text-xs">
               <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
                 <span>Mã định danh User:</span>
-                <span className="font-mono text-[11px] text-slate-400">{user.id}</span>
+                <span className="font-mono text-[11px] text-slate-400 bg-slate-200/60 dark:bg-slate-700/60 px-2 py-0.5 rounded-md">{user.id}</span>
               </div>
               <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
                 <span>Trạng thái tiến độ:</span>
-                <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
-                  <CheckCircle2 size={13} />
+                <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1.5">
+                  <CheckCircle2 size={14} />
                   <span>Đồng bộ MySQL</span>
                 </span>
               </div>
@@ -220,7 +220,7 @@ export default function LoginPage({ onNavigate, initialMode = 'login' }: LoginPa
             <div className="space-y-3 pt-2">
               <button
                 onClick={() => onNavigate('dashboard')}
-                className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-2xl shadow-md shadow-blue-500/20 active:scale-98 transition-all flex items-center justify-center gap-2"
+                className="w-full py-3.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold text-sm rounded-2xl shadow-lg shadow-blue-500/25 active:scale-98 transition-all flex items-center justify-center gap-2"
               >
                 <span>🚀 Vào Bàn Học Từ Vựng</span>
                 <ArrowRight size={16} />
@@ -255,7 +255,7 @@ export default function LoginPage({ onNavigate, initialMode = 'login' }: LoginPa
 
   // 2. IF NOT LOGGED IN: FULL AUTHENTICATION PAGE VIEW
   return (
-    <div className="max-w-md mx-auto py-6 sm:py-10 px-4 animate-fade-in space-y-6">
+    <div className="max-w-md mx-auto py-8 sm:py-12 px-4 animate-fade-in space-y-6">
       {/* Top back to home link */}
       <div className="flex items-center justify-between">
         <button
@@ -272,7 +272,7 @@ export default function LoginPage({ onNavigate, initialMode = 'login' }: LoginPa
       </div>
 
       {/* Main Auth Card */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-200/80 dark:border-slate-800 overflow-hidden">
+      <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl rounded-3xl shadow-2xl shadow-blue-500/5 dark:shadow-black/60 border border-slate-200/80 dark:border-slate-800/80 overflow-hidden">
         {/* Decorative top bar */}
         <div className="h-2.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600" />
 

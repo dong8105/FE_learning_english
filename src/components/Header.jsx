@@ -31,14 +31,14 @@ export default function Header({
     }, []);
 
     return (
-        <header className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-md sticky top-0 z-40 shadow-sm dark:shadow-slate-800/50 border-b border-slate-200/70 dark:border-slate-800 transition-colors">
-            <div className="px-3 sm:px-4 h-16 flex items-center justify-between gap-2">
+        <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 border-b border-slate-200/70 dark:border-slate-800/80 shadow-xs transition-colors">
+            <div className="px-3 sm:px-5 h-16 flex items-center justify-between gap-2 max-w-7xl mx-auto">
                 {/* Left: Menu toggle + Logo */}
-                <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                <div className="flex items-center gap-2 sm:gap-3.5 shrink-0">
                     {activeTab !== 'home' && (
                         <button 
                             onClick={onToggleSidebar}
-                            className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg md:hidden text-gray-600 dark:text-slate-400 transition-colors"
+                            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-xl md:hidden text-slate-600 dark:text-slate-400 active:scale-95 transition-all"
                             aria-label="Toggle Menu"
                         >
                             <Menu size={22} />
@@ -46,17 +46,17 @@ export default function Header({
                     )}
                     <div 
                         onClick={() => onNavigateTab && onNavigateTab('home')}
-                        className="flex items-center gap-2 text-blue-700 dark:text-blue-400 select-none cursor-pointer group"
-                        title="Về Trang Chủ"
+                        className="flex items-center gap-2.5 select-none cursor-pointer group"
+                        title="Về Trang Chủ EngMaster"
                     >
-                        <div className="p-1.5 bg-blue-50 dark:bg-blue-950/60 rounded-xl border border-blue-100 dark:border-blue-900/50 shadow-sm group-hover:scale-105 transition-transform">
-                            <BookOpen size={22} className="text-blue-600 dark:text-blue-400 fill-blue-600/20" />
+                        <div className="p-2 bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-xl shadow-md shadow-blue-500/25 group-hover:scale-105 transition-transform">
+                            <BookOpen size={20} className="stroke-[2.5]" />
                         </div>
                         <div className="flex flex-col">
-                            <h1 className="text-lg md:text-xl font-black tracking-tight leading-none text-slate-800 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                            <h1 className="text-lg md:text-xl font-black tracking-tight leading-none bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 dark:from-blue-400 dark:via-indigo-300 dark:to-purple-400 bg-clip-text text-transparent group-hover:opacity-90 transition-opacity">
                                 EngMaster
                             </h1>
-                            <span className="text-[10px] font-semibold tracking-wider text-blue-600 dark:text-blue-400 uppercase hidden sm:inline">
+                            <span className="text-[10px] font-bold tracking-wider text-blue-600/80 dark:text-blue-400/80 uppercase hidden sm:inline">
                                 Pro Edition
                             </span>
                         </div>
@@ -129,10 +129,10 @@ export default function Header({
                 <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
                     {/* Streak Badge */}
                     <div 
-                        className="flex items-center gap-1 sm:1.5 text-xs font-bold text-orange-500 bg-orange-50 dark:bg-orange-500/10 px-2.5 py-1.5 rounded-full border border-orange-200/80 dark:border-orange-500/20 shadow-xs select-none" 
+                        className="flex items-center gap-1.5 text-xs font-black text-amber-600 dark:text-amber-400 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/30 px-3 py-1.5 rounded-full border border-amber-200/80 dark:border-amber-800/60 shadow-xs select-none" 
                         title="Chuỗi ngày học liên tiếp"
                     >
-                        <Flame size={15} className="fill-orange-500 animate-pulse text-orange-500" />
+                        <Flame size={15} className="fill-amber-500 text-amber-500 animate-bounce" />
                         <span className="hidden xs:inline">{streak} ngày</span>
                         <span className="xs:hidden">{streak}d</span>
                     </div>
@@ -141,36 +141,40 @@ export default function Header({
                     {onToggleSfx && (
                         <button
                             onClick={onToggleSfx}
-                            className={`p-2 rounded-xl transition-all ${
+                            className={`p-2 rounded-xl transition-all active:scale-95 border ${
                                 isSfxMuted 
-                                    ? 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800' 
-                                    : 'text-blue-600 dark:text-blue-400 bg-blue-50/70 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/50'
+                                    ? 'text-slate-400 border-transparent hover:bg-slate-100 dark:hover:bg-slate-800/80' 
+                                    : 'text-blue-600 dark:text-blue-400 bg-blue-50/70 dark:bg-blue-950/50 border-blue-200/70 dark:border-blue-900/50 hover:bg-blue-100'
                             }`}
                             title={isSfxMuted ? 'Bật âm thanh hiệu ứng (SFX)' : 'Tắt âm thanh hiệu ứng (SFX)'}
                             aria-label="Toggle SFX Sound"
                         >
-                            {isSfxMuted ? <VolumeX size={19} /> : <Volume2 size={19} />}
+                            {isSfxMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
                         </button>
                     )}
                     
-                    {/* Dark/Light Theme Toggle */}
+                    {/* Dark/Light Theme Toggle with Enhanced Glow */}
                     <button
                         onClick={toggleTheme}
-                        className="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
-                        title="Chuyển chế độ Sáng/Tối"
+                        className="p-2 text-slate-600 dark:text-amber-300 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-xl transition-all active:scale-95 border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
+                        title={theme === 'dark' ? 'Chuyển sang giao diện Sáng' : 'Chuyển sang giao diện Tối (Dark Mode)'}
                         aria-label="Toggle Theme"
                     >
-                        {theme === 'dark' ? <Sun size={19} className="text-amber-400" /> : <Moon size={19} />}
+                        {theme === 'dark' ? (
+                            <Sun size={19} className="text-amber-400 fill-amber-400/20" />
+                        ) : (
+                            <Moon size={19} className="text-slate-600 hover:text-indigo-600" />
+                        )}
                     </button>
 
                     {/* Settings Modal Toggle */}
                     <button
                         onClick={onOpenSettings}
-                        className="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
+                        className="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-xl transition-all active:scale-95 border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
                         title="Cài đặt giọng đọc & AI"
                         aria-label="Settings"
                     >
-                        <Settings size={19} />
+                        <Settings size={18} />
                     </button>
 
                     {/* Auth Login / User Profile Dropdown */}
@@ -178,15 +182,15 @@ export default function Header({
                         <div className="relative" ref={userMenuRef}>
                             <button
                                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                                className={`flex items-center gap-1.5 p-1 sm:px-2.5 sm:py-1 rounded-xl transition-all border ${
+                                className={`flex items-center gap-2 p-1 sm:px-3 sm:py-1 rounded-xl transition-all border shadow-xs active:scale-98 ${
                                     isAdmin 
-                                        ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/60 text-amber-700 dark:text-amber-300' 
-                                        : 'bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800/60 text-blue-700 dark:text-blue-300'
+                                        ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/60 text-amber-800 dark:text-amber-300' 
+                                        : 'bg-slate-50 dark:bg-slate-800/70 border-slate-200/80 dark:border-slate-700 text-slate-800 dark:text-slate-200'
                                 }`}
                                 title={user.name || user.username}
                             >
-                                <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-black text-xs ${
-                                    isAdmin ? 'bg-amber-500 text-slate-950' : 'bg-blue-600 text-white'
+                                <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-black text-xs shadow-xs ${
+                                    isAdmin ? 'bg-amber-500 text-slate-950' : 'bg-gradient-to-br from-blue-600 to-indigo-600 text-white'
                                 }`}>
                                     {isAdmin ? '👑' : (user.name ? user.name.charAt(0).toUpperCase() : 'U')}
                                 </div>

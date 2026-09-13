@@ -60,45 +60,49 @@ export default function HomePage({ wordCount = 4650, onNavigate, speak }: HomePa
   const showGames = isSectionVisible('games');
 
   return (
-    <div className="max-w-6xl mx-auto space-y-10 pb-12 animate-fade-in">
+    <div className="max-w-6xl mx-auto space-y-12 pb-14 animate-fade-in">
       {/* 1. HERO SECTION */}
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 text-white p-6 sm:p-10 md:p-12 shadow-xl">
+      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 text-white p-7 sm:p-12 md:p-14 shadow-2xl shadow-indigo-500/10">
         {/* Background decorative glows */}
-        <div className="absolute -right-20 -top-20 w-80 h-80 bg-white/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-blue-400/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -right-16 -top-16 w-96 h-96 bg-white/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -left-20 -bottom-20 w-96 h-96 bg-blue-400/25 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute right-1/3 bottom-0 w-64 h-64 bg-violet-400/20 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 max-w-3xl space-y-6">
           {/* Tagline Badge */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-xs font-bold text-white shadow-xs">
-            <Sparkles size={15} className="text-amber-300 animate-pulse" />
-            <span>Nền Tảng Luyện Tiếng Anh & TOEIC Thông Minh 2026</span>
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/15 backdrop-blur-xl border border-white/25 text-xs font-black text-white shadow-xs">
+            <Sparkles size={15} className="text-amber-300 animate-spin-slow" />
+            <span className="tracking-wide">NỀN TẢNG LUYỆN TIẾNG ANH & TOEIC THÔNG MINH 2026</span>
           </div>
 
           {/* Headline */}
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-tight">
-            Chinh Phục Tiếng Anh Tự Tin Mỗi Ngày Cùng AI & Lộ Trình Toàn Diện
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-[1.15]">
+            Chinh Phục Tiếng Anh <br className="hidden sm:inline" />
+            <span className="bg-gradient-to-r from-white via-blue-100 to-amber-200 bg-clip-text text-transparent">
+              Tự Tin Cùng AI
+            </span> & Lộ Trình Chuẩn
           </h1>
 
           {/* Subtext */}
-          <p className="text-sm sm:text-base md:text-lg text-blue-100 font-normal leading-relaxed">
-            Hơn <span className="font-bold text-white">{wordCount.toLocaleString()}</span> từ vựng chuẩn kèm phát âm IPA, lộ trình TOEIC 30 ngày từng bước, ngữ pháp tương tác và các trò chơi rèn luyện phản xạ ghi nhớ sâu.
+          <p className="text-sm sm:text-base md:text-lg text-blue-100/90 font-normal leading-relaxed max-w-2xl">
+            Hơn <span className="font-extrabold text-white underline decoration-amber-400 decoration-2 underline-offset-4">{wordCount.toLocaleString()}+</span> từ vựng chuẩn kèm phát âm IPA, lộ trình TOEIC 30 ngày từng bước, ngữ pháp tương tác và các trò chơi rèn luyện phản xạ ghi nhớ sâu.
           </p>
 
           {/* Welcome User Banner or CTA Buttons */}
-          <div className="pt-2 flex flex-wrap items-center gap-3 sm:gap-4">
+          <div className="pt-2 flex flex-wrap items-center gap-3.5 sm:gap-4">
             {!user ? (
               <button
                 onClick={() => handleAction('login')}
-                className="px-6 py-3.5 bg-white hover:bg-blue-50 text-blue-700 hover:text-blue-800 font-black text-sm rounded-2xl shadow-lg shadow-black/10 active:scale-95 transition-all flex items-center gap-2"
+                className="px-6 py-3.5 bg-white hover:bg-blue-50 text-blue-700 hover:text-blue-800 font-black text-sm rounded-2xl shadow-xl shadow-black/15 hover:shadow-2xl hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all flex items-center gap-2"
               >
-                <LogIn size={18} />
+                <LogIn size={18} className="text-blue-600" />
                 <span>Đăng Nhập Để Bắt Đầu Học</span>
                 <ArrowRight size={18} />
               </button>
             ) : (
               <button
                 onClick={() => handleAction('dashboard')}
-                className="px-6 py-3.5 bg-white hover:bg-blue-50 text-blue-700 hover:text-blue-800 font-black text-sm rounded-2xl shadow-lg shadow-black/10 active:scale-95 transition-all flex items-center gap-2"
+                className="px-7 py-3.5 bg-white hover:bg-blue-50 text-blue-700 hover:text-blue-800 font-black text-sm rounded-2xl shadow-xl shadow-black/15 hover:shadow-2xl hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all flex items-center gap-2"
               >
                 <span>🚀 Vào Bàn Học Ngay</span>
                 <ArrowRight size={18} />
@@ -108,24 +112,24 @@ export default function HomePage({ wordCount = 4650, onNavigate, speak }: HomePa
             {showToeic30 && (
               <button
                 onClick={() => handleAction('toeic30')}
-                className="px-5 py-3.5 bg-white/15 hover:bg-white/25 backdrop-blur-md text-white font-bold text-sm rounded-2xl border border-white/25 active:scale-95 transition-all flex items-center gap-2"
+                className="px-5 py-3.5 bg-white/15 hover:bg-white/25 backdrop-blur-xl text-white font-bold text-sm rounded-2xl border border-white/25 hover:border-white/40 active:scale-95 transition-all flex items-center gap-2"
               >
                 <Calendar size={18} className="text-amber-300" />
                 <span>Lộ Trình TOEIC 30 Ngày</span>
-                {!user && <Lock size={14} className="text-amber-300 ml-0.5 opacity-80" />}
+                {!user && <Lock size={14} className="text-amber-300 ml-0.5 opacity-90" />}
               </button>
             )}
 
             {user && (
-              <div className="flex items-center gap-2.5 px-4 py-2 bg-white/20 backdrop-blur-md rounded-2xl border border-white/25">
-                <div className="w-8 h-8 rounded-xl bg-white text-blue-700 font-black flex items-center justify-center text-xs">
+              <div className="flex items-center gap-3 px-4 py-2 bg-white/15 backdrop-blur-xl rounded-2xl border border-white/25 shadow-xs">
+                <div className="w-8 h-8 rounded-xl bg-white text-blue-700 font-black flex items-center justify-center text-xs shadow-xs">
                   {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
                 </div>
                 <div className="text-left">
                   <div className="text-xs font-bold text-white truncate max-w-[150px]">
                     Chào bạn, {user.name || user.username}!
                   </div>
-                  <div className="text-[10px] text-blue-200">
+                  <div className="text-[10px] text-blue-200 font-medium">
                     {isAdmin ? '👑 Quản Trị Viên' : '🎓 Học Viên'}
                   </div>
                 </div>
@@ -135,7 +139,7 @@ export default function HomePage({ wordCount = 4650, onNavigate, speak }: HomePa
 
           {!user && (
             <div className="flex items-center gap-2 text-xs text-blue-100/90 font-medium pt-1">
-              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-400 text-slate-900 font-black text-[10px] shrink-0">
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-400 text-slate-900 font-black text-[10px] shrink-0 shadow-xs">
                 !
               </span>
               <span>Bắt buộc đăng nhập tài khoản để vào bàn học, làm bài tập và theo dõi lộ trình</span>
@@ -144,59 +148,59 @@ export default function HomePage({ wordCount = 4650, onNavigate, speak }: HomePa
         </div>
       </section>
 
-      {/* 2. LIVE METRICS COUNTER */}
+      {/* 2. LIVE METRICS COUNTER (Modern Glass Cards) */}
       <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-4">
-          <div className="p-3 bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 rounded-2xl shrink-0">
-            <BookOpen size={24} />
+        <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all flex items-center gap-4">
+          <div className="p-3.5 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/70 dark:to-blue-900/40 text-blue-600 dark:text-blue-400 rounded-2xl shrink-0 shadow-xs">
+            <BookOpen size={24} className="stroke-[2.5]" />
           </div>
           <div>
-            <div className="text-2xl font-black text-slate-800 dark:text-white">
+            <div className="text-2xl sm:text-3xl font-black text-slate-800 dark:text-white tracking-tight">
               {wordCount.toLocaleString()}+
             </div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
               Từ vựng chuẩn & IPA
             </div>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-4">
-          <div className="p-3 bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 rounded-2xl shrink-0">
-            <Calendar size={24} />
+        <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all flex items-center gap-4">
+          <div className="p-3.5 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/70 dark:to-amber-900/40 text-amber-600 dark:text-amber-400 rounded-2xl shrink-0 shadow-xs">
+            <Calendar size={24} className="stroke-[2.5]" />
           </div>
           <div>
-            <div className="text-2xl font-black text-slate-800 dark:text-white">
+            <div className="text-2xl sm:text-3xl font-black text-slate-800 dark:text-white tracking-tight">
               30 Ngày
             </div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
               Lộ trình TOEIC bám sát
             </div>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-4">
-          <div className="p-3 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 rounded-2xl shrink-0">
-            <BrainCircuit size={24} />
+        <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all flex items-center gap-4">
+          <div className="p-3.5 bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/70 dark:to-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-2xl shrink-0 shadow-xs">
+            <BrainCircuit size={24} className="stroke-[2.5]" />
           </div>
           <div>
-            <div className="text-2xl font-black text-slate-800 dark:text-white">
+            <div className="text-2xl sm:text-3xl font-black text-slate-800 dark:text-white tracking-tight">
               10+ Chế Độ
             </div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
               Học & Ôn luyện thông minh
             </div>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-4">
-          <div className="p-3 bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 rounded-2xl shrink-0">
-            <Gamepad2 size={24} />
+        <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all flex items-center gap-4">
+          <div className="p-3.5 bg-gradient-to-br from-rose-50 to-rose-100 dark:from-rose-950/70 dark:to-rose-900/40 text-rose-600 dark:text-rose-400 rounded-2xl shrink-0 shadow-xs">
+            <Gamepad2 size={24} className="stroke-[2.5]" />
           </div>
           <div>
-            <div className="text-2xl font-black text-slate-800 dark:text-white">
+            <div className="text-2xl sm:text-3xl font-black text-slate-800 dark:text-white tracking-tight">
               5 Trò Chơi
             </div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
               Đấu trường luyện phản xạ
             </div>
           </div>

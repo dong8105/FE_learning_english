@@ -36,17 +36,24 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, onClose }) {
     const { user, isAdmin } = useAuth();
     const { isTopicVisible, isSectionVisible } = useVisibility();
     
-    const SidebarButton = ({ id, icon: Icon, label }) => (
+    const SidebarButton = ({ id, icon: Icon, label, badge }) => (
         <button
             onClick={() => setActiveTab(id)}
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all w-full text-left ${
+            className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all w-full text-left group ${
                 activeTab === id
-                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 font-bold'
-                    : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-green-600 dark:hover:text-green-400'
+                    ? 'bg-blue-50/90 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-bold border-l-4 border-blue-600 shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100/80 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-100'
             }`}
         >
-            <Icon size={20} className={activeTab === id ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-slate-500'} />
-            <span>{label}</span>
+            <div className="flex items-center gap-3 truncate">
+                <Icon size={18} className={`shrink-0 transition-transform group-hover:scale-110 ${activeTab === id ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500'}`} />
+                <span className="truncate">{label}</span>
+            </div>
+            {badge && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold">
+                    {badge}
+                </span>
+            )}
         </button>
     );
 
@@ -65,21 +72,21 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, onClose }) {
             {/* Overlay for mobile */}
             {isOpen && (
                 <div 
-                    className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm"
+                    className="fixed inset-0 bg-slate-950/60 z-40 md:hidden backdrop-blur-sm transition-opacity"
                     onClick={onClose}
                 />
             )}
 
             <aside className={`
                 fixed md:static inset-y-0 left-0 z-50
-                w-64 h-full bg-white dark:bg-slate-900 flex flex-col py-6 px-4 gap-8 shrink-0 overflow-y-auto custom-scrollbar
+                w-64 h-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl flex flex-col py-5 px-3 gap-6 shrink-0 overflow-y-auto custom-scrollbar
                 transition-transform duration-300 ease-in-out
                 ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-                border-r border-gray-100 dark:border-slate-800 md:border-none
+                border-r border-slate-200/80 dark:border-slate-800/80
             `}>
-                <div className="flex items-center justify-between md:hidden mb-2">
-                    <span className="font-bold text-gray-400 dark:text-slate-500 text-xs uppercase tracking-widest">Menu</span>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full text-gray-500 dark:text-slate-400">
+                <div className="flex items-center justify-between md:hidden mb-1 px-2">
+                    <span className="font-black text-slate-400 dark:text-slate-500 text-xs uppercase tracking-widest">Menu</span>
+                    <button onClick={onClose} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-500 dark:text-slate-400">
                         <X size={20} />
                     </button>
                 </div>
