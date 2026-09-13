@@ -10,7 +10,6 @@ import {
     Network,
     BookOpen,
     TrendingUp,
-    Languages,
     X,
     Shuffle,
     LayoutDashboard,
@@ -24,12 +23,15 @@ import {
     LayoutGrid,
     CloudRain,
     HelpCircle,
-    ShieldCheck
+    ShieldCheck,
+    Target
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useVisibility } from '../context/VisibilityContext';
 
 export default function Sidebar({ activeTab, setActiveTab, isOpen, onClose }) {
     const { isAdmin } = useAuth();
+    const { isTopicVisible, isSectionVisible } = useVisibility();
     
     const SidebarButton = ({ id, icon: Icon, label }) => (
         <button
@@ -44,6 +46,16 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, onClose }) {
             <span>{label}</span>
         </button>
     );
+
+    // Topic visibility checks
+    const showToeic30 = isTopicVisible('toeic30') || isTopicVisible('Lộ trình TOEIC 30 Ngày');
+    const showToeic500 = isTopicVisible('toeic500') || isTopicVisible('500 Từ Vựng TOEIC Mất Gốc');
+    const showEts2026 = isTopicVisible('ets2026') || isTopicVisible('Từ Vựng ETS 2026');
+    const showMinna = isTopicVisible('japaneseMinna') || isTopicVisible('Từ Vựng Tiếng Nhật Minna No Nihongo');
+    const hasAnySpecialTopic = showToeic30 || showToeic500 || showEts2026 || showMinna;
+
+    const showGrammarSection = isSectionVisible('grammar');
+    const showGamesSection = isSectionVisible('games');
 
     return (
         <>
@@ -69,7 +81,7 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, onClose }) {
                     </button>
                 </div>
 
-                {/* Admin Exclusive Navigation Section */}
+                {/* 1. Admin Exclusive Navigation Section */}
                 {isAdmin && (
                     <div className="p-3 bg-amber-50/80 dark:bg-amber-950/40 rounded-2xl border border-amber-200 dark:border-amber-800/60 shadow-xs">
                         <h2 className="text-[11px] font-black text-amber-700 dark:text-amber-300 uppercase tracking-wider mb-2 px-1 flex items-center gap-1.5">
@@ -102,70 +114,90 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, onClose }) {
                     </div>
                 )}
 
+                {/* 2. Học Tập & Tổng Quan */}
                 <div>
                     <h2 className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-3 px-2">
-                        Thống kê & Đề xuất
+                        Học Tập & Tổng Quan
                     </h2>
                     <div className="flex flex-col gap-1">
                         <SidebarButton id="dashboard" icon={LayoutDashboard} label="Tổng quan" />
-                        <SidebarButton id="toeic30" icon={Calendar} label="Lộ trình TOEIC 30 Ngày" />
-                        <button
-                            onClick={() => setActiveTab('toeic500')}
-                            className={`flex flex-col gap-1 px-4 py-3 rounded-2xl font-medium w-full text-left transition-all ${
-                                activeTab === 'toeic500'
-                                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 shadow-sm border border-emerald-200 dark:border-emerald-800/50'
-                                    : 'bg-emerald-50/70 text-emerald-700 dark:bg-emerald-900/10 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 border border-transparent'
-                            }`}
-                        >
-                            <div className="flex items-center gap-3">
-                                <BookmarkCheck size={20} className={activeTab === 'toeic500' ? 'text-emerald-600 dark:text-emerald-400' : 'text-emerald-500/70 dark:text-emerald-500'} />
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <span className="font-bold text-sm whitespace-nowrap">500 Từ Vựng Mất Gốc</span>
-                                </div>
-                            </div>
-                            <span className="text-[11px] opacity-80 font-normal ml-8 pl-0.5">20 Câu Chuyện Ngữ Cảnh</span>
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('ets2026')}
-                            className={`flex flex-col gap-1 px-4 py-3 rounded-2xl font-medium w-full text-left transition-all ${
-                                activeTab === 'ets2026'
-                                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 shadow-sm border border-blue-200 dark:border-blue-800/50'
-                                    : 'bg-blue-50/70 text-blue-700 dark:bg-blue-900/10 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 border border-transparent'
-                            }`}
-                        >
-                            <div className="flex items-center gap-3">
-                                <Award size={20} className={activeTab === 'ets2026' ? 'text-blue-600 dark:text-blue-400' : 'text-blue-500/70 dark:text-blue-500'} />
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <span className="font-bold text-sm whitespace-nowrap">Từ Vựng ETS 2026</span>
-                                </div>
-                            </div>
-                            <span className="text-[11px] opacity-80 font-normal ml-8 pl-0.5">800 LC + 800 RC Official</span>
-                        </button>
-
-                        <button
-                            onClick={() => setActiveTab('japaneseMinna')}
-                            className={`flex flex-col gap-1 px-4 py-3 rounded-2xl font-medium w-full text-left transition-all ${
-                                activeTab === 'japaneseMinna'
-                                    ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 shadow-sm border border-red-200 dark:border-red-800/50'
-                                    : 'bg-red-50/70 text-red-700 dark:bg-red-900/10 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 border border-transparent'
-                            }`}
-                        >
-                            <div className="flex items-center gap-3">
-                                <span className="text-xl">🇯🇵</span>
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <span className="font-bold text-sm whitespace-nowrap">Tiếng Nhật Minna</span>
-                                </div>
-                            </div>
-                            <span className="text-[11px] opacity-80 font-normal ml-8 pl-0.5">50 Bài Minna No Nihongo</span>
-                        </button>
                         <SidebarButton id="recommendations" icon={TrendingUp} label="Đề xuất ôn tập" />
                         <SidebarButton id="srs" icon={BrainCircuit} label="Ôn tập ngắt quãng (SRS)" />
                     </div>
                 </div>
 
+                {/* 3. Bộ Chuyên Đề Trọng Điểm */}
+                {hasAnySpecialTopic && (
+                    <div>
+                        <h2 className="text-xs font-black text-purple-600 dark:text-purple-400 uppercase tracking-wider mb-3 px-2 flex items-center gap-1.5">
+                            <Target size={15} /> Bộ Chuyên Đề Trọng Điểm
+                        </h2>
+                        <div className="flex flex-col gap-1.5">
+                            {showToeic30 && (
+                                <SidebarButton id="toeic30" icon={Calendar} label="Lộ trình TOEIC 30 Ngày" />
+                            )}
+                            {showEts2026 && (
+                                <button
+                                    onClick={() => setActiveTab('ets2026')}
+                                    className={`flex flex-col gap-1 px-4 py-3 rounded-2xl font-medium w-full text-left transition-all ${
+                                        activeTab === 'ets2026'
+                                            ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 shadow-sm border border-blue-200 dark:border-blue-800/50'
+                                            : 'bg-blue-50/70 text-blue-700 dark:bg-blue-900/10 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 border border-transparent'
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <Award size={20} className={activeTab === 'ets2026' ? 'text-blue-600 dark:text-blue-400' : 'text-blue-500/70 dark:text-blue-500'} />
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <span className="font-bold text-sm whitespace-nowrap">Từ Vựng ETS 2026</span>
+                                        </div>
+                                    </div>
+                                    <span className="text-[11px] opacity-80 font-normal ml-8 pl-0.5">800 LC + 800 RC Official</span>
+                                </button>
+                            )}
+                            {showToeic500 && (
+                                <button
+                                    onClick={() => setActiveTab('toeic500')}
+                                    className={`flex flex-col gap-1 px-4 py-3 rounded-2xl font-medium w-full text-left transition-all ${
+                                        activeTab === 'toeic500'
+                                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 shadow-sm border border-emerald-200 dark:border-emerald-800/50'
+                                            : 'bg-emerald-50/70 text-emerald-700 dark:bg-emerald-900/10 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 border border-transparent'
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <BookmarkCheck size={20} className={activeTab === 'toeic500' ? 'text-emerald-600 dark:text-emerald-400' : 'text-emerald-500/70 dark:text-emerald-500'} />
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <span className="font-bold text-sm whitespace-nowrap">500 Từ Vựng Mất Gốc</span>
+                                        </div>
+                                    </div>
+                                    <span className="text-[11px] opacity-80 font-normal ml-8 pl-0.5">20 Câu Chuyện Ngữ Cảnh</span>
+                                </button>
+                            )}
+                            {showMinna && (
+                                <button
+                                    onClick={() => setActiveTab('japaneseMinna')}
+                                    className={`flex flex-col gap-1 px-4 py-3 rounded-2xl font-medium w-full text-left transition-all ${
+                                        activeTab === 'japaneseMinna'
+                                            ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 shadow-sm border border-red-200 dark:border-red-800/50'
+                                            : 'bg-red-50/70 text-red-700 dark:bg-red-900/10 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 border border-transparent'
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-xl">🇯🇵</span>
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <span className="font-bold text-sm whitespace-nowrap">Tiếng Nhật Minna</span>
+                                        </div>
+                                    </div>
+                                    <span className="text-[11px] opacity-80 font-normal ml-8 pl-0.5">50 Bài Minna No Nihongo</span>
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* 4. Luyện Tập Từ Vựng */}
                 <div>
                     <h2 className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-3 px-2">
-                        Luyện từ vựng
+                        Luyện Tập Từ Vựng
                     </h2>
                     <div className="flex flex-col gap-1">
                         <button
@@ -212,39 +244,36 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, onClose }) {
                     </div>
                 </div>
 
-                <div>
-                    <h2 className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-3 px-2">
-                        Luyện câu & Ngữ pháp
-                    </h2>
-                    <div className="flex flex-col gap-1">
-                        <SidebarButton id="reading" icon={BookAIcon} label="Đọc & Trả Lời"/>
-                        <SidebarButton id="grammar" icon={BookOpen} label="Luyện Ngữ Pháp"/>
-                        <SidebarButton id="mixed" icon={Layers} label="Bài Tập Tổng Hợp"/>
-                        <SidebarButton id="speaking" icon={Mic} label="Luyện Đọc (AI)"/>
+                {/* 5. Luyện Câu & Ngữ Pháp */}
+                {showGrammarSection && (
+                    <div>
+                        <h2 className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-3 px-2">
+                            Luyện Câu & Ngữ Pháp
+                        </h2>
+                        <div className="flex flex-col gap-1">
+                            <SidebarButton id="reading" icon={BookAIcon} label="Đọc & Trả Lời"/>
+                            <SidebarButton id="grammar" icon={BookOpen} label="Luyện Ngữ Pháp"/>
+                            <SidebarButton id="mixed" icon={Layers} label="Bài Tập Tổng Hợp"/>
+                            <SidebarButton id="speaking" icon={Mic} label="Luyện Đọc (AI)"/>
+                        </div>
                     </div>
-                </div>
+                )}
 
-                <div>
-                    <h2 className="text-xs font-black text-violet-500 dark:text-violet-400 uppercase tracking-wider mb-3 px-2 flex items-center gap-2">
-                        <Gamepad2 size={16} /> Khu vực Trò chơi
-                    </h2>
-                    <div className="flex flex-col gap-1">
-                        <SidebarButton id="game_memory" icon={LayoutGrid} label="Lật Thẻ Nhớ" />
-                        <SidebarButton id="game_survival" icon={Heart} label="Sinh Tồn 5s" />
-                        <SidebarButton id="game_hangman" icon={HelpCircle} label="Đoán Chữ (Hangman)" />
-                        <SidebarButton id="game_falling" icon={CloudRain} label="Mưa Từ Vựng" />
-                        <SidebarButton id="game_scramble" icon={Shuffle} label="Xếp Chữ (Đảo Từ)" />
+                {/* 6. Khu Vực Trò Chơi */}
+                {showGamesSection && (
+                    <div>
+                        <h2 className="text-xs font-black text-violet-500 dark:text-violet-400 uppercase tracking-wider mb-3 px-2 flex items-center gap-2">
+                            <Gamepad2 size={16} /> Khu vực Trò chơi
+                        </h2>
+                        <div className="flex flex-col gap-1">
+                            <SidebarButton id="game_memory" icon={LayoutGrid} label="Lật Thẻ Nhớ" />
+                            <SidebarButton id="game_survival" icon={Heart} label="Sinh Tồn 5s" />
+                            <SidebarButton id="game_hangman" icon={HelpCircle} label="Đoán Chữ (Hangman)" />
+                            <SidebarButton id="game_falling" icon={CloudRain} label="Mưa Từ Vựng" />
+                            <SidebarButton id="game_scramble" icon={Shuffle} label="Xếp Chữ (Đảo Từ)" />
+                        </div>
                     </div>
-                </div>
-
-                <div>
-                    <h2 className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-3 px-2">
-                        Công cụ & Tiện ích
-                    </h2>
-                    <div className="flex flex-col gap-1">
-                        <SidebarButton id="translator" icon={Languages} label="Dịch thuật AI"/>
-                    </div>
-                </div>
+                )}
             </aside>
         </>
     );

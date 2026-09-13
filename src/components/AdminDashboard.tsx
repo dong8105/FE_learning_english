@@ -1,6 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   ShieldCheck, 
+  Eye, 
+  EyeOff, 
+  Save, 
+  Gamepad2, 
+  BookOpen, 
   Users, 
   Database, 
   Activity, 
@@ -23,6 +28,7 @@ import {
 import { toast } from 'react-toastify';
 import { audioManager } from '../utils/audioManager';
 import { useAuth, User } from '../context/AuthContext';
+import { useVisibility } from '../context/VisibilityContext';
 
 interface AdminDashboardProps {
   words: any[];
@@ -34,7 +40,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export default function AdminDashboard({ words, setActiveTab }: AdminDashboardProps) {
   const { user } = useAuth();
-  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'users' | 'backup' | 'settings'>('overview');
+  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'users' | 'backup' | 'settings' | 'visibility'>('overview');
   const [serverMetrics, setServerMetrics] = useState<any>(null);
   const [usersList, setUsersList] = useState<User[]>([]);
   const [loadingMetrics, setLoadingMetrics] = useState(false);
@@ -45,6 +51,68 @@ export default function AdminDashboard({ words, setActiveTab }: AdminDashboardPr
   const [newPassword, setNewPassword] = useState('');
   const [newName, setNewName] = useState('');
   const [newRole, setNewRole] = useState<'admin' | 'user'>('user');
+
+  const { settings: visibilitySettings, updateSettings: updateVisibilitySettings } = useVisibility();
+  const [localVisibility, setLocalVisibility] = useState(visibilitySettings);
+  const [savingVisibility, setSavingVisibility] = useState(false);
+
+  useEffect(() => {
+    setLocalVisibility(visibilitySettings);
+  }, [visibilitySettings]);
+
+  const SPECIAL_TOPICS_LIST = [
+    { key: '600 Từ Vựng TOEIC', title: '600 Từ Vựng TOEIC Căn Bản', desc: 'Bộ từ vựng cốt lõi phân theo 50 chủ đề kinh điển của TOEIC' },
+    { key: 'Từ Vựng ETS 2026', title: 'Từ Vựng ETS 2026 Mới Nhất', desc: 'Cập nhật đề thi ETS 2026 thực chiến và bộ đề chuẩn' },
+    { key: '500 Từ Vựng TOEIC Mất Gốc', title: '500 Từ TOEIC Lấy Gốc Cấp Tốc', desc: 'Dành cho người mới bắt đầu hoặc lấy lại căn bản' },
+    { key: 'Từ Vựng Tiếng Nhật Minna No Nihongo', title: 'Tiếng Nhật Minna No Nihongo', desc: 'Giáo trình tiếng Nhật sơ cấp 50 bài tiêu chuẩn' },
+    { key: 'Lộ trình TOEIC 30 Ngày', title: 'Lộ trình TOEIC 30 Ngày Tự Học', desc: 'Kế hoạch học tập 30 ngày từng bước chinh phục mục tiêu' },
+  ];
+
+  const allTopics = useMemo(() => {
+    const list = [...SPECIAL_TOPICS_LIST];
+    const knownKeys = new Set(list.map(t => t.key));
+    words.forEach(w => {
+      if (w.master_group && !knownKeys.has(w.master_group)) {
+        list.push({
+          key: w.master_group,
+          title: w.master_group,
+          desc: 'Chuyên đề học tập bổ sung'
+        });
+        knownKeys.add(w.master_group);
+      }
+    });
+    return list;
+  }, [words]);
+
+  const toggleTopicVisibility = (topicKey: string) => {
+    setLocalVisibility(prev => {
+      const isHidden = prev.hiddenTopics.includes(topicKey);
+      const newHidden = isHidden
+        ? prev.hiddenTopics.filter(t => t !== topicKey)
+        : [...prev.hiddenTopics, topicKey];
+      return { ...prev, hiddenTopics: newHidden };
+    });
+  };
+
+  const toggleSectionVisibility = (section: 'grammar' | 'games') => {
+    setLocalVisibility(prev => {
+      if (section === 'grammar') return { ...prev, showGrammar: !prev.showGrammar };
+      return { ...prev, showGames: !prev.showGames };
+    });
+  };
+
+  const handleSaveVisibility = async () => {
+    setSavingVisibility(true);
+    try {
+      await updateVisibilitySettings(localVisibility);
+      audioManager.playSuccess();
+      toast.success("Đã cập nhật quyền hiển thị thành công!");
+    } catch {
+      toast.error("Lỗi khi lưu cấu hình hiển thị!");
+    } finally {
+      setSavingVisibility(false);
+    }
+  };
 
   const fetchServerMetrics = async () => {
     setLoadingMetrics(true);
@@ -406,6 +474,20 @@ export default function AdminDashboard({ words, setActiveTab }: AdminDashboardPr
         <button
           onClick={() => {
             audioManager.playClick();
+            setActiveSubTab('visibility');
+          }}
+          className={`flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-all whitespace-nowrap ${
+            activeSubTab === 'visibility'
+              ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+              : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+          }`}
+        >
+          <Eye size={18} />
+          <span>Phân Quyền & Hiển Thị</span>
+        </button>
+        <button
+          onClick={() => {
+            audioManager.playClick();
             setActiveSubTab('settings');
           }}
           className={`flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-all whitespace-nowrap ${
@@ -676,6 +758,207 @@ export default function AdminDashboard({ words, setActiveTab }: AdminDashboardPr
               <Download size={16} />
               <span>Tải Xuống Bảng Tính CSV</span>
             </button>
+          </div>
+        </div>
+      )}
+
+
+      {/* Tab 5: Visibility & Permissions */}
+      {activeSubTab === 'visibility' && (
+        <div className="space-y-6">
+          {/* Header Action Card */}
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="p-2 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-xl">
+                  <Eye size={20} />
+                </span>
+                <h3 className="text-lg font-black text-slate-800 dark:text-white">
+                  Phân Quyền & Quản Lý Hiển Thị Cho Học Viên
+                </h3>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Chủ động bật/tắt hiển thị các chuyên đề và các phân khu chức năng cho học viên thường. Tài khoản Quản trị viên (Admin) luôn xem được toàn bộ.
+              </p>
+            </div>
+
+            <button
+              onClick={handleSaveVisibility}
+              disabled={savingVisibility}
+              className="flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-500/20 transition-all disabled:opacity-50"
+            >
+              <Save size={16} className={savingVisibility ? 'animate-spin' : ''} />
+              <span>{savingVisibility ? 'Đang lưu...' : 'Lưu Cấu Hình Hiển Thị'}</span>
+            </button>
+          </div>
+
+          {/* Section 1: Chuyên đề học tập */}
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
+                  <BookOpen size={16} className="text-purple-600" />
+                  Quản Lý Ẩn/Hiện Chuyên Đề Trọng Điểm
+                </h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Những chuyên đề bị tắt sẽ tự động ẩn khỏi Sidebar và Menu Chọn Từ Vựng của học viên.
+                </p>
+              </div>
+              <span className="text-xs font-bold px-2.5 py-1 bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 rounded-lg">
+                Đang ẩn: {localVisibility.hiddenTopics.length} chuyên đề
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-2">
+              {allTopics.map((topic) => {
+                const isHidden = localVisibility.hiddenTopics.includes(topic.key);
+                return (
+                  <div
+                    key={topic.key}
+                    className={`p-4 rounded-2xl border transition-all flex items-center justify-between gap-4 ${
+                      isHidden
+                        ? 'bg-slate-50 dark:bg-slate-800/30 border-slate-200 dark:border-slate-800 opacity-75'
+                        : 'bg-white dark:bg-slate-800/80 border-purple-200/60 dark:border-purple-800/40 shadow-sm'
+                    }`}
+                  >
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-xs text-slate-800 dark:text-slate-200 truncate">
+                          {topic.title}
+                        </span>
+                        <span
+                          className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${
+                            isHidden
+                              ? 'bg-rose-100 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400'
+                              : 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400'
+                          }`}
+                        >
+                          {isHidden ? 'Đang ẩn' : 'Hiển thị'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1">
+                        {topic.desc}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => toggleTopicVisibility(topic.key)}
+                      className={`shrink-0 relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                        !isHidden ? 'bg-purple-600' : 'bg-slate-300 dark:bg-slate-700'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          !isHidden ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Section 2: Phân khu Luyện câu & Khu vực Trò chơi */}
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+            <div>
+              <h4 className="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
+                <Layers size={16} className="text-blue-600" />
+                Quản Lý Ẩn/Hiện Phân Khu Chức Năng
+              </h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Cho phép ẩn toàn bộ nhóm chức năng Ngữ pháp và Trò chơi khi muốn học viên tập trung học từ vựng.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+              {/* Grammar & Sentence Section Toggle */}
+              <div
+                className={`p-5 rounded-2xl border transition-all flex items-center justify-between gap-4 ${
+                  !localVisibility.showGrammar
+                    ? 'bg-slate-50 dark:bg-slate-800/30 border-slate-200 dark:border-slate-800 opacity-75'
+                    : 'bg-white dark:bg-slate-800/80 border-blue-200/60 dark:border-blue-800/40 shadow-sm'
+                }`}
+              >
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-sm text-slate-800 dark:text-slate-200">
+                      ✍️ Luyện Câu & Ngữ Pháp
+                    </span>
+                    <span
+                      className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${
+                        !localVisibility.showGrammar
+                          ? 'bg-rose-100 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400'
+                          : 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400'
+                      }`}
+                    >
+                      {localVisibility.showGrammar ? 'Đang mở' : 'Đang ẩn'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Bao gồm: Luyện đọc hiểu, Ngữ pháp chuyên sâu, Luyện câu ghép và Luyện phát âm AI.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => toggleSectionVisibility('grammar')}
+                  className={`shrink-0 relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                    localVisibility.showGrammar ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-700'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      localVisibility.showGrammar ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Games Section Toggle */}
+              <div
+                className={`p-5 rounded-2xl border transition-all flex items-center justify-between gap-4 ${
+                  !localVisibility.showGames
+                    ? 'bg-slate-50 dark:bg-slate-800/30 border-slate-200 dark:border-slate-800 opacity-75'
+                    : 'bg-white dark:bg-slate-800/80 border-amber-200/60 dark:border-amber-800/40 shadow-sm'
+                }`}
+              >
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-sm text-slate-800 dark:text-slate-200">
+                      🎮 Khu Vực Trò Chơi
+                    </span>
+                    <span
+                      className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${
+                        !localVisibility.showGames
+                          ? 'bg-rose-100 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400'
+                          : 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400'
+                      }`}
+                    >
+                      {localVisibility.showGames ? 'Đang mở' : 'Đang ẩn'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Bao gồm: Lật Thẻ Trí Nhớ, Thử Thách Sinh Tồn, Treo Cổ (Hangman), Mưa Từ Rơi, Ghép Chữ Scramble.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => toggleSectionVisibility('games')}
+                  className={`shrink-0 relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                    localVisibility.showGames ? 'bg-amber-600' : 'bg-slate-300 dark:bg-slate-700'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      localVisibility.showGames ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

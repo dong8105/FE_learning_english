@@ -1,5 +1,6 @@
 import { Filter, BookOpen, Layers, Star, FolderTree, ChevronDown, Target } from "lucide-react"
 import { useState, useMemo, useEffect } from "react"
+import { useVisibility } from "../context/VisibilityContext"
 
 const isSpecialTopicGroup = (name) => {
     if (!name) return false;
@@ -8,6 +9,7 @@ const isSpecialTopicGroup = (name) => {
 };
 
 const UnitSelector = ({ selectedGroup, onSelectGroup, words = [] }) => {
+    const { isTopicVisible } = useVisibility();
     // 1. Khóa học (Units 1-12)
     const basicUnits = useMemo(() => {
         const set = new Set(words.filter(w => typeof w.unit === 'number' && w.unit >= 1 && w.unit <= 12).map(w => w.unit));
@@ -66,7 +68,7 @@ const UnitSelector = ({ selectedGroup, onSelectGroup, words = [] }) => {
     ];
 
     const specialGroupNames = useMemo(() => {
-        const names = Array.from(specialGroupsMap.keys());
+        const names = Array.from(specialGroupsMap.keys()).filter(name => isTopicVisible(name));
         names.sort((a, b) => {
             const idxA = preferredSpecialOrder.indexOf(a);
             const idxB = preferredSpecialOrder.indexOf(b);
@@ -76,7 +78,7 @@ const UnitSelector = ({ selectedGroup, onSelectGroup, words = [] }) => {
             return a.localeCompare(b);
         });
         return names;
-    }, [specialGroupsMap]);
+    }, [specialGroupsMap, isTopicVisible]);
 
     const masterGroupNames = useMemo(() => {
         return Array.from(masterGroupsMap.keys()).sort();
@@ -89,7 +91,10 @@ const UnitSelector = ({ selectedGroup, onSelectGroup, words = [] }) => {
         if (currentMode === 'unit' && basicUnits.length === 0) {
             onSelectGroup({ type: 'all' });
         }
-    }, [currentMode, basicUnits.length, onSelectGroup]);
+        if (currentMode === 'chuyende' && specialGroupNames.length === 0) {
+            onSelectGroup({ type: 'all' });
+        }
+    }, [currentMode, basicUnits.length, specialGroupNames.length, onSelectGroup]);
 
     return (
         <div className="bg-white dark:bg-slate-900 px-6 py-4 border-b border-gray-150 dark:border-slate-800/80 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all duration-300 shadow-sm">

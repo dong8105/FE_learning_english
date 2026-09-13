@@ -14,6 +14,7 @@ import { AiStatusProvider } from './components/AiStatusProvider';
 import AiStatusBadge from './components/AiStatusBadge';
 import AiDashboardModal from './components/AiDashboardModal';
 import { AuthProvider } from './context/AuthContext';
+import { VisibilityProvider } from './context/VisibilityContext';
 import AuthModal from './components/AuthModal';
 
 import { vocabularyApi } from './api/vocabularyApi';
@@ -35,7 +36,6 @@ const MixedTestMode = lazy(() => import('./components/MixedTestMode'));
 const MixedGameMode = lazy(() => import('./components/MixedGameMode'));
 const RecommendationsMode = lazy(() => import('./components/RecommendationsMode'));
 const SRSMode = lazy(() => import('./components/SRSMode'));
-const TranslatorMode = lazy(() => import('./components/TranslatorMode'));
 const OptimalLearningMode = lazy(() => import('./components/OptimalLearningMode'));
 const Toeic30DayMode = lazy(() => import('./components/Toeic30DayMode'));
 const Toeic500Mode = lazy(() => import('./components/Toeic500Mode'));
@@ -270,38 +270,39 @@ function App() {
 
   return (
     <AuthProvider>
-      <AiStatusProvider>
-        <div className="flex flex-col h-[100dvh] bg-gray-50 dark:bg-slate-950 font-sans overflow-hidden transition-colors duration-300">
-          <AiStatusBadge />
-          <AiDashboardModal />
-          <Header 
-            wordCount={words.length} 
-            onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} 
-            onOpenSettings={() => setIsSettingsOpen(true)}
-            theme={theme}
-            toggleTheme={toggleTheme}
-            streak={streak}
-            onOpenSearch={() => setIsSearchOpen(true)}
-            isSfxMuted={isSfxMuted}
-            onToggleSfx={handleToggleSfx}
-            onNavigateTab={setActiveTab}
-          />
-          
-          <div className="flex flex-1 overflow-hidden relative min-h-0">
-            <Sidebar 
-              activeTab={activeTab} 
-              setActiveTab={(tab) => {
-                setActiveTab(tab);
-                setIsSidebarOpen(false);
-              }} 
-              isOpen={isSidebarOpen}
-              onClose={() => setIsSidebarOpen(false)}
+      <VisibilityProvider>
+        <AiStatusProvider>
+          <div className="flex flex-col h-[100dvh] bg-gray-50 dark:bg-slate-950 font-sans overflow-hidden transition-colors duration-300">
+            <AiStatusBadge />
+            <AiDashboardModal />
+            <Header 
+              wordCount={words.length} 
+              onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} 
+              onOpenSettings={() => setIsSettingsOpen(true)}
+              theme={theme}
+              toggleTheme={toggleTheme}
+              streak={streak}
+              onOpenSearch={() => setIsSearchOpen(true)}
+              isSfxMuted={isSfxMuted}
+              onToggleSfx={handleToggleSfx}
+              onNavigateTab={setActiveTab}
             />
             
-            <main className="flex-1 flex flex-col overflow-hidden w-full bg-gray-50 dark:bg-slate-950 transition-colors min-h-0 pb-16 md:pb-0">
-              {activeTab !== 'dashboard' && activeTab !== 'admin_dashboard' && activeTab !== 'reading' && activeTab !== 'manage' && activeTab !== 'speaking' && activeTab !== 'grammar' && activeTab !== 'recommendations' && activeTab !== 'srs' && activeTab !== 'translator' && activeTab !== 'toeic30' && activeTab !== 'ets2026' && activeTab !== 'japaneseMinna' && (
-                <UnitSelector selectedGroup={selectedGroup} onSelectGroup={setSelectedGroup} words={words} />
-              )}
+            <div className="flex flex-1 overflow-hidden relative min-h-0">
+              <Sidebar 
+                activeTab={activeTab} 
+                setActiveTab={(tab) => {
+                  setActiveTab(tab);
+                  setIsSidebarOpen(false);
+                }} 
+                isOpen={isSidebarOpen}
+                onClose={() => setIsSidebarOpen(false)}
+              />
+              
+              <main className="flex-1 flex flex-col overflow-hidden w-full bg-gray-50 dark:bg-slate-950 transition-colors min-h-0 pb-16 md:pb-0">
+                {activeTab !== 'dashboard' && activeTab !== 'admin_dashboard' && activeTab !== 'reading' && activeTab !== 'manage' && activeTab !== 'speaking' && activeTab !== 'grammar' && activeTab !== 'recommendations' && activeTab !== 'srs' && activeTab !== 'toeic30' && activeTab !== 'ets2026' && activeTab !== 'japaneseMinna' && (
+                  <UnitSelector selectedGroup={selectedGroup} onSelectGroup={setSelectedGroup} words={words} />
+                )}
               
               <div className="flex-1 overflow-y-auto p-4 md:p-6 min-h-0">
                 <Suspense fallback={
@@ -349,7 +350,6 @@ function App() {
                   {activeTab === 'mixed' && <MixedTestMode />}
                   {activeTab === 'mixedGame' && <MixedGameMode words={words} speak={speak} />}
                   {activeTab === 'speaking' && <SpeakingMode words={words} />}
-                  {activeTab === 'translator' && <TranslatorMode speak={speak} />}
                   {activeTab === 'game_memory' && <MemoryMatchGame words={filteredWords && filteredWords.length >= 8 ? filteredWords : words} speak={speak} />}
                   {activeTab === 'game_survival' && <SurvivalGame words={filteredWords && filteredWords.length >= 4 ? filteredWords : words} speak={speak} />}
                   {activeTab === 'game_hangman' && <HangmanGame words={filteredWords && filteredWords.length >= 4 ? filteredWords : words} speak={speak} />}
@@ -392,6 +392,7 @@ function App() {
           <ToastContainer position="bottom-right" aria-label="Notifications" />
         </div>
       </AiStatusProvider>
+      </VisibilityProvider>
     </AuthProvider>
   );
 }
