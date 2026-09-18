@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import {
     BookOpen, Volume2, CheckCircle2, Search, Filter, RefreshCw,
     Sparkles, ChevronRight, Check, Play, Flame, Layers, HelpCircle,
-    ArrowLeft, Grid, RotateCcw
+    ArrowLeft, Grid, RotateCcw, Network
 } from 'lucide-react';
 import FlashcardMode from './FlashcardMode';
 import QuizMode from './QuizMode';
@@ -10,6 +10,7 @@ import MatchMode from './MatchMode';
 import TypingMode from './TypingMode';
 import DictationMode from './DictationMode';
 import Sequential3StepMode from './Sequential3StepMode';
+import JapaneseRelatedWordsMode from './JapaneseRelatedWordsMode';
 
 const POS_CATEGORIES = ["Tất cả", "Danh từ", "Động từ", "Tính từ (i)", "Tính từ (na)", "Phó từ", "Thán từ", "Cụm từ"];
 
@@ -17,7 +18,7 @@ const JapaneseMinnaMode = ({ japaneseWords = [], speak, onExit }) => {
     const [selectedLessons, setSelectedLessons] = useState([]); // [] = All 50 Lessons
     const [selectedPos, setSelectedPos] = useState('Tất cả');
     const [searchQuery, setSearchQuery] = useState('');
-    const [activeStudyMode, setActiveStudyMode] = useState(null); // null | 'flashcard' | 'quiz' | 'match' | 'typing' | 'dictation' | 'sequential3'
+    const [activeStudyMode, setActiveStudyMode] = useState(null); // null | 'flashcard' | 'quiz' | 'match' | 'typing' | 'dictation' | 'sequential3' | 'related'
 
     // Extract all unique lesson names (Bài 01 -> Bài 50)
     const availableLessons = useMemo(() => {
@@ -87,23 +88,36 @@ const JapaneseMinnaMode = ({ japaneseWords = [], speak, onExit }) => {
 
     // Helper mapped words for standard study modes (map hiragana/kanji/en to 'en' and vi to 'vi')
     const mappedWordsForStudy = useMemo(() => {
-        return currentWords.map(w => ({
-            id: w.id,
-            en: w.kanji ? `${w.kanji} (${w.hiragana || w.romaji})` : (w.hiragana || w.romaji || w.en || ''),
-            vi: w.vi,
-            ipa: w.romaji ? `[${w.romaji}]` : (w.hiragana ? `/${w.hiragana}/` : (w.ipa || '')),
-            category: w.category || 'Từ vựng',
-            master_group: 'Từ Vựng Tiếng Nhật Minna No Nihongo',
-            sub_group: w.sub_group || `Bài ${w.lesson || 1}`,
-            example_en: w.romaji,
-            example_vi: w.vi
-        }));
+        return currentWords.map(w => {
+            const displayWord = w.kanji ? `${w.kanji} (${w.hiragana || w.romaji})` : (w.hiragana || w.romaji || w.en || '');
+            const speechText = w.hiragana || w.kanji || (w.en ? w.en.replace(/\(.*?\)/g, '').trim() : '');
+            return {
+                id: w.id,
+                en: w.en || displayWord,
+                displayWord,
+                kanji: w.kanji,
+                hiragana: w.hiragana,
+                romaji: w.romaji,
+                speechText,
+                isJapanese: true,
+                vi: w.vi,
+                ipa: w.romaji ? `[${w.romaji}]` : (w.hiragana ? `/${w.hiragana}/` : (w.ipa || '')),
+                category: w.category || 'Từ vựng',
+                master_group: 'Từ Vựng Tiếng Nhật Minna No Nihongo',
+                sub_group: w.sub_group || (w.lesson ? `Bài ${String(w.lesson).padStart(2, '0')}` : 'Bài 01'),
+                example_en: w.romaji,
+                example_vi: w.vi
+            };
+        });
     }, [currentWords]);
 
-    // Speak Japanese custom handler
-    const handleSpeakJapanese = (wordText, e) => {
-        if (speak) {
-            speak(wordText, e, 'ja-JP');
+    // Speak Japanese custom handler with safe rate sanitization
+    const handleSpeakJapanese = (wordText, rateOrEvent = null) => {
+        if (speak && wordText) {
+            const numericRate = (typeof rateOrEvent === 'number' && Number.isFinite(rateOrEvent) && rateOrEvent > 0)
+                ? rateOrEvent
+                : null;
+            speak(wordText, numericRate, 'ja-JP');
         }
     };
 
@@ -120,22 +134,30 @@ const JapaneseMinnaMode = ({ japaneseWords = [], speak, onExit }) => {
                 </button>
 
                 {activeStudyMode === 'flashcard' && (
-                    <FlashcardMode words={mappedWordsForStudy} speak={(txt, e) => handleSpeakJapanese(txt, e)} />
+                    <FlashcardMode words={mappedWordsForStudy} speak={(txt) => handleSpeakJapanese(txt)} />
                 )}
                 {activeStudyMode === 'quiz' && (
-                    <QuizMode words={mappedWordsForStudy} speak={(txt, e) => handleSpeakJapanese(txt, e)} />
+                    <QuizMode words={mappedWordsForStudy} speak={(txt) => handleSpeakJapanese(txt)} />
                 )}
                 {activeStudyMode === 'match' && (
-                    <MatchMode words={mappedWordsForStudy} speak={(txt, e) => handleSpeakJapanese(txt, e)} />
+                    <MatchMode words={mappedWordsForStudy} speak={(txt) => handleSpeakJapanese(txt)} />
                 )}
                 {activeStudyMode === 'typing' && (
-                    <TypingMode words={mappedWordsForStudy} speak={(txt, e) => handleSpeakJapanese(txt, e)} />
+                    <TypingMode words={mappedWordsForStudy} speak={(txt) => handleSpeakJapanese(txt)} />
                 )}
                 {activeStudyMode === 'dictation' && (
-                    <DictationMode words={mappedWordsForStudy} speak={(txt, e) => handleSpeakJapanese(txt, e)} />
+                    <DictationMode words={mappedWordsForStudy} speak={(txt) => handleSpeakJapanese(txt)} />
                 )}
                 {activeStudyMode === 'sequential3' && (
-                    <Sequential3StepMode words={mappedWordsForStudy} speak={(txt, e) => handleSpeakJapanese(txt, e)} />
+                    <Sequential3StepMode words={mappedWordsForStudy} speak={(txt) => handleSpeakJapanese(txt)} />
+                )}
+                {activeStudyMode === 'related' && (
+                    <JapaneseRelatedWordsMode
+                        japaneseWords={currentWords.length > 0 ? currentWords : japaneseWords}
+                        allWords={japaneseWords}
+                        speak={(txt) => handleSpeakJapanese(txt)}
+                        onExit={() => setActiveStudyMode(null)}
+                    />
                 )}
             </div>
         );
@@ -145,7 +167,7 @@ const JapaneseMinnaMode = ({ japaneseWords = [], speak, onExit }) => {
         <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
             
             {/* ── Top Header Banner ── */}
-            <div className="bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 dark:from-red-950 dark:via-rose-950 dark:to-amber-950 rounded-3xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden">
+            <div className="bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 dark:from-rose-950/90 dark:via-red-950/80 dark:to-slate-900/90 rounded-3xl p-6 md:p-8 text-white shadow-xl dark:shadow-[0_0_50px_-15px_rgba(244,63,94,0.15)] dark:border dark:border-rose-900/50 relative overflow-hidden">
                 <div className="absolute right-0 top-0 translate-x-8 -translate-y-8 opacity-10 pointer-events-none text-9xl font-black">
                     日本語
                 </div>
@@ -184,102 +206,113 @@ const JapaneseMinnaMode = ({ japaneseWords = [], speak, onExit }) => {
             </div>
 
             {/* ── Study Mode Launch Bar ── */}
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-gray-200 dark:border-slate-800 shadow-sm space-y-3">
+            <div className="bg-white dark:bg-[#0f172a]/90 rounded-3xl p-5 border border-slate-200/90 dark:border-slate-800/80 shadow-[0_4px_20px_-4px_rgba(15,23,42,0.05)] dark:shadow-[0_10px_25px_-5px_rgba(0,0,0,0.4)] space-y-3">
                 <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-black text-gray-800 dark:text-slate-200 flex items-center gap-2">
-                        <Sparkles size={18} className="text-red-500" />
+                    <h3 className="text-sm font-black text-slate-900 dark:text-slate-200 flex items-center gap-2">
+                        <Sparkles size={18} className="text-rose-500" />
                         <span>Chọn Chế Độ Học Nâng Cao ({currentWords.length} từ vựng đã chọn)</span>
                     </h3>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
                     <button
                         onClick={() => setActiveStudyMode('sequential3')}
-                        className="p-3.5 rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/50 hover:bg-red-100 dark:hover:bg-red-900/60 transition text-left cursor-pointer space-y-1.5 group"
+                        className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-800/50 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition text-left cursor-pointer space-y-1.5 group shadow-2xs"
                     >
-                        <div className="w-8 h-8 rounded-xl bg-red-600 text-white flex items-center justify-center font-black text-xs shadow-sm group-hover:scale-110 transition">
+                        <div className="w-8 h-8 rounded-xl bg-rose-600 text-white flex items-center justify-center font-black text-xs shadow-xs group-hover:scale-110 transition">
                             3B
                         </div>
-                        <div className="font-extrabold text-xs text-red-900 dark:text-red-300">Lộ Trình 3 Bước</div>
-                        <div className="text-[10px] text-red-600 dark:text-red-400 font-medium">Học 5in1 vững chắc</div>
+                        <div className="font-black text-xs text-rose-950 dark:text-rose-200">Lộ Trình 3 Bước</div>
+                        <div className="text-[10px] text-rose-700 dark:text-rose-300/80 font-semibold">Học 5in1 vững chắc</div>
                     </button>
 
                     <button
                         onClick={() => setActiveStudyMode('flashcard')}
-                        className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 hover:bg-amber-100 dark:hover:bg-amber-900/60 transition text-left cursor-pointer space-y-1.5 group"
+                        className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/50 hover:bg-amber-100 dark:hover:bg-amber-900/60 transition text-left cursor-pointer space-y-1.5 group shadow-2xs"
                     >
-                        <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center font-black text-xs shadow-sm group-hover:scale-110 transition">
+                        <div className="w-8 h-8 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-black text-xs shadow-xs group-hover:scale-110 transition">
                             🎴
                         </div>
-                        <div className="font-extrabold text-xs text-amber-900 dark:text-amber-300">Flashcards 3D</div>
-                        <div className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">Lật thẻ lặp lại ngắt quãng</div>
+                        <div className="font-black text-xs text-amber-950 dark:text-amber-200">Flashcards 3D</div>
+                        <div className="text-[10px] text-amber-700 dark:text-amber-300/80 font-semibold">Lặp lại ngắt quãng</div>
                     </button>
 
                     <button
                         onClick={() => setActiveStudyMode('quiz')}
-                        className="p-3.5 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition text-left cursor-pointer space-y-1.5 group"
+                        className="p-3.5 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition text-left cursor-pointer space-y-1.5 group shadow-2xs"
                     >
-                        <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-xs shadow-sm group-hover:scale-110 transition">
+                        <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-xs shadow-xs group-hover:scale-110 transition">
                             ❓
                         </div>
-                        <div className="font-extrabold text-xs text-indigo-900 dark:text-indigo-300">Trắc Nghiệm</div>
-                        <div className="text-[10px] text-indigo-600 dark:text-indigo-400 font-medium">Lựa chọn A, B, C, D</div>
+                        <div className="font-black text-xs text-indigo-950 dark:text-indigo-200">Trắc Nghiệm</div>
+                        <div className="text-[10px] text-indigo-700 dark:text-indigo-300/80 font-semibold">Lựa chọn 4 đáp án</div>
                     </button>
 
                     <button
                         onClick={() => setActiveStudyMode('match')}
-                        className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition text-left cursor-pointer space-y-1.5 group"
+                        className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition text-left cursor-pointer space-y-1.5 group shadow-2xs"
                     >
-                        <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black text-xs shadow-sm group-hover:scale-110 transition">
+                        <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black text-xs shadow-xs group-hover:scale-110 transition">
                             🧩
                         </div>
-                        <div className="font-extrabold text-xs text-emerald-900 dark:text-emerald-300">Ghép Cặp Từ</div>
-                        <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">Nối Kana & Tiếng Việt</div>
+                        <div className="font-black text-xs text-emerald-950 dark:text-emerald-200">Ghép Cặp Từ</div>
+                        <div className="text-[10px] text-emerald-700 dark:text-emerald-300/80 font-semibold">Nối Kana & Tiếng Việt</div>
                     </button>
 
                     <button
                         onClick={() => setActiveStudyMode('typing')}
-                        className="p-3.5 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/50 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition text-left cursor-pointer space-y-1.5 group"
+                        className="p-3.5 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-800/50 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition text-left cursor-pointer space-y-1.5 group shadow-2xs"
                     >
-                        <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-xs shadow-sm group-hover:scale-110 transition">
+                        <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-xs shadow-xs group-hover:scale-110 transition">
                             ⌨️
                         </div>
-                        <div className="font-extrabold text-xs text-blue-900 dark:text-blue-300">Luyện Gõ Từ</div>
-                        <div className="text-[10px] text-blue-600 dark:text-blue-400 font-medium">Gõ Kana/Romaji chính xác</div>
+                        <div className="font-black text-xs text-blue-950 dark:text-blue-200">Luyện Gõ Từ</div>
+                        <div className="text-[10px] text-blue-700 dark:text-blue-300/80 font-semibold">Gõ Kana/Romaji</div>
                     </button>
 
                     <button
                         onClick={() => setActiveStudyMode('dictation')}
-                        className="p-3.5 rounded-2xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/50 hover:bg-purple-100 dark:hover:bg-purple-900/60 transition text-left cursor-pointer space-y-1.5 group"
+                        className="p-3.5 rounded-2xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200/80 dark:border-purple-800/50 hover:bg-purple-100 dark:hover:bg-purple-900/60 transition text-left cursor-pointer space-y-1.5 group shadow-2xs"
                     >
-                        <div className="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center font-black text-xs shadow-sm group-hover:scale-110 transition">
+                        <div className="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center font-black text-xs shadow-xs group-hover:scale-110 transition">
                             🎧
                         </div>
-                        <div className="font-extrabold text-xs text-purple-900 dark:text-purple-300">Nghe Tiếng Nhật</div>
-                        <div className="text-[10px] text-purple-600 dark:text-purple-400 font-medium">Nghe giọng đọc bản xứ</div>
+                        <div className="font-black text-xs text-purple-950 dark:text-purple-200">Nghe & Viết</div>
+                        <div className="text-[10px] text-purple-700 dark:text-purple-300/80 font-semibold">Luyện thính xạ</div>
+                    </button>
+
+                    <button
+                        onClick={() => setActiveStudyMode('related')}
+                        className="p-3.5 rounded-2xl bg-teal-50 dark:bg-teal-950/40 border border-teal-200/80 dark:border-teal-800/50 hover:bg-teal-100 dark:hover:bg-teal-900/60 transition text-left cursor-pointer space-y-1.5 group shadow-2xs"
+                    >
+                        <div className="w-8 h-8 rounded-xl bg-teal-600 text-white flex items-center justify-center font-black text-xs shadow-xs group-hover:scale-110 transition">
+                            <Network size={16} />
+                        </div>
+                        <div className="font-black text-xs text-teal-950 dark:text-teal-200">Từ Liên Quan</div>
+                        <div className="text-[10px] text-teal-700 dark:text-teal-300/80 font-semibold">Mindmap Hán Tự</div>
                     </button>
                 </div>
             </div>
 
             {/* ── Multi-Select Lesson Filter Pills ── */}
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-gray-200 dark:border-slate-800 shadow-sm space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 dark:border-slate-800 pb-3">
+            <div className="bg-white dark:bg-[#0f172a]/90 rounded-3xl p-5 border border-slate-200/90 dark:border-slate-800/80 shadow-[0_4px_20px_-4px_rgba(15,23,42,0.05)] dark:shadow-[0_10px_25px_-5px_rgba(0,0,0,0.4)] space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
                     <div className="flex items-center gap-2">
-                        <Filter size={18} className="text-red-600 dark:text-red-400" />
-                        <h3 className="text-sm font-black text-gray-900 dark:text-white">
+                        <Filter size={18} className="text-rose-600 dark:text-rose-400" />
+                        <h3 className="text-sm font-black text-slate-900 dark:text-white">
                             Chọn Bài Học Minna (Hỗ trợ chọn nhiều Bài cùng lúc)
                         </h3>
                     </div>
 
                     <div className="flex items-center gap-2 text-xs font-bold">
-                        <span className="text-gray-500 dark:text-slate-400">
+                        <span className="text-slate-600 dark:text-slate-400">
                             {selectedLessons.length === 0 ? (
-                                <span className="text-red-600 dark:text-red-400 font-black">
+                                <span className="text-rose-600 dark:text-rose-400 font-black">
                                     Đang chọn Tất cả 50 Bài ({currentWords.length} từ)
                                 </span>
                             ) : (
                                 <span>
-                                    Đang chọn <strong className="text-red-600 dark:text-red-400 font-black">{selectedLessons.length}</strong> Bài ({currentWords.length} từ vựng)
+                                    Đang chọn <strong className="text-rose-600 dark:text-rose-400 font-black">{selectedLessons.length}</strong> Bài ({currentWords.length} từ vựng)
                                 </span>
                             )}
                         </span>
@@ -287,7 +320,7 @@ const JapaneseMinnaMode = ({ japaneseWords = [], speak, onExit }) => {
                         {selectedLessons.length > 0 && (
                             <button
                                 onClick={clearSelectedLessons}
-                                className="px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-slate-800 hover:bg-red-50 hover:text-red-600 text-gray-600 dark:text-slate-300 transition text-[11px] font-bold cursor-pointer"
+                                className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 hover:text-rose-600 text-slate-600 dark:text-slate-300 transition text-[11px] font-bold cursor-pointer"
                             >
                                 [Bỏ chọn tất cả]
                             </button>
@@ -296,13 +329,13 @@ const JapaneseMinnaMode = ({ japaneseWords = [], speak, onExit }) => {
                 </div>
 
                 {/* Lesson Pills Grid */}
-                <div className="max-h-48 overflow-y-auto pr-1 flex flex-wrap gap-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-slate-700">
+                <div className="max-h-48 overflow-y-auto pr-1 flex flex-wrap gap-2 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700">
                     <button
                         onClick={selectAllLessons}
                         className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer flex items-center gap-1.5 shadow-sm ${
                             selectedLessons.length === 0
-                                ? 'bg-red-600 text-white border-2 border-red-600 shadow-red-200'
-                                : 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 hover:bg-red-50 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700'
+                                ? 'bg-rose-600 text-white border-2 border-rose-600 shadow-rose-200'
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-rose-50 dark:hover:bg-slate-700 border border-slate-200/90 dark:border-slate-700'
                         }`}
                     >
                         <span>🇯🇵 Tất cả 50 Bài</span>
@@ -317,8 +350,8 @@ const JapaneseMinnaMode = ({ japaneseWords = [], speak, onExit }) => {
                                 onClick={() => toggleLesson(lesson)}
                                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
                                     isSelected
-                                        ? 'bg-red-600 text-white border border-red-600 shadow-sm'
-                                        : 'bg-gray-50 dark:bg-slate-800/80 text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700'
+                                        ? 'bg-rose-600 text-white border border-rose-600 shadow-sm'
+                                        : 'bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200/90 dark:border-slate-700'
                                 }`}
                             >
                                 <span>{lesson}</span>
@@ -329,15 +362,15 @@ const JapaneseMinnaMode = ({ japaneseWords = [], speak, onExit }) => {
                 </div>
 
                 {/* Search Bar & POS Filter */}
-                <div className="pt-2 flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between border-t border-gray-100 dark:border-slate-800">
+                <div className="pt-2 flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between border-t border-slate-100 dark:border-slate-800">
                     <div className="relative flex-1">
-                        <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                         <input
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="Tìm kiếm theo Hiragana, Kanji, Romaji hoặc Tiếng Việt..."
-                            className="w-full pl-9 pr-4 py-2 rounded-xl bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-xs font-semibold text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-red-500"
+                            className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-rose-500"
                         />
                     </div>
 
@@ -348,8 +381,8 @@ const JapaneseMinnaMode = ({ japaneseWords = [], speak, onExit }) => {
                                 onClick={() => setSelectedPos(pos)}
                                 className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition whitespace-nowrap cursor-pointer ${
                                     selectedPos === pos
-                                        ? 'bg-red-600 text-white shadow-xs'
-                                        : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400 hover:bg-gray-200'
+                                        ? 'bg-rose-600 text-white shadow-xs'
+                                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
                                 }`}
                             >
                                 {pos}
@@ -360,16 +393,16 @@ const JapaneseMinnaMode = ({ japaneseWords = [], speak, onExit }) => {
             </div>
 
             {/* ── Word Grid Display ── */}
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-gray-200 dark:border-slate-800 shadow-sm space-y-4">
-                <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-800 pb-4">
+            <div className="bg-white dark:bg-[#0f172a]/90 rounded-3xl p-6 border border-slate-200/90 dark:border-slate-800/80 shadow-[0_4px_20px_-4px_rgba(15,23,42,0.05)] dark:shadow-[0_10px_25px_-5px_rgba(0,0,0,0.4)] space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
                     <div>
-                        <h3 className="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
+                        <h3 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
                             <span>Danh Sách Từ Vựng Tiếng Nhật</span>
-                            <span className="text-xs px-2.5 py-0.5 rounded-full bg-red-100 dark:bg-red-950 text-red-600 dark:text-red-400 font-bold border border-red-200 dark:border-red-800">
+                            <span className="text-xs px-2.5 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 font-bold border border-rose-200 dark:border-rose-800/60">
                                 {currentWords.length} từ
                             </span>
                         </h3>
-                        <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
+                        <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
                             {selectedLessons.length === 0
                                 ? 'Hiển thị tất cả từ vựng Minna No Nihongo'
                                 : `Hiển thị từ vựng của ${selectedLessons.length} bài đã chọn`}
@@ -378,7 +411,7 @@ const JapaneseMinnaMode = ({ japaneseWords = [], speak, onExit }) => {
 
                     <button
                         onClick={() => setActiveStudyMode('sequential3')}
-                        className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-black transition cursor-pointer flex items-center gap-1.5 shadow-sm"
+                        className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-black transition cursor-pointer flex items-center gap-1.5 shadow-sm"
                     >
                         <span>Bắt Đầu Học Lộ Trình 3 Bước</span>
                         <ChevronRight size={16} />
@@ -386,12 +419,12 @@ const JapaneseMinnaMode = ({ japaneseWords = [], speak, onExit }) => {
                 </div>
 
                 {currentWords.length === 0 ? (
-                    <div className="py-12 text-center text-sm text-gray-400 space-y-2">
+                    <div className="py-12 text-center text-sm text-slate-400 space-y-2">
                         <p>Không tìm thấy từ vựng tiếng Nhật nào khớp với bộ lọc.</p>
                         {searchQuery && (
                             <button
                                 onClick={() => setSearchQuery('')}
-                                className="text-red-600 font-bold underline cursor-pointer"
+                                className="text-rose-600 font-bold underline cursor-pointer"
                             >
                                 Xóa tìm kiếm
                             </button>
@@ -402,24 +435,27 @@ const JapaneseMinnaMode = ({ japaneseWords = [], speak, onExit }) => {
                         {currentWords.map((w, idx) => (
                             <div
                                 key={w.id || idx}
-                                className="p-4 rounded-2xl border border-gray-200 dark:border-slate-800 bg-gray-50/60 dark:bg-slate-800/40 hover:border-red-400 transition space-y-2 flex flex-col justify-between"
+                                className="p-4 rounded-2xl border border-slate-200/90 dark:border-slate-800/80 bg-white dark:bg-[#111928]/70 shadow-[0_2px_8px_-2px_rgba(15,23,42,0.04)] dark:shadow-[0_4px_16px_-4px_rgba(0,0,0,0.3)] hover:shadow-md hover:border-rose-400 dark:hover:border-rose-500/50 transition space-y-2 flex flex-col justify-between"
                             >
                                 <div className="space-y-1.5">
                                     <div className="flex items-start justify-between gap-2">
                                         <div>
-                                            <h4 className="font-black text-xl text-gray-900 dark:text-white tracking-wide">
+                                            <h4 className="font-black text-xl text-slate-900 dark:text-white tracking-wide">
                                                 {w.kanji || w.hiragana || w.en}
                                             </h4>
                                             {w.kanji && w.hiragana && (
-                                                <p className="text-xs font-bold text-red-600 dark:text-red-400">
+                                                <p className="text-xs font-bold text-rose-600 dark:text-rose-400">
                                                     {w.hiragana}
                                                 </p>
                                             )}
                                         </div>
                                         
                                         <button
-                                            onClick={(e) => handleSpeakJapanese(w.hiragana || w.kanji || w.en, e)}
-                                            className="p-2 rounded-xl bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-300 hover:bg-red-200 transition shrink-0 cursor-pointer"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleSpeakJapanese(w.hiragana || w.kanji || w.en);
+                                            }}
+                                            className="p-2 rounded-xl bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-300 hover:bg-rose-200 transition shrink-0 cursor-pointer"
                                             title="Nghe phát âm tiếng Nhật"
                                         >
                                             <Volume2 size={16} />
@@ -427,21 +463,21 @@ const JapaneseMinnaMode = ({ japaneseWords = [], speak, onExit }) => {
                                     </div>
 
                                     {w.romaji && (
-                                        <div className="text-xs font-mono font-bold text-gray-500 dark:text-slate-400">
+                                        <div className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400">
                                             [{w.romaji}]
                                         </div>
                                     )}
 
-                                    <div className="text-xs font-bold text-gray-800 dark:text-slate-200 pt-1">
+                                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200 pt-1">
                                         ➔ {w.vi}
                                     </div>
                                 </div>
 
-                                <div className="pt-2 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-gray-400 font-semibold">
-                                    <span className="px-2 py-0.5 rounded-md bg-gray-200/70 dark:bg-slate-700 text-gray-700 dark:text-slate-300 font-bold">
+                                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-500 font-semibold">
+                                    <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold border border-slate-200/60">
                                         {w.category || 'Từ vựng'}
                                     </span>
-                                    <span className="truncate max-w-[120px] font-bold text-red-600 dark:text-red-400">
+                                    <span className="truncate max-w-[120px] font-bold text-rose-600 dark:text-rose-400">
                                         {w.sub_group || (w.lesson ? `Bài ${w.lesson}` : 'Bài 01')}
                                     </span>
                                 </div>

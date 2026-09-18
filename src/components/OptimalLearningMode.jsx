@@ -91,9 +91,14 @@ Hãy trả về một đối tượng JSON BẮT BUỘC có cấu trúc:
   "io_prompt": "Một đề bài ngắn bằng tiếng Việt yêu cầu học viên tự đặt một câu tiếng Anh sử dụng từ '${currentWord.en}' trong một tình huống cụ thể."
 }`;
 
+            const token = localStorage.getItem('engmaster_token') || localStorage.getItem('token');
             const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/generate`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
                 body: JSON.stringify({
                     prompt,
                     systemInstruction: "You are an English language coach. You must output valid JSON only.",
@@ -101,7 +106,16 @@ Hãy trả về một đối tượng JSON BẮT BUỘC có cấu trúc:
                 })
             });
 
-            if (!response.ok) throw new Error('API Error');
+            if (!response.ok) {
+                if (response.status === 403) {
+                    const errJson = await response.json().catch(() => ({}));
+                    if (errJson.aiLocked) {
+                        toast.error(errJson.error || "Tính năng AI đang tạm khóa bởi Quản trị viên!");
+                        return;
+                    }
+                }
+                throw new Error('API Error');
+            }
             const data = await response.json();
             if (data.metadata) reportAiUsage(data.metadata);
             
@@ -112,7 +126,11 @@ Hãy trả về một đối tượng JSON BẮT BUỘC có cấu trúc:
             // Save to database cache
             await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/words/${currentWord.id}/helpers`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
                 body: JSON.stringify({
                     collocations: JSON.stringify(parsed.collocations),
                     mnemonics: parsed.mnemonics,
@@ -172,13 +190,27 @@ Hãy trả về một đối tượng JSON BẮT BUỘC có cấu trúc:
   "feedback": "Nhận xét ngắn gọn bằng tiếng Việt về lỗi sai nếu có, cấu trúc ngữ pháp học viên đã dùng và cách cải thiện câu viết."
 }`;
 
+            const token = localStorage.getItem('engmaster_token') || localStorage.getItem('token');
             const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/generate`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
                 body: JSON.stringify({ prompt, jsonMode: true })
             });
 
-            if (!response.ok) throw new Error('API Error');
+            if (!response.ok) {
+                if (response.status === 403) {
+                    const errJson = await response.json().catch(() => ({}));
+                    if (errJson.aiLocked) {
+                        toast.error(errJson.error || "Tính năng AI đang tạm khóa bởi Quản trị viên!");
+                        return;
+                    }
+                }
+                throw new Error('API Error');
+            }
             const data = await response.json();
             if (data.metadata) reportAiUsage(data.metadata);
             

@@ -33,16 +33,30 @@ export default function AICreateWordModal({ isOpen, onClose, onAddWords }) {
             
             Do not include markdown blocks like \`\`\`json or any other text.`;
 
+            const token = localStorage.getItem('engmaster_token') || localStorage.getItem('token');
             const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/generate`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
                 body: JSON.stringify({ 
                     prompt, 
                     preferredModel: preferredModel === 'auto' ? null : preferredModel 
                 })
             });
 
-            if (!response.ok) throw new Error('Lỗi kết nối API');
+            if (!response.ok) {
+                if (response.status === 403) {
+                    const errJson = await response.json().catch(() => ({}));
+                    if (errJson.aiLocked) {
+                        toast.error(errJson.error || "Tính năng AI hiện đang tạm thời bị khóa bởi Quản trị viên hệ thống!");
+                        return;
+                    }
+                }
+                throw new Error('Lỗi kết nối API');
+            }
             
             const data = await response.json();
             if (data.metadata) reportAiUsage(data.metadata);

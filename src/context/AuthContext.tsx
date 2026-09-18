@@ -1,11 +1,22 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
+export interface UserStreak {
+  count: number;
+  lastActiveDate?: string | null;
+  lastActiveTimestamp?: number | null;
+  isOnlineToday?: boolean;
+  isStreakActive?: boolean;
+  updatedAt?: string;
+}
+
 export interface User {
   id: string;
   username: string;
   name: string;
   role: 'admin' | 'user';
   createdAt?: string;
+  lastActivityAt?: string;
+  streak?: UserStreak;
 }
 
 export interface AuthContextType {
@@ -15,8 +26,8 @@ export interface AuthContextType {
   isAuthModalOpen: boolean;
   openAuthModal: () => void;
   closeAuthModal: () => void;
-  login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  register: (username: string, password: string, name?: string) => Promise<{ success: boolean; error?: string }>;
+  login: (username: string, password: string) => Promise<{ success: boolean; user?: User; error?: string }>;
+  register: (username: string, password: string, name?: string) => Promise<{ success: boolean; user?: User; error?: string }>;
   logout: () => void;
   getUserStorageKey: (baseKey: string) => string;
   getAuthHeaders: () => Record<string, string>;
@@ -49,12 +60,33 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   });
 
   const [token, setToken] = useState<string | null>(() => {
-    return localStorage.getItem('engmaster_token');
+    return localStorage.getItem('engmaster_token') || localStorage.getItem('token');
   });
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   const isAdmin = user?.role === 'admin';
+
+  // Automatically restore / verify session from HttpOnly Cookie on mount
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/auth/me`, {
+          credentials: 'include',
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.user) {
+            setUser(data.user);
+            localStorage.setItem('engmaster_user', JSON.stringify(data.user));
+          }
+        }
+      } catch (err) {
+        // Backend temporarily offline, use cached user state
+      }
+    };
+    checkSession();
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -67,8 +99,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     if (token) {
       localStorage.setItem('engmaster_token', token);
+      localStorage.setItem('token', token);
     } else {
       localStorage.removeItem('engmaster_token');
+      localStorage.removeItem('token');
     }
   }, [token]);
 
@@ -77,20 +111,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const trimmedPassword = password.trim();
 
     try {
-      // 1. Try Backend API first
+      // 1. Try Backend API first with HttpOnly credentials
       const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ username: trimmedUsername, password: trimmedPassword }),
       });
 
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.user) {
+          localStorage.setItem('engmaster_user', JSON.stringify(data.user));
+          if (data.token) {
+            localStorage.setItem('engmaster_token', data.token);
+          }
           setUser(data.user);
           setToken(data.token || `token-${data.user.id}`);
           setIsAuthModalOpen(false);
-          return { success: true };
+          return { success: true, user: data.user };
         }
       } else {
         const errData = await res.json().catch(() => ({}));
@@ -110,10 +149,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         name: 'Quản Trị Viên (Admin Demo)',
         role: 'admin',
       };
+      const demoToken = `demo-token-${Date.now()}`;
+      localStorage.setItem('engmaster_user', JSON.stringify(demoAdmin));
+      localStorage.setItem('engmaster_token', demoToken);
       setUser(demoAdmin);
-      setToken(`demo-token-${Date.now()}`);
+      setToken(demoToken);
       setIsAuthModalOpen(false);
-      return { success: true };
+      return { success: true, user: demoAdmin };
     }
 
     if (trimmedUsername === 'user' && trimmedPassword === 'user123') {
@@ -123,10 +165,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         name: 'Học Viên Mẫu',
         role: 'user',
       };
+      const demoToken = `demo-token-${Date.now()}`;
+      localStorage.setItem('engmaster_user', JSON.stringify(demoUser));
+      localStorage.setItem('engmaster_token', demoToken);
       setUser(demoUser);
-      setToken(`demo-token-${Date.now()}`);
+      setToken(demoToken);
       setIsAuthModalOpen(false);
-      return { success: true };
+      return { success: true, user: demoUser };
     }
 
     return { success: false, error: 'Tên đăng nhập hoặc mật khẩu không chính xác' };
@@ -141,16 +186,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ username: trimmedUsername, password: trimmedPassword, name: displayName }),
       });
 
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.user) {
+          localStorage.setItem('engmaster_user', JSON.stringify(data.user));
+          if (data.token) {
+            localStorage.setItem('engmaster_token', data.token);
+          }
           setUser(data.user);
           setToken(data.token || `token-${data.user.id}`);
           setIsAuthModalOpen(false);
-          return { success: true };
+          return { success: true, user: data.user };
         }
       } else {
         const errData = await res.json().catch(() => ({}));
@@ -165,20 +215,30 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         name: displayName,
         role: 'user',
       };
+      const demoToken = `demo-token-${Date.now()}`;
+      localStorage.setItem('engmaster_user', JSON.stringify(newLocalUser));
+      localStorage.setItem('engmaster_token', demoToken);
       setUser(newLocalUser);
-      setToken(`local-token-${Date.now()}`);
+      setToken(demoToken);
       setIsAuthModalOpen(false);
-      return { success: true };
+      return { success: true, user: newLocalUser };
     }
 
     return { success: false, error: 'Lỗi đăng ký tài khoản' };
   };
 
   const logout = () => {
+    // Notify server to clear HttpOnly cookie
+    fetch(`${API_BASE_URL}/api/auth/logout`, {
+      method: 'POST',
+      credentials: 'include',
+    }).catch(() => {});
+
     setUser(null);
     setToken(null);
     localStorage.removeItem('engmaster_user');
     localStorage.removeItem('engmaster_token');
+    localStorage.removeItem('token');
     window.dispatchEvent(new CustomEvent('engmaster_auth_changed', { detail: { user: null } }));
   };
 

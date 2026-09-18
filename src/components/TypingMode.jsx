@@ -2,6 +2,7 @@ import { ArrowRight, CheckCircle, CheckCircle2, RotateCcw, Volume2, XCircle, Typ
 import { useEffect, useRef, useState } from "react";
 import IpaGuide from "./IpaGuide";
 import { recordWordResult } from "../utils/progressTracker";
+import { isAnswerCorrect } from "../utils/answerChecker";
 
 const TypingMode = ({ words, speak }) => {
     const [currentWordIndex, setCurrentWordIndex] = useState(0);
@@ -31,6 +32,12 @@ const TypingMode = ({ words, speak }) => {
     }, [words]);
 
     const currentWord = shuffledWords[currentWordIndex];
+    const isJapanese = Boolean(
+        currentWord?.isJapanese ||
+        currentWord?.master_group === 'Từ Vựng Tiếng Nhật Minna No Nihongo' ||
+        /[\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf]/.test(currentWord?.en || '')
+    );
+    const speechTarget = currentWord ? (currentWord.speechText || currentWord.hiragana || currentWord.kanji || currentWord.en) : '';
 
     useEffect(() => {
         const handleKeyDown = (e) => {
@@ -57,13 +64,13 @@ const TypingMode = ({ words, speak }) => {
 
     const handleCheck = (e) => {
         e.preventDefault();
-        if (!userInput.trim()) return;
+        if (!userInput.trim() || !currentWord) return;
 
-        if (userInput.trim().toLowerCase() === currentWord.en.toLowerCase()) {
+        if (isAnswerCorrect(userInput, currentWord)) {
             setFeedback("correct");
             setScore(prev => prev + 1);
             recordWordResult(currentWord.id, true);
-            speak("Correct!");
+            if (!isJapanese) speak("Correct!");
         } else {
             setFeedback("incorrect");
             recordWordResult(currentWord.id, false);
@@ -73,7 +80,7 @@ const TypingMode = ({ words, speak }) => {
                 }
                 return prev;
             });
-            speak("Wrong!");
+            if (!isJapanese) speak("Wrong!");
         }
     };
 
@@ -94,7 +101,7 @@ const TypingMode = ({ words, speak }) => {
     const handlePlayAudio = () => {
         if (currentWord) {
             setHintUsed(true);
-            speak(currentWord.en);
+            speak(speechTarget);
         }
     };
 
@@ -181,7 +188,7 @@ const TypingMode = ({ words, speak }) => {
                         ${feedback === 'correct' ? 'border-green-500 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400' : ''}
                         ${feedback === 'incorrect' ? 'border-red-500 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400' : ''}
                         ${feedback === null ? 'border-gray-300 dark:border-slate-700 hover:border-emerald-500 dark:hover:border-emerald-500 focus:border-emerald-500 dark:focus:border-emerald-500' : ''}`}
-                            placeholder="Nhập từ tiếng Anh..."
+                            placeholder={isJapanese ? "Gõ Hiragana, Kanji hoặc Romaji..." : "Nhập từ tiếng Anh..."}
                             autoFocus
                         />
                         {feedback === 'correct' && <CheckCircle2 className="absolute right-4 top-4 text-green-500" />}
@@ -189,7 +196,9 @@ const TypingMode = ({ words, speak }) => {
                     </div>
 
                     <div className="mt-4 flex justify-between items-center">
-                        <span className="text-sm text-gray-400 dark:text-slate-500 font-medium">Gợi ý: {currentWord.en.length} chữ cái</span>
+                        <span className="text-sm text-gray-400 dark:text-slate-500 font-medium">
+                            {isJapanese ? `Gợi ý: ${currentWord.hiragana || currentWord.kanji || currentWord.en}` : `Gợi ý: ${currentWord.en?.length || 0} chữ cái`}
+                        </span>
                         <button 
                             type="button" 
                             onClick={handlePlayAudio}
@@ -203,9 +212,9 @@ const TypingMode = ({ words, speak }) => {
                     {feedback === 'incorrect' && (
                         <div className="mt-4 text-center animate-fade-in bg-red-50 dark:bg-red-900/30 p-4 rounded-xl border border-red-100 dark:border-red-900">
                             <p className="text-red-500 dark:text-red-400 font-bold mb-1">Sai rồi!</p>
-                            <p className="text-gray-600 dark:text-slate-400">Đáp án đúng: <span className="text-green-600 dark:text-green-400 font-extrabold text-xl">{currentWord.en}</span> </p>
-                            <p className="text-gray-400 dark:text-slate-500 font-mono text-sm mt-1">{currentWord.ipa}</p>
-                            <IpaGuide ipa={currentWord.ipa} />
+                            <p className="text-gray-600 dark:text-slate-400">Đáp án đúng: <span className="text-green-600 dark:text-green-400 font-extrabold text-xl">{isJapanese ? (currentWord.displayWord || currentWord.en) : currentWord.en}</span> </p>
+                            {currentWord.ipa && <p className="text-gray-400 dark:text-slate-500 font-mono text-sm mt-1">{currentWord.ipa}</p>}
+                            {!isJapanese && currentWord.ipa && <IpaGuide ipa={currentWord.ipa} />}
                         </div>
                     )}
 

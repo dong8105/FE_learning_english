@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useDeferredValue } from 'react';
 import { Search, X, Volume2, Sparkles, BookOpen, Layers, ArrowRight, CornerDownLeft } from 'lucide-react';
 import { audioManager } from '../utils/audioManager';
+import { useVisibility } from '../context/VisibilityContext';
 
 interface WordItem {
   id: string | number;
@@ -9,6 +10,8 @@ interface WordItem {
   ipa?: string;
   category?: string;
   unit?: number;
+  master_group?: string;
+  sub_group?: string;
   definition_en?: string;
   definition_vi?: string;
   example_en?: string;
@@ -31,24 +34,26 @@ export default function GlobalSearchModal({
   words,
   speak,
 }: GlobalSearchModalProps) {
+  const { isTopicVisible, isWordCountVisible, isWordCountHidden, shouldAdminBypass } = useVisibility();
   const [query, setQuery] = useState('');
   const deferredQuery = useDeferredValue(query);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  // Filter words (limit to top 30 for super fast rendering)
+  // Filter words (limit to top 40 for super fast rendering, excluding hidden topics)
   const filteredWords = useMemo(() => {
-    if (!deferredQuery.trim()) return words.slice(0, 20);
+    const visibleWords = words.filter(w => !w.master_group || isTopicVisible(w.master_group));
+    if (!deferredQuery.trim()) return visibleWords.slice(0, 20);
     const q = deferredQuery.trim().toLowerCase();
-    return words
+    return visibleWords
       .filter(w => 
         (w.en && w.en.toLowerCase().includes(q)) ||
         (w.vi && w.vi.toLowerCase().includes(q)) ||
         (w.category && w.category.toLowerCase().includes(q))
       )
       .slice(0, 40);
-  }, [words, deferredQuery]);
+  }, [words, deferredQuery, isTopicVisible]);
 
   // Focus input when opened
   useEffect(() => {
@@ -103,9 +108,9 @@ export default function GlobalSearchModal({
       />
 
       {/* Modal Container */}
-      <div className="relative w-full max-w-3xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-gray-200 dark:border-slate-800 overflow-hidden z-10 flex flex-col max-h-[85vh]">
+      <div className="relative w-full max-w-3xl bg-white dark:bg-slate-900 rounded-3xl shadow-[0_20px_50px_rgba(15,23,42,0.15)] border border-slate-200/90 dark:border-slate-800 overflow-hidden z-10 flex flex-col max-h-[85vh]">
         {/* Search Input Bar */}
-        <div className="p-4 md:p-5 border-b border-gray-100 dark:border-slate-800 flex items-center gap-3 bg-gray-50/50 dark:bg-slate-900/50">
+        <div className="p-4 md:p-5 border-b border-slate-200/80 dark:border-slate-800 flex items-center gap-3 bg-slate-50/70 dark:bg-slate-900/50">
           <Search size={22} className="text-indigo-600 dark:text-indigo-400 shrink-0" />
           <input
             ref={inputRef}
@@ -113,30 +118,30 @@ export default function GlobalSearchModal({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Tra cứu nhanh từ tiếng Anh, nghĩa tiếng Việt hoặc chủ đề..."
-            className="w-full bg-transparent outline-none text-base md:text-lg font-bold text-gray-900 dark:text-white placeholder-gray-400"
+            className="w-full bg-transparent outline-none text-base md:text-lg font-bold text-slate-900 dark:text-white placeholder-slate-400"
           />
           {query && (
             <button 
               onClick={() => setQuery('')}
-              className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg"
+              className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-gray-200 rounded-lg"
             >
               <X size={18} />
             </button>
           )}
-          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 rounded-lg text-xs font-mono">
+          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 bg-slate-200/60 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-lg text-xs font-mono">
             ESC để thoát
           </div>
         </div>
 
         {/* Content Body: Split Layout */}
-        <div className="grid grid-cols-1 md:grid-cols-12 flex-1 min-h-0 divide-y md:divide-y-0 md:divide-x divide-gray-100 dark:divide-slate-800">
+        <div className="grid grid-cols-1 md:grid-cols-12 flex-1 min-h-0 divide-y md:divide-y-0 md:divide-x divide-slate-200/80 dark:divide-slate-800">
           {/* Left Column: Results List */}
           <div 
             ref={listRef}
             className="md:col-span-5 overflow-y-auto max-h-[45vh] md:max-h-[55vh] p-2 space-y-1 custom-scrollbar"
           >
             {filteredWords.length === 0 ? (
-              <div className="p-8 text-center text-gray-400 dark:text-slate-500">
+              <div className="p-8 text-center text-slate-400 dark:text-slate-500">
                 <BookOpen size={36} className="mx-auto mb-2 opacity-40" />
                 <p className="text-sm font-bold">Không tìm thấy từ vựng nào</p>
               </div>
@@ -153,20 +158,20 @@ export default function GlobalSearchModal({
                     }}
                     className={`p-3 rounded-2xl cursor-pointer transition-all flex items-center justify-between gap-3 ${
                       isSelected
-                        ? 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-900 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-800/60 shadow-sm'
-                        : 'hover:bg-gray-50 dark:hover:bg-slate-800/50 text-gray-700 dark:text-gray-300 border border-transparent'
+                        ? 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-950 dark:text-indigo-200 border border-indigo-200/90 dark:border-indigo-800/60 shadow-xs font-bold'
+                        : 'hover:bg-slate-100/70 dark:hover:bg-slate-800/50 text-slate-700 dark:text-gray-300 border border-transparent'
                     }`}
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <span className="font-black text-base truncate">{word.en}</span>
                         {word.ipa && (
-                          <span className="text-xs text-gray-400 dark:text-slate-500 font-mono hidden sm:inline">
+                          <span className="text-xs text-slate-500 dark:text-slate-500 font-mono hidden sm:inline">
                             {word.ipa}
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-gray-500 dark:text-slate-400 truncate mt-0.5">
+                      <p className="text-xs text-slate-600 dark:text-slate-400 truncate mt-0.5">
                         {word.vi}
                       </p>
                     </div>
@@ -179,7 +184,7 @@ export default function GlobalSearchModal({
                       className={`p-2 rounded-xl transition ${
                         isSelected 
                           ? 'bg-indigo-600 text-white shadow-sm' 
-                          : 'bg-gray-100 dark:bg-slate-800 text-gray-500 hover:text-indigo-600'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-indigo-600'
                       }`}
                       title="Phát âm"
                     >
@@ -192,22 +197,22 @@ export default function GlobalSearchModal({
           </div>
 
           {/* Right Column: Detailed Card Preview */}
-          <div className="md:col-span-7 p-5 md:p-6 overflow-y-auto max-h-[45vh] md:max-h-[55vh] bg-gray-50/40 dark:bg-slate-900/40 custom-scrollbar">
+          <div className="md:col-span-7 p-5 md:p-6 overflow-y-auto max-h-[45vh] md:max-h-[55vh] bg-slate-50/50 dark:bg-slate-900/40 custom-scrollbar">
             {activeWord ? (
               <div className="space-y-4 animate-fade-in">
                 {/* Word Title & Pronounce */}
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     {activeWord.category && (
-                      <span className="inline-block px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 text-[11px] font-black rounded-lg mb-1.5 border border-indigo-200/50 dark:border-indigo-800/40">
+                      <span className="inline-block px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 text-[11px] font-black rounded-lg mb-1.5 border border-indigo-200/90 dark:border-indigo-800/40">
                         {activeWord.category}
                       </span>
                     )}
-                    <h3 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+                    <h3 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
                       {activeWord.en}
                     </h3>
                     {activeWord.ipa && (
-                      <p className="text-sm font-mono text-gray-400 dark:text-slate-500 mt-0.5">
+                      <p className="text-sm font-mono text-slate-500 dark:text-slate-500 mt-0.5">
                         {activeWord.ipa}
                       </p>
                     )}
@@ -222,28 +227,28 @@ export default function GlobalSearchModal({
                 </div>
 
                 {/* Meaning Box */}
-                <div className="p-4 bg-white dark:bg-slate-800/80 rounded-2xl border border-gray-200/70 dark:border-slate-700/70 shadow-sm">
-                  <span className="text-[10px] font-black uppercase text-gray-400 tracking-wider block mb-1">
+                <div className="p-4 bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-200/90 dark:border-slate-700/70 shadow-2xs">
+                  <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider block mb-1">
                     Nghĩa Tiếng Việt
                   </span>
-                  <p className="text-lg font-bold text-gray-800 dark:text-gray-100">
+                  <p className="text-lg font-black text-slate-900 dark:text-gray-100">
                     {activeWord.vi}
                   </p>
                 </div>
 
                 {/* Example Sentence */}
                 {(activeWord.example_en || activeWord.example_vi) && (
-                  <div className="p-4 bg-white dark:bg-slate-800/80 rounded-2xl border border-gray-200/70 dark:border-slate-700/70 shadow-sm space-y-1.5">
-                    <span className="text-[10px] font-black uppercase text-indigo-500 tracking-wider block">
+                  <div className="p-4 bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-200/90 dark:border-slate-700/70 shadow-2xs space-y-1.5">
+                    <span className="text-[10px] font-black uppercase text-indigo-600 tracking-wider block">
                       Ví Dụ Minh Họa
                     </span>
                     {activeWord.example_en && (
-                      <p className="text-sm font-bold text-gray-800 dark:text-gray-200 italic">
+                      <p className="text-sm font-bold text-slate-800 dark:text-gray-200 italic">
                         "{activeWord.example_en}"
                       </p>
                     )}
                     {activeWord.example_vi && (
-                      <p className="text-xs text-gray-500 dark:text-slate-400">
+                      <p className="text-xs text-slate-600 dark:text-slate-400">
                         → {activeWord.example_vi}
                       </p>
                     )}
@@ -252,13 +257,13 @@ export default function GlobalSearchModal({
 
                 {/* Collocations & Mnemonics */}
                 {activeWord.collocations && (
-                  <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200/60 dark:border-amber-800/40 text-xs text-amber-900 dark:text-amber-300">
-                    <strong>Cụm từ hay gặp:</strong> {activeWord.collocations}
+                  <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200/80 dark:border-amber-800/40 text-xs text-amber-950 dark:text-amber-300">
+                    <strong className="font-black text-amber-900">Cụm từ hay gặp:</strong> {activeWord.collocations}
                   </div>
                 )}
               </div>
             ) : (
-              <div className="h-full flex items-center justify-center text-gray-400">
+              <div className="h-full flex items-center justify-center text-slate-400">
                 Chọn một từ để xem chi tiết
               </div>
             )}
@@ -266,16 +271,25 @@ export default function GlobalSearchModal({
         </div>
 
         {/* Footer Shortcut Guide */}
-        <div className="p-3 bg-gray-50 dark:bg-slate-850 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-gray-500 dark:text-slate-400 px-5">
+        <div className="p-3 bg-slate-50 dark:bg-slate-850 border-t border-slate-200/80 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-400 px-5">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1">
-              <span className="px-1.5 py-0.5 rounded bg-gray-200 dark:bg-slate-700 font-mono text-[10px]">↑↓</span> Di chuyển
+              <span className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 font-mono text-[10px] text-slate-700 dark:text-slate-200">↑↓</span> Di chuyển
             </span>
             <span className="flex items-center gap-1">
-              <span className="px-1.5 py-0.5 rounded bg-gray-200 dark:bg-slate-700 font-mono text-[10px]">Enter</span> Nghe phát âm
+              <span className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 font-mono text-[10px] text-slate-700 dark:text-slate-200">Enter</span> Nghe phát âm
             </span>
           </div>
-          <span>Tổng {words.length.toLocaleString()} từ trong từ điển</span>
+          <span className="font-medium text-slate-500 flex items-center gap-1.5">
+            {isWordCountVisible()
+              ? `Tổng ${words.length.toLocaleString()} từ trong từ điển`
+              : 'Từ điển từ vựng chuẩn'}
+            {shouldAdminBypass && isWordCountHidden() && (
+              <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300">
+                Đã ẩn số lượng
+              </span>
+            )}
+          </span>
         </div>
       </div>
     </div>

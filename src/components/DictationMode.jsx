@@ -2,6 +2,7 @@ import { ArrowRight, CheckCircle, CheckCircle2, RotateCcw, Volume2, XCircle } fr
 import { useEffect, useRef, useState } from "react";
 import IpaGuide from "./IpaGuide";
 import { recordWordResult } from "../utils/progressTracker";
+import { isAnswerCorrect } from "../utils/answerChecker";
 
 const DictationMode = ({ words, speak }) => {
     const [currentWordIndex, setCurrentWordIndex] = useState(0);
@@ -30,15 +31,21 @@ const DictationMode = ({ words, speak }) => {
     }, [words]);
 
     const currentWord = shuffledWords[currentWordIndex];
+    const isJapanese = Boolean(
+        currentWord?.isJapanese ||
+        currentWord?.master_group === 'Từ Vựng Tiếng Nhật Minna No Nihongo' ||
+        /[\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf]/.test(currentWord?.en || '')
+    );
+    const speechTarget = currentWord ? (currentWord.speechText || currentWord.hiragana || currentWord.kanji || currentWord.en) : '';
 
     useEffect(() => {
         if (currentWord && !isFinished) {
             const timer = setTimeout(() => {
-                speak(currentWord.en);
-            }, 500)
+                speak(speechTarget);
+            }, 500);
             return () => clearTimeout(timer);
         }
-    }, [currentWord, isFinished]);
+    }, [currentWord, isFinished, speechTarget]);
 
     useEffect(() => {
         const handleKeyDown = (e) => {
@@ -50,7 +57,7 @@ const DictationMode = ({ words, speak }) => {
                 }
             }
 
-            if (e.key === 'ArrowUp') {
+            if (e.key === 'ArrowUp' || (e.ctrlKey && e.code === 'Space')) {
                 e.preventDefault();
                 handlePlayAudio();
             }
@@ -59,29 +66,29 @@ const DictationMode = ({ words, speak }) => {
         window.addEventListener("keydown", handleKeyDown);
 
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [feedback, userInput]);
+    }, [feedback, userInput, currentWord, speechTarget]);
 
-const handleCheck = (e) => {
-    e.preventDefault();
-    if (!userInput.trim()) return;
+    const handleCheck = (e) => {
+        e.preventDefault();
+        if (!userInput.trim() || !currentWord) return;
 
-    if (userInput.trim().toLowerCase() === currentWord.en.toLowerCase()) {
-        setFeedback("correct");
-        setScore(prev => prev + 1);
-        recordWordResult(currentWord.id, true);
-        speak("Correct!");
-    } else {
-        setFeedback("incorrect");
-        recordWordResult(currentWord.id, false);
-        setWrongWords(prev => {
-            if (!prev.find(w => w.en === currentWord.en)) {
-                return [...prev, currentWord];
-            }
-            return prev;
-        });
-        speak("Wrong!");
-    }
-};
+        if (isAnswerCorrect(userInput, currentWord)) {
+            setFeedback("correct");
+            setScore(prev => prev + 1);
+            recordWordResult(currentWord.id, true);
+            if (!isJapanese) speak("Correct!");
+        } else {
+            setFeedback("incorrect");
+            recordWordResult(currentWord.id, false);
+            setWrongWords(prev => {
+                if (!prev.find(w => w.en === currentWord.en)) {
+                    return [...prev, currentWord];
+                }
+                return prev;
+            });
+            if (!isJapanese) speak("Wrong!");
+        }
+    };
 
     const handleNext = () => {
         if (currentWordIndex + 1 < shuffledWords.length) {
@@ -99,7 +106,7 @@ const handleCheck = (e) => {
 
     const handlePlayAudio = () => {
         if (currentWord) {
-            speak(currentWord.en);
+            speak(speechTarget);
         }
     };
 
@@ -191,7 +198,7 @@ const handleCheck = (e) => {
                         ${feedback === 'correct' ? 'border-green-500 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400' : ''}
                         ${feedback === 'incorrect' ? 'border-red-500 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400' : ''}
                         ${feedback === null ? 'border-gray-300 dark:border-slate-700 hover:border-indigo-500 dark:hover:border-indigo-500 focus:border-indigo-500 dark:focus:border-indigo-500' : ''}`}
-                            placeholder="Nhập từ bạn nghe được..."
+                            placeholder={isJapanese ? "Gõ từ bạn nghe được (Hiragana, Kanji hoặc Romaji)..." : "Nhập từ bạn nghe được..."}
                             autoFocus
                         />
                         {feedback === 'correct' && <CheckCircle2 className="absolute right-4 top-4 text-green-500" />}
@@ -202,9 +209,9 @@ const handleCheck = (e) => {
                     {feedback === 'incorrect' && (
                         <div className="mt-4 text-center animate-fade-in">
                             <p className="text-red-500 font-bold mb-1">Sai rồi!</p>
-                            <p className="text-gray-600 dark:text-slate-400">Đáp án đúng: <span className="text-green-600 dark:text-green-400 font-extrabold text-xl">{currentWord.en}</span> </p>
-                            <p className="text-gray-400 dark:text-slate-500 font-mono text-sm mt-1">{currentWord.ipa}</p>
-                            <IpaGuide ipa={currentWord.ipa} />
+                            <p className="text-gray-600 dark:text-slate-400">Đáp án đúng: <span className="text-green-600 dark:text-green-400 font-extrabold text-xl">{isJapanese ? (currentWord.displayWord || currentWord.en) : currentWord.en}</span> </p>
+                            {currentWord.ipa && <p className="text-gray-400 dark:text-slate-500 font-mono text-sm mt-1">{currentWord.ipa}</p>}
+                            {!isJapanese && currentWord.ipa && <IpaGuide ipa={currentWord.ipa} />}
                         </div>
                     )}
 

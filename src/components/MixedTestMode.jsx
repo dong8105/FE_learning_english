@@ -138,9 +138,14 @@ Trả về định dạng JSON BẮT BUỘC như sau. Đặc biệt chú ý thu�
     ]
 }`;
 
+            const token = localStorage.getItem('engmaster_token') || localStorage.getItem('token');
             const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/generate`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
                 body: JSON.stringify({ 
                     prompt, 
                     systemInstruction: "Bạn là một giám khảo chuyên ra đề thi VSTEP. Luôn trả về JSON hợp lệ với cấu trúc chuẩn xác.", 
@@ -148,7 +153,16 @@ Trả về định dạng JSON BẮT BUỘC như sau. Đặc biệt chú ý thu�
                 })
             });
             
-            if (!response.ok) throw new Error('API Error');
+            if (!response.ok) {
+                if (response.status === 403) {
+                    const errJson = await response.json().catch(() => ({}));
+                    if (errJson.aiLocked) {
+                        toast.error(errJson.error || "Tính năng AI đang tạm khóa bởi Quản trị viên!");
+                        return;
+                    }
+                }
+                throw new Error('API Error');
+            }
             const data = await response.json();
             if (data.metadata) reportAiUsage(data.metadata);
             
@@ -376,7 +390,7 @@ Trả về định dạng JSON BẮT BUỘC như sau. Đặc biệt chú ý thu�
                                                                 <p className="font-extrabold text-yellow-800 dark:text-yellow-400 mb-2.5 flex items-center gap-2 text-xs uppercase tracking-wider">
                                                                     <Lightbulb size={16} /> Bài Trả Lời Mẫu (Sample Answer)
                                                                 </p>
-                                                                <div className="whitespace-pre-wrap text-gray-700 dark:text-slate-350 text-sm leading-relaxed font-serif bg-white/60 dark:bg-slate-900/40 p-4 rounded-xl border border-yellow-100 dark:border-yellow-900/20 shadow-inner">
+                                                                <div className="whitespace-pre-wrap text-gray-700 dark:text-slate-200 text-sm leading-relaxed font-serif bg-white/60 dark:bg-slate-900/40 p-4 rounded-xl border border-yellow-100 dark:border-yellow-900/20 shadow-inner">
                                                                     {q.sampleAnswer}
                                                                 </div>
                                                             </div>
@@ -473,7 +487,7 @@ Trả về định dạng JSON BẮT BUỘC như sau. Đặc biệt chú ý thu�
                                     <p className="text-yellow-800 dark:text-yellow-400 font-bold text-xs flex items-center gap-1.5 justify-center">
                                         <Eye size={14} /> Phần thi Viết (Writing Task 1 & 2)
                                     </p>
-                                    <p className="text-gray-650 dark:text-slate-350 text-xs mt-1.5 leading-relaxed">Không chấm điểm tự động. Vui lòng chuyển sang Tab Viết luận ở trên để đối chiếu bài viết của bạn với Bài làm mẫu của chuyên gia.</p>
+                                    <p className="text-gray-650 dark:text-slate-300 text-xs mt-1.5 leading-relaxed">Không chấm điểm tự động. Vui lòng chuyển sang Tab Viết luận ở trên để đối chiếu bài viết của bạn với Bài làm mẫu của chuyên gia.</p>
                                 </div>
 
                                 <p className="text-gray-600 dark:text-slate-400 mb-6 font-medium text-sm">

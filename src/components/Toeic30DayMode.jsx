@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
     Calendar, Trophy, BookOpen, Volume2, Sparkles, 
     CheckCircle2, ArrowLeft, ArrowRight, Play, RefreshCw, 
     HelpCircle, XCircle, Award, Layers, Star, Zap, Edit, 
-    BookOpenCheck, LayoutGrid, Check 
+    BookOpenCheck, LayoutGrid, Check, Keyboard, Lock,
+    Search, Filter, BookmarkCheck, ChevronRight, Flame, Target, Compass, Clock, RotateCcw
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { TOEIC_30_DAYS_CURRICULUM } from '../data/toeic30DaysData';
@@ -15,6 +16,7 @@ import TypingMode from './TypingMode';
 import GrammarMode from './GrammarMode';
 import { useAiStatus } from "./AiStatusProvider";
 import { useAuth } from '../context/AuthContext';
+import { useVisibility } from '../context/VisibilityContext';
 
 const STATIC_EXAMPLE_TRANSLATIONS = {
     "The meeting is scheduled for Monday.": "Cuộc họp được lên lịch vào thứ Hai.",
@@ -113,9 +115,11 @@ const STATIC_EXAMPLE_TRANSLATIONS = {
     "Follow the recipe to cook this.": "Hãy làm theo công thức để nấu món này."
 };
 
-const Toeic30DayMode = ({ words = [], speak }) => {
+const Toeic30DayMode = ({ words = [], speak, onNavigate, setActiveTab: setParentActiveTab }) => {
+    const navigateTab = onNavigate || setParentActiveTab;
     const { reportAiUsage } = useAiStatus();
     const { user, token } = useAuth();
+    const { isAiLocked } = useVisibility();
     const userPrefix = user ? `u_${user.id}` : 'guest';
     const PROGRESS_KEY = `${userPrefix}_toeic30_progress`;
     const SCORES_KEY = `${userPrefix}_toeic30_scores`;
@@ -123,6 +127,61 @@ const Toeic30DayMode = ({ words = [], speak }) => {
     const DATE_KEY = `${userPrefix}_toeic30_last_study_date`;
     const QUIZZES_KEY = `${userPrefix}_toeic30_ai_quizzes`;
     const QUIZZES_STATE_KEY = `${userPrefix}_toeic30_ai_quizzes_state`;
+
+    // Filter by week or status
+    const [selectedWeekFilter, setSelectedWeekFilter] = useState('all'); // 'all' | 1 | 2 | 3 | 4 | 'completed' | 'uncompleted'
+    const [searchFilter, setSearchFilter] = useState('');
+
+    // Dynamic counts for the 3 core pillars
+    const etsWordsCount = useMemo(() => {
+        return (words || []).filter(w =>
+            w.master_group === 'Từ Vựng ETS 2026' ||
+            (w.sub_group && w.sub_group.includes('ETS 2026'))
+        ).length;
+    }, [words]);
+
+    const toeic500Count = useMemo(() => {
+        return (words || []).filter(w =>
+            w.master_group === '500 Từ Vựng TOEIC Mất Gốc' ||
+            (w.sub_group && w.sub_group.toLowerCase().includes('story'))
+        ).length;
+    }, [words]);
+
+    const toeic600Count = useMemo(() => {
+        return (words || []).filter(w =>
+            w.master_group === '600 Từ Vựng TOEIC'
+        ).length;
+    }, [words]);
+
+    const handleJumpToTopic = (tabId) => {
+        if (typeof navigateTab === 'function') {
+            navigateTab(tabId);
+        }
+    };
+
+    // Practice type badge helper
+    const getPracticeTypeBadge = (practiceType) => {
+        switch (practiceType) {
+            case 'listening_part1':
+                return { label: 'Nghe Part 1 (Tranh)', color: 'text-sky-700 dark:text-sky-300 bg-sky-100/70 dark:bg-sky-950/50 border-sky-200 dark:border-sky-800/60' };
+            case 'listening_part2':
+                return { label: 'Nghe Part 2 (Hỏi-Đáp)', color: 'text-blue-700 dark:text-blue-300 bg-blue-100/70 dark:bg-blue-950/50 border-blue-200 dark:border-blue-800/60' };
+            case 'listening_part3':
+                return { label: 'Nghe Part 3 (Hội thoại)', color: 'text-indigo-700 dark:text-indigo-300 bg-indigo-100/70 dark:bg-indigo-950/50 border-indigo-200 dark:border-indigo-800/60' };
+            case 'listening_part4':
+                return { label: 'Nghe Part 4 (Độc thoại)', color: 'text-violet-700 dark:text-violet-300 bg-violet-100/70 dark:bg-violet-950/50 border-violet-200 dark:border-violet-800/60' };
+            case 'grammar_quiz':
+                return { label: 'Ngữ pháp Part 5', color: 'text-purple-700 dark:text-purple-300 bg-purple-100/70 dark:bg-purple-950/50 border-purple-200 dark:border-purple-800/60' };
+            case 'reading_part6':
+                return { label: 'Đọc điền Part 6', color: 'text-emerald-700 dark:text-emerald-300 bg-emerald-100/70 dark:bg-emerald-950/50 border-emerald-200 dark:border-emerald-800/60' };
+            case 'reading_part7':
+                return { label: 'Đọc hiểu Part 7', color: 'text-teal-700 dark:text-teal-300 bg-teal-100/70 dark:bg-teal-950/50 border-teal-200 dark:border-teal-800/60' };
+            case 'review':
+                return { label: 'Ôn tập tổng hợp', color: 'text-amber-700 dark:text-amber-300 bg-amber-100/70 dark:bg-amber-950/50 border-amber-200 dark:border-amber-800/60' };
+            default:
+                return { label: practiceType || 'Luyện tập', color: 'text-slate-700 dark:text-slate-300 bg-slate-100/70 dark:bg-slate-800 border-slate-200 dark:border-slate-700' };
+        }
+    };
 
     const [progress, setProgress] = useState({});
     const [scores, setScores] = useState({});
@@ -140,6 +199,7 @@ const Toeic30DayMode = ({ words = [], speak }) => {
     const [vocabSubTab, setVocabSubTab] = useState('list'); // list, context
     const [vocabPartIndices, setVocabPartIndices] = useState([-1]); // [-1] means "Tất cả", or array like [0, 1]
     const [activeVocabStudyMode, setActiveVocabStudyMode] = useState(null); // null, flashcards, quiz, typing
+    const [practiceMethod, setPracticeMethod] = useState(null); // null, 'flashcards', 'quiz', 'typing', 'ai_quiz'
     const [contextIndex, setContextIndex] = useState(0);
     const [typedSentence, setTypedSentence] = useState('');
     const [typedChecked, setTypedChecked] = useState(false);
@@ -161,6 +221,7 @@ const Toeic30DayMode = ({ words = [], speak }) => {
         // Sync with backend database if user is logged in
         if (token) {
             fetch('http://localhost:5000/api/progress/toeic30', {
+                credentials: 'include',
                 headers: { 'Authorization': `Bearer ${token}` }
             })
             .then(res => res.ok ? res.json() : null)
@@ -257,6 +318,7 @@ const Toeic30DayMode = ({ words = [], speak }) => {
         if (token) {
             fetch('http://localhost:5000/api/progress/toeic30', {
                 method: 'POST',
+                credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
@@ -288,6 +350,7 @@ const Toeic30DayMode = ({ words = [], speak }) => {
             if (token) {
                 fetch('http://localhost:5000/api/progress/toeic30', {
                     method: 'POST',
+                    credentials: 'include',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
@@ -320,6 +383,7 @@ const Toeic30DayMode = ({ words = [], speak }) => {
         setVocabSubTab('list');
         setVocabPartIndices([-1]);
         setActiveVocabStudyMode(null);
+        setPracticeMethod(null);
         setShowGrammarDrill(false);
 
         // Load cached AI quiz for this day if exists
@@ -352,6 +416,7 @@ const Toeic30DayMode = ({ words = [], speak }) => {
         setSelectedDay(null);
         setQuizData(null);
         setActiveVocabStudyMode(null);
+        setPracticeMethod(null);
         setShowGrammarDrill(false);
     };
 
@@ -444,6 +509,11 @@ const Toeic30DayMode = ({ words = [], speak }) => {
 
     // AI quiz generator based on day focal grammar/skill
     const handleGenerateQuiz = async () => {
+        if (isAiLocked) {
+            toast.warning("Tính năng AI hiện đang tạm khóa bởi Quản trị viên hệ thống!");
+            return;
+        }
+
         setLoadingQuiz(true);
         setQuizData(null);
         setUserAnswers({});
@@ -475,7 +545,11 @@ const Toeic30DayMode = ({ words = [], speak }) => {
 
             const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/generate`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
                 body: JSON.stringify({
                     prompt,
                     systemInstruction: "You are a professional TOEIC test maker. You must output valid JSON only.",
@@ -483,7 +557,16 @@ const Toeic30DayMode = ({ words = [], speak }) => {
                 })
             });
 
-            if (!response.ok) throw new Error('API Error');
+            if (!response.ok) {
+                if (response.status === 403) {
+                    const errJson = await response.json().catch(() => ({}));
+                    if (errJson.aiLocked) {
+                        toast.error(errJson.error || "Tính năng AI hiện đang tạm khóa bởi Quản trị viên hệ thống!");
+                        return;
+                    }
+                }
+                throw new Error('API Error');
+            }
             const data = await response.json();
             if (data.metadata) reportAiUsage(data.metadata);
             
@@ -598,7 +681,7 @@ const Toeic30DayMode = ({ words = [], speak }) => {
                 
                 elements.push(
                     <div key={`table-${key}`} className="overflow-x-auto my-4 shadow-sm border border-gray-200 dark:border-slate-800 rounded-xl">
-                        <table className="w-full text-sm text-left text-gray-700 dark:text-slate-350">
+                        <table className="w-full text-sm text-left text-gray-700 dark:text-slate-200">
                             <thead className="text-xs text-gray-500 uppercase bg-gray-50 dark:bg-slate-800/80 dark:text-slate-400 border-b border-gray-200 dark:border-slate-800">
                                 <tr>
                                     {parsedRows[0]?.map((cell, i) => (
@@ -634,15 +717,15 @@ const Toeic30DayMode = ({ words = [], speak }) => {
             }
 
             if (trimmed.startsWith('### ')) {
-                elements.push(<h3 key={index} className="text-lg font-black text-gray-800 dark:text-white mt-6 mb-3 border-b border-gray-200 dark:border-slate-800 pb-2">{trimmed.substring(4)}</h3>);
+                elements.push(<h3 key={index} className="text-lg font-black text-slate-900 dark:text-white mt-6 mb-3 border-b border-slate-200 dark:border-slate-800 pb-2">{trimmed.substring(4)}</h3>);
             } else if (trimmed.startsWith('#### ')) {
-                elements.push(<h4 key={index} className="text-base font-extrabold text-green-600 dark:text-green-400 mt-4 mb-2">{trimmed.substring(5)}</h4>);
+                elements.push(<h4 key={index} className="text-base font-extrabold text-indigo-600 dark:text-indigo-400 mt-4 mb-2">{trimmed.substring(5)}</h4>);
             } else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-                elements.push(<li key={index} className="ml-5 list-disc text-sm text-gray-700 dark:text-slate-300 mb-1 leading-relaxed">{trimmed.substring(2)}</li>);
+                elements.push(<li key={index} className="ml-5 list-disc text-sm text-slate-700 dark:text-slate-300 mb-1 leading-relaxed">{trimmed.substring(2)}</li>);
             } else if (trimmed.startsWith('> ')) {
-                elements.push(<div key={index} className="p-4 bg-green-50/30 dark:bg-green-950/20 border-l-4 border-green-500 rounded-r-xl my-4 text-xs font-semibold text-green-950 dark:text-green-300">{trimmed.substring(2)}</div>);
+                elements.push(<div key={index} className="p-4 bg-indigo-50/50 dark:bg-indigo-950/20 border-l-4 border-indigo-500 rounded-r-xl my-4 text-xs font-semibold text-indigo-950 dark:text-indigo-300">{trimmed.substring(2)}</div>);
             } else if (trimmed) {
-                elements.push(<p key={index} className="text-sm text-gray-700 dark:text-slate-300 my-2 leading-relaxed">{trimmed}</p>);
+                elements.push(<p key={index} className="text-sm text-slate-700 dark:text-slate-300 my-2 leading-relaxed">{trimmed}</p>);
             }
         });
 
@@ -687,136 +770,423 @@ const Toeic30DayMode = ({ words = [], speak }) => {
             .flat();
 
     return (
-        <div className="max-w-5xl mx-auto space-y-6">
+        <div className="max-w-5xl mx-auto space-y-8">
             
             {/* OVERVIEW DASHBOARD */}
             {!selectedDay ? (
-                <div className="space-y-6 animate-fade-in">
+                <div className="space-y-8 animate-fade-in">
                     
-                    {/* Header Banner */}
-                    <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 md:p-8 shadow-sm border border-gray-200 dark:border-slate-800 relative overflow-hidden transition-all">
-                        <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-green-500 to-emerald-600" />
-                        
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                            <div className="space-y-2">
-                                <span className="text-[10px] uppercase font-bold tracking-widest text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/30 px-3 py-1 rounded-full border border-green-100 dark:border-green-900/30">
-                                    Lộ Trình Cốt Lõi
-                                </span>
-                                <h1 className="text-3xl font-black text-gray-800 dark:text-white">
+                    {/* ── 1. HERO BANNER ── */}
+                    <div className="relative overflow-hidden rounded-3xl p-6 sm:p-8 bg-gradient-to-br from-white via-slate-50/90 to-indigo-50/50 dark:from-slate-900/95 dark:via-slate-900/80 dark:to-indigo-950/30 border border-slate-200/90 dark:border-slate-800/80 shadow-[0_4px_20px_-4px_rgba(15,23,42,0.05)] backdrop-blur-xl">
+                        {/* Decorative background ambient glow */}
+                        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 dark:bg-indigo-500/5 rounded-full blur-3xl -z-10 pointer-events-none" />
+                        <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/10 dark:bg-emerald-500/5 rounded-full blur-2xl -z-10 pointer-events-none" />
+
+                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                            <div className="space-y-3 max-w-2xl">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <span className="text-[10px] uppercase font-black tracking-widest text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 px-3 py-1 rounded-full border border-indigo-200/80 dark:border-indigo-900/40 flex items-center gap-1.5 shadow-2xs">
+                                        <Compass size={12} /> Lộ Trình Thực Chiến 2026
+                                    </span>
+                                    <span className="text-[10px] uppercase font-black tracking-widest text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-3 py-1 rounded-full border border-emerald-200/80 dark:border-emerald-900/40 flex items-center gap-1.5 shadow-2xs">
+                                        <Trophy size={12} /> Mục Tiêu 400+ Cốt Lõi
+                                    </span>
+                                </div>
+
+                                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
                                     Chương Trình Ôn Thi TOEIC 30 Ngày
                                 </h1>
-                                <p className="text-gray-500 dark:text-slate-400 text-sm max-w-2xl leading-relaxed">
-                                    Thiết kế tinh gọn cho người mất gốc hướng tới mục tiêu **400+ điểm**. 
-                                    Học lý thuyết, trau dồi từ vựng cốt lõi và luyện đề thi thử tương tác hàng ngày.
+
+                                <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-400 leading-relaxed font-medium">
+                                    Kế hoạch tinh gọn dành cho người mất gốc hướng tới mục tiêu bứt phá 400+ điểm. 
+                                    Học lý thuyết ngữ pháp trọng điểm, tích lũy từ vựng cốt lõi và tự do chọn phương pháp ôn tập linh hoạt (Flashcard, Trắc nghiệm, Gõ từ).
                                 </p>
                             </div>
 
-                            {/* Streak & Score Widget */}
-                            <div className="flex items-center gap-4 bg-gray-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-gray-200 dark:border-slate-800">
-                                <div className="text-center px-2">
-                                    <div className="flex items-center gap-1 justify-center text-amber-500">
-                                        <Zap size={20} className="fill-current animate-pulse" />
-                                        <span className="text-2xl font-black">{streak}</span>
+                            {/* Stats Pill Card */}
+                            <div className="flex items-center gap-4 sm:gap-6 bg-white dark:bg-slate-800/80 backdrop-blur-md p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-700/60 shadow-[0_4px_20px_-4px_rgba(15,23,42,0.05)] shrink-0 self-start lg:self-center">
+                                <div className="text-center px-1">
+                                    <div className="flex items-center gap-1.5 justify-center text-amber-500 dark:text-amber-400">
+                                        <Flame size={22} className="fill-current animate-pulse" />
+                                        <span className="text-2xl sm:text-3xl font-black">{streak}</span>
                                     </div>
-                                    <span className="text-[10px] text-gray-400 dark:text-slate-500 font-bold uppercase tracking-wider">Chuỗi Ngày</span>
+                                    <span className="text-[10px] text-slate-600 dark:text-slate-400 font-black uppercase tracking-wider block mt-0.5">
+                                        Chuỗi Ngày
+                                    </span>
                                 </div>
-                                <div className="w-px h-10 bg-gray-200 dark:bg-slate-700" />
-                                <div className="text-center px-2">
-                                    <span className="text-2xl font-black text-green-600 dark:text-green-400">{completedDays} / 30</span>
-                                    <span className="block text-[10px] text-gray-400 dark:text-slate-500 font-bold uppercase tracking-wider">Đã Học</span>
+
+                                <div className="w-px h-10 bg-slate-200 dark:bg-slate-700" />
+
+                                <div className="text-center px-1">
+                                    <span className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400 block">
+                                        {completedDays} <span className="text-xs font-bold text-slate-400 dark:text-slate-500">/ 30</span>
+                                    </span>
+                                    <span className="text-[10px] text-slate-600 dark:text-slate-400 font-black uppercase tracking-wider block mt-0.5">
+                                        Ngày Đã Học
+                                    </span>
+                                </div>
+
+                                <div className="w-px h-10 bg-slate-200 dark:bg-slate-700" />
+
+                                <div className="text-center px-1">
+                                    <span className="text-2xl sm:text-3xl font-black text-indigo-600 dark:text-indigo-400 block">
+                                        {progressPercent}%
+                                    </span>
+                                    <span className="text-[10px] text-slate-600 dark:text-slate-400 font-black uppercase tracking-wider block mt-0.5">
+                                        Tiến Độ
+                                    </span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Progress Bar */}
-                        <div className="mt-8 pt-4 border-t border-gray-100 dark:border-slate-800 space-y-2">
-                            <div className="flex justify-between text-xs font-bold text-gray-500 dark:text-slate-400">
-                                <span>Tiến trình hoàn thành lộ trình</span>
-                                <span>{progressPercent}% ({completedDays} ngày)</span>
+                        <div className="mt-6 pt-4 border-t border-slate-200/80 dark:border-slate-800/80 space-y-2">
+                            <div className="flex justify-between items-center text-xs font-bold text-slate-600 dark:text-slate-400">
+                                <span>Tiến trình hoàn thành toàn bộ lộ trình</span>
+                                <span className="text-indigo-700 dark:text-indigo-400 font-extrabold">{completedDays} / 30 Ngày ({progressPercent}%)</span>
                             </div>
-                            <div className="w-full h-3 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                            <div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-200/60 dark:border-transparent">
                                 <div 
-                                    className="h-full bg-gradient-to-r from-green-500 to-emerald-600 transition-all duration-500" 
+                                    className="h-full bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-600 rounded-full transition-all duration-700 shadow-xs" 
                                     style={{ width: `${progressPercent}%` }}
                                 />
                             </div>
                         </div>
                     </div>
 
-                    {/* WEEK GRID GROUPING */}
-                    {[1, 2, 3, 4].map(weekNum => {
-                        const weekDays = TOEIC_30_DAYS_CURRICULUM.filter(d => d.week === weekNum);
-                        return (
-                            <div key={weekNum} className="space-y-3">
-                                <div className="flex justify-between items-center px-2">
-                                    <h2 className="text-sm font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest">
-                                        Tuần {weekNum}: {
-                                            weekNum === 1 ? "Xây dựng nền tảng từ vựng & phát âm" :
-                                            weekNum === 2 ? "Ngữ pháp cốt lõi & từ vựng nâng cao" :
-                                            weekNum === 3 ? "Luyện đề thực chiến từng phần" :
-                                            "Chiến lược thi & Hoàn thiện"
-                                        }
-                                    </h2>
-                                    <button 
-                                        onClick={() => handleReviewWeek(weekNum)}
-                                        className="text-xs bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800/50 px-3 py-1 rounded-full font-bold transition-colors flex items-center gap-1 shadow-sm"
+                    {/* ── 2. BỘ BA CHUYÊN ĐỀ TỪ VỰNG TOEIC CỐT LÕI ── */}
+                    <div className="space-y-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1">
+                            <div>
+                                <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+                                    <Target size={20} className="text-indigo-600 dark:text-indigo-400" />
+                                    <span>Bộ Ba Chuyên Đề Từ Vựng Trọng Điểm</span>
+                                </h2>
+                                <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+                                    Ba kho tàng từ vựng cốt lõi kết hợp chuẩn mực giúp bứt phá điểm số từ mất gốc đến 800+
+                                </p>
+                            </div>
+                            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-500 self-start sm:self-auto">
+                                Giáo trình chuẩn ETS quốc tế
+                            </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {/* Pillar 1: Từ Vựng ETS 2026 */}
+                            <div className="relative group rounded-3xl p-5 border transition-all duration-300 bg-gradient-to-br from-blue-50/90 via-sky-50/40 to-white dark:from-slate-900/90 dark:via-blue-950/20 dark:to-slate-900 border-blue-200/80 dark:border-blue-900/50 shadow-[0_4px_20px_-4px_rgba(37,99,235,0.06)] hover:shadow-md hover:border-blue-400 dark:hover:border-blue-600 flex flex-col justify-between">
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <div className="w-11 h-11 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
+                                            <Award size={22} />
+                                        </div>
+                                        <span className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded-full bg-blue-100/90 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/60 shadow-2xs">
+                                            {etsWordsCount || '1.626'} Từ Vựng
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-base font-black text-slate-900 dark:text-white group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors">
+                                            Từ Vựng ETS 2026
+                                        </h3>
+                                        <p className="text-xs font-bold text-blue-700 dark:text-blue-400 mt-0.5">
+                                            800 LC + 800 RC Official
+                                        </p>
+                                        <p className="text-xs text-slate-700 dark:text-slate-400 mt-2 leading-relaxed line-clamp-2">
+                                            Trọn bộ 1.626 từ vựng cốt lõi trích xuất trực tiếp từ đề thi ETS 2026 mới nhất của viện khảo thí ETS Hoa Kỳ.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="mt-5 pt-3 border-t border-blue-100/90 dark:border-slate-800/80 flex items-center justify-between">
+                                    <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400">
+                                        Phân chia theo Part
+                                    </span>
+                                    <button
+                                        onClick={() => handleJumpToTopic('ets2026')}
+                                        className="text-xs font-black text-blue-700 dark:text-blue-400 hover:text-blue-800 flex items-center gap-1 group-hover:translate-x-0.5 transition-all cursor-pointer"
                                     >
-                                        <Layers size={14} /> Ôn Tập Tuần {weekNum}
+                                        Ôn luyện ETS 2026 <ArrowRight size={13} />
                                     </button>
                                 </div>
+                            </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                                    {weekDays.map(day => {
-                                        const isCompleted = progress[day.day];
-                                        return (
-                                            <button
-                                                key={day.day}
-                                                onClick={() => handleSelectDay(day)}
-                                                className={`p-5 rounded-2xl border text-left flex flex-col justify-between min-h-[140px] transition-all hover:scale-[1.02] cursor-pointer shadow-sm relative group bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800 ${
-                                                    isCompleted 
-                                                        ? 'ring-2 ring-green-500/30 border-green-500/50 bg-green-50/10 dark:bg-green-950/5'
-                                                        : 'hover:border-green-400 dark:hover:border-green-500'
-                                                }`}
-                                            >
-                                                <div className="space-y-2">
-                                                    <div className="flex justify-between items-center">
-                                                        <span className="text-xs font-mono font-black text-gray-400 group-hover:text-green-500 transition-colors">
-                                                            NGÀY {day.day}
-                                                        </span>
-                                                        {isCompleted && (
-                                                            <CheckCircle2 size={16} className="text-green-500 fill-green-50 dark:fill-slate-900" />
-                                                        )}
-                                                    </div>
-                                                    <h3 className="text-sm font-bold text-gray-800 dark:text-white line-clamp-2 leading-tight group-hover:text-green-600 dark:group-hover:text-green-400">
-                                                        {day.title.split(': ')[1]}
-                                                    </h3>
-                                                </div>
-
-                                                <div className="mt-4 pt-2 border-t border-gray-100 dark:border-slate-800/60 flex items-center justify-between w-full">
-                                                    <span className="text-[10px] text-gray-500 dark:text-slate-500 font-bold uppercase truncate max-w-[130px]">
-                                                        {day.grammarFocus}
-                                                    </span>
-                                                    {scores[day.day] && (
-                                                        <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded border border-indigo-100 dark:border-indigo-900/30">
-                                                            Score: {scores[day.day]}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </button>
-                                        );
-                                    })}
+                            {/* Pillar 2: 500 Từ Vựng Mất Gốc */}
+                            <div className="relative group rounded-3xl p-5 border transition-all duration-300 bg-gradient-to-br from-emerald-50/90 via-teal-50/40 to-white dark:from-slate-900/90 dark:via-emerald-950/20 dark:to-slate-900 border-emerald-200/80 dark:border-emerald-900/50 shadow-[0_4px_20px_-4px_rgba(5,150,105,0.06)] hover:shadow-md hover:border-emerald-400 dark:hover:border-emerald-600 flex flex-col justify-between">
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <div className="w-11 h-11 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform">
+                                            <BookmarkCheck size={22} />
+                                        </div>
+                                        <span className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded-full bg-emerald-100/90 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/60 shadow-2xs">
+                                            {toeic500Count || '500'} Từ Vựng
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-base font-black text-slate-900 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">
+                                            500 Từ Vựng Mất Gốc
+                                        </h3>
+                                        <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400 mt-0.5">
+                                            20 Câu Chuyện Ngữ Cảnh
+                                        </p>
+                                        <p className="text-xs text-slate-700 dark:text-slate-400 mt-2 leading-relaxed line-clamp-2">
+                                            Phương pháp học từ vựng qua 20 câu chuyện ngữ cảnh đời sống và công sở, giúp người mất gốc dễ nhớ và phản xạ tự nhiên.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="mt-5 pt-3 border-t border-emerald-100/90 dark:border-slate-800/80 flex items-center justify-between">
+                                    <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400">
+                                        20 Story sinh động
+                                    </span>
+                                    <button
+                                        onClick={() => handleJumpToTopic('toeic500')}
+                                        className="text-xs font-black text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 flex items-center gap-1 group-hover:translate-x-0.5 transition-all cursor-pointer"
+                                    >
+                                        Học qua Story <ArrowRight size={13} />
+                                    </button>
                                 </div>
                             </div>
-                        );
-                    })}
+
+                            {/* Pillar 3: 600 Từ Vựng TOEIC */}
+                            <div className="relative group rounded-3xl p-5 border transition-all duration-300 bg-gradient-to-br from-amber-50/90 via-orange-50/40 to-white dark:from-slate-900/90 dark:via-amber-950/20 dark:to-slate-900 border-amber-200/80 dark:border-amber-900/50 shadow-[0_4px_20px_-4px_rgba(217,119,6,0.06)] hover:shadow-md hover:border-amber-400 dark:hover:border-amber-600 flex flex-col justify-between">
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <div className="w-11 h-11 rounded-2xl bg-amber-600 text-white flex items-center justify-center shadow-md shadow-amber-500/20 group-hover:scale-105 transition-transform">
+                                            <BookOpen size={22} />
+                                        </div>
+                                        <span className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded-full bg-amber-100/90 dark:bg-amber-900/60 text-amber-900 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60 shadow-2xs">
+                                            {toeic600Count || '600'} Từ Vựng
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-base font-black text-slate-900 dark:text-white group-hover:text-amber-800 dark:group-hover:text-amber-400 transition-colors">
+                                            600 Từ Vựng TOEIC
+                                        </h3>
+                                        <p className="text-xs font-bold text-amber-800 dark:text-amber-400 mt-0.5">
+                                            50 Chủ Đề Căn Bản
+                                        </p>
+                                        <p className="text-xs text-slate-700 dark:text-slate-400 mt-2 leading-relaxed line-clamp-2">
+                                            50 chủ đề từ vựng kinh điển trong đề thi TOEIC: Hợp đồng, Tiếp thị, Nhân sự, Du lịch, Mua sắm và Tài chính ngân hàng.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="mt-5 pt-3 border-t border-amber-100/90 dark:border-slate-800/80 flex items-center justify-between">
+                                    <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400">
+                                        50 Chủ đề nền tảng
+                                    </span>
+                                    <button
+                                        onClick={() => handleJumpToTopic('toeic600')}
+                                        className="text-xs font-black text-amber-800 dark:text-amber-400 hover:text-amber-900 flex items-center gap-1 group-hover:translate-x-0.5 transition-all cursor-pointer"
+                                    >
+                                        Vào 50 chủ đề <ArrowRight size={13} />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ── 3. FILTER & SEARCH BAR ── */}
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200/90 dark:border-slate-800/80 shadow-[0_4px_20px_-4px_rgba(15,23,42,0.05)]">
+                        {/* Week & Status Tabs */}
+                        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
+                            {[
+                                { id: 'all', label: 'Tất cả 30 Ngày' },
+                                { id: 1, label: 'Tuần 1' },
+                                { id: 2, label: 'Tuần 2' },
+                                { id: 3, label: 'Tuần 3' },
+                                { id: 4, label: 'Tuần 4' },
+                                { id: 'completed', label: `Đã học (${completedDays})` },
+                                { id: 'uncompleted', label: `Chưa học (${30 - completedDays})` },
+                            ].map(item => {
+                                const isSelected = selectedWeekFilter === item.id;
+                                return (
+                                    <button
+                                        key={String(item.id)}
+                                        onClick={() => setSelectedWeekFilter(item.id)}
+                                        className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition cursor-pointer ${
+                                            isSelected
+                                                ? 'bg-indigo-600 text-white shadow-xs'
+                                                : 'text-slate-700 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                        }`}
+                                    >
+                                        {item.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* Search Input */}
+                        <div className="relative min-w-[200px] sm:max-w-xs">
+                            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                            <input
+                                type="text"
+                                value={searchFilter}
+                                onChange={(e) => setSearchFilter(e.target.value)}
+                                placeholder="Tìm theo chủ đề, ngữ pháp..."
+                                className="w-full pl-9 pr-7 py-1.5 text-xs rounded-xl bg-slate-50 hover:bg-white focus:bg-white dark:bg-slate-800/60 border border-slate-200/90 dark:border-slate-700 text-slate-900 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-all"
+                            />
+                            {searchFilter && (
+                                <button
+                                    onClick={() => setSearchFilter('')}
+                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                                >
+                                    ✕
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* ── 4. WEEK ROADMAP & DAY CARDS ── */}
+                    {(() => {
+                        const weeksToRender = [1, 2, 3, 4].filter(weekNum => {
+                            if (typeof selectedWeekFilter === 'number') return weekNum === selectedWeekFilter;
+                            return true;
+                        });
+
+                        const matchingWeeks = weeksToRender.map(weekNum => {
+                            let weekDays = TOEIC_30_DAYS_CURRICULUM.filter(d => d.week === weekNum);
+                            
+                            if (selectedWeekFilter === 'completed') {
+                                weekDays = weekDays.filter(d => progress[d.day]);
+                            } else if (selectedWeekFilter === 'uncompleted') {
+                                weekDays = weekDays.filter(d => !progress[d.day]);
+                            }
+
+                            if (searchFilter.trim()) {
+                                const q = searchFilter.toLowerCase().trim();
+                                weekDays = weekDays.filter(d => 
+                                    (d.title && d.title.toLowerCase().includes(q)) ||
+                                    (d.grammarFocus && d.grammarFocus.toLowerCase().includes(q)) ||
+                                    (d.vocabTopic && d.vocabTopic.toLowerCase().includes(q)) ||
+                                    (d.objective && d.objective.toLowerCase().includes(q))
+                                );
+                            }
+
+                            return { weekNum, weekDays };
+                        }).filter(group => group.weekDays.length > 0);
+
+                        if (matchingWeeks.length === 0) {
+                            return (
+                                <div className="p-12 text-center rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
+                                    <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto">
+                                        <Search size={24} />
+                                    </div>
+                                    <h3 className="text-base font-bold text-slate-800 dark:text-white">Không tìm thấy ngày học phù hợp</h3>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                                        Hãy thử điều chỉnh từ khóa tìm kiếm hoặc bấm để xem lại toàn bộ các ngày học.
+                                    </p>
+                                    <button
+                                        onClick={() => { setSelectedWeekFilter('all'); setSearchFilter(''); }}
+                                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition cursor-pointer"
+                                    >
+                                        Xem lại tất cả 30 ngày
+                                    </button>
+                                </div>
+                            );
+                        }
+
+                        return matchingWeeks.map(({ weekNum, weekDays }) => {
+                            const totalInWeek = TOEIC_30_DAYS_CURRICULUM.filter(d => d.week === weekNum).length;
+                            const completedInWeek = TOEIC_30_DAYS_CURRICULUM.filter(d => d.week === weekNum && progress[d.day]).length;
+
+                            return (
+                                <div key={weekNum} className="space-y-4">
+                                    {/* Week Header */}
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1 border-b border-slate-200/70 dark:border-slate-800/80 pb-3">
+                                        <div className="space-y-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-2.5 py-0.5 rounded-full border border-indigo-200/50 dark:border-indigo-900/30">
+                                                    Tuần {weekNum}
+                                                </span>
+                                                <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                                                    Đã học: {completedInWeek}/{totalInWeek} ngày
+                                                </span>
+                                            </div>
+                                            <h3 className="text-sm sm:text-base font-black text-slate-800 dark:text-white">
+                                                {weekNum === 1 && "Nền Tảng Từ Vựng & Cấu Trúc Đề Thi (Part 1 - 2)"}
+                                                {weekNum === 2 && "Ngữ Pháp Cốt Lõi Part 5 & Đọc Điền Part 6"}
+                                                {weekNum === 3 && "Luyện Đề Thực Chiến Nghe Hiểu & Đọc Hiểu Đoạn Đơn"}
+                                                {weekNum === 4 && "Chiến Lược Thi Thực Chiến, Bẫy Đề & Hoàn Thiện"}
+                                            </h3>
+                                        </div>
+
+                                        <button 
+                                            onClick={() => handleReviewWeek(weekNum)}
+                                            className="text-xs bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-800/50 px-3.5 py-1.5 rounded-xl font-bold transition-all flex items-center gap-1.5 shadow-sm shrink-0 self-start sm:self-auto cursor-pointer"
+                                        >
+                                            <Layers size={14} /> Ôn Tập Tuần {weekNum}
+                                        </button>
+                                    </div>
+
+                                    {/* Days Grid */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                                        {weekDays.map(day => {
+                                            const isCompleted = progress[day.day];
+                                            const badgeInfo = getPracticeTypeBadge(day.practiceType);
+
+                                            return (
+                                                <button
+                                                    key={day.day}
+                                                    onClick={() => handleSelectDay(day)}
+                                                    className={`p-5 rounded-3xl border text-left flex flex-col justify-between min-h-[160px] transition-all duration-200 hover:scale-[1.015] cursor-pointer shadow-[0_2px_8px_-2px_rgba(15,23,42,0.04)] relative group bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-800/80 ${
+                                                        isCompleted 
+                                                            ? 'ring-2 ring-emerald-500/30 border-emerald-500/60 bg-emerald-50/20 dark:bg-emerald-950/10'
+                                                            : 'hover:border-indigo-400 dark:hover:border-indigo-500 hover:shadow-md'
+                                                    }`}
+                                                >
+                                                    <div className="space-y-3">
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-[11px] font-mono font-black text-slate-500 dark:text-slate-500 group-hover:text-indigo-700 dark:group-hover:text-indigo-400 transition-colors">
+                                                                NGÀY {day.day < 10 ? `0${day.day}` : day.day}
+                                                            </span>
+                                                            {isCompleted ? (
+                                                                <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-900/30 flex items-center gap-1 shadow-2xs">
+                                                                    <CheckCircle2 size={12} /> Đã học
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full border border-slate-200/60 dark:border-slate-700">
+                                                                    Chưa học
+                                                                </span>
+                                                            )}
+                                                        </div>
+
+                                                        <h4 className="text-sm font-black text-slate-900 dark:text-white line-clamp-2 leading-snug group-hover:text-indigo-700 dark:group-hover:text-indigo-400 transition-colors">
+                                                            {day.title.includes(': ') ? day.title.split(': ')[1] : day.title}
+                                                        </h4>
+                                                    </div>
+
+                                                    <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/70 space-y-2">
+                                                        <div className="flex items-center justify-between gap-1">
+                                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border truncate max-w-[135px] ${badgeInfo.color}`}>
+                                                                {badgeInfo.label}
+                                                            </span>
+
+                                                            {scores[day.day] && (
+                                                                <span className="text-[10px] font-black text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-1.5 py-0.5 rounded border border-indigo-200/60 dark:border-indigo-900/30 shrink-0">
+                                                                    {scores[day.day]}
+                                                                </span>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="flex items-center justify-between text-[10px] text-slate-500 group-hover:text-indigo-700 dark:group-hover:text-indigo-400 font-bold transition-colors">
+                                                            <span className="truncate max-w-[130px]">{day.grammarFocus}</span>
+                                                            <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
+                                                        </div>
+                                                    </div>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            );
+                        });
+                    })()}
 
                     {/* Footer resets */}
-                    <div className="flex justify-end pt-4">
+                    <div className="flex justify-between items-center pt-4 border-t border-slate-200/60 dark:border-slate-800/60 text-xs text-slate-400">
+                        <span>Lộ trình TOEIC 30 Ngày · Hệ thống học tập thông minh</span>
                         <button 
                             onClick={handleResetAllProgress}
-                            className="text-xs font-bold text-slate-400 hover:text-red-500 transition-colors flex items-center gap-1 cursor-pointer"
+                            className="font-bold text-slate-400 hover:text-rose-500 transition-colors flex items-center gap-1 cursor-pointer"
                         >
-                            Đặt lại tiến trình học tập
+                            <RotateCcw size={13} /> Đặt lại tiến trình học tập
                         </button>
                     </div>
                 </div>
@@ -826,43 +1196,78 @@ const Toeic30DayMode = ({ words = [], speak }) => {
                 <div className="space-y-6 animate-fade-in">
                     
                     {/* Workspace Header */}
-                    <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-gray-200 dark:border-slate-800 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
+                    <div className="relative overflow-hidden bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-3xl p-5 sm:p-6 shadow-sm border border-slate-200/80 dark:border-slate-800/80 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex items-start sm:items-center gap-3.5">
                             <button 
                                 onClick={handleBackToDashboard}
-                                className="p-2.5 bg-gray-50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl text-gray-600 dark:text-slate-400 transition cursor-pointer"
-                                title="Quay lại Dashboard"
+                                className="p-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-2xl text-slate-600 dark:text-slate-300 transition-all cursor-pointer hover:scale-105 shrink-0"
+                                title="Quay lại Lộ trình"
                             >
-                                <ArrowLeft size={16} />
+                                <ArrowLeft size={18} aria-hidden="true" />
                             </button>
-                            <div>
-                                <span className="text-[10px] font-black uppercase tracking-widest text-green-600 dark:text-green-400">
-                                    Tuần {selectedDay.week} / Ngày {selectedDay.day}
-                                </span>
-                                <h1 className="text-xl font-black text-gray-800 dark:text-white leading-tight">
+                            <div className="space-y-1">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <button
+                                        onClick={handleBackToDashboard}
+                                        className="text-[11px] font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition cursor-pointer"
+                                    >
+                                        Lộ Trình 30 Ngày
+                                    </button>
+                                    <span className="text-slate-300 dark:text-slate-700">/</span>
+                                    <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">
+                                        Tuần {selectedDay.week}
+                                    </span>
+                                    <span className="text-slate-300 dark:text-slate-700">/</span>
+                                    <span className="text-[10px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 px-2 py-0.5 rounded-full border border-indigo-200/50 dark:border-indigo-900/40">
+                                        Ngày {selectedDay.day < 10 ? `0${selectedDay.day}` : selectedDay.day}
+                                    </span>
+                                    {(() => {
+                                        const badge = getPracticeTypeBadge(selectedDay.practiceType);
+                                        return (
+                                            <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-md border ${badge.color}`}>
+                                                {badge.label}
+                                            </span>
+                                        );
+                                    })()}
+                                </div>
+                                <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white leading-tight">
                                     {selectedDay.title}
                                 </h1>
                             </div>
                         </div>
 
                         {/* Complete button status */}
-                        <div className="flex items-center gap-2 self-end sm:self-center">
-                            <button
-                                onClick={handleMarkDayCompletedWithoutQuiz}
-                                className="bg-green-600 hover:bg-green-700 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition cursor-pointer"
-                            >
-                                <CheckCircle2 size={14} /> Đánh dấu hoàn thành
-                            </button>
+                        <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
+                            {progress[selectedDay.day] ? (
+                                <div className="flex items-center gap-2">
+                                    <span className="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-xs font-black border border-emerald-200/60 dark:border-emerald-800/60 flex items-center gap-1.5">
+                                        <CheckCircle2 size={15} aria-hidden="true" /> Đã hoàn thành
+                                    </span>
+                                    <button
+                                        onClick={handleBackToDashboard}
+                                        className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition cursor-pointer"
+                                    >
+                                        Quay lại
+                                    </button>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={handleMarkDayCompletedWithoutQuiz}
+                                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-1.5 shadow-sm shadow-emerald-500/20 hover:scale-[1.02] transition cursor-pointer"
+                                >
+                                    <CheckCircle2 size={15} aria-hidden="true" /> Đánh dấu hoàn thành
+                                </button>
+                            )}
                         </div>
                     </div>
 
                     {/* DAY WORKSPACE TABS */}
                     {!showGrammarDrill && !activeVocabStudyMode && (
-                        <div className="flex bg-white dark:bg-slate-900 p-1.5 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm transition-colors">
+                        <div className="flex bg-white/80 dark:bg-slate-900/80 backdrop-blur-md p-1.5 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm transition-colors gap-1.5 overflow-x-auto no-scrollbar">
                             {[
                                 { id: 'theory', label: '1. Lý thuyết & Kỹ năng', icon: BookOpen },
                                 { id: 'vocab', label: '2. Từ vựng cốt lõi', icon: Layers },
-                                { id: 'practice', label: '3. Bài tập trắc nghiệm', icon: Sparkles }
+                                { id: 'practice', label: '3. Chọn phương pháp ôn từ vựng', icon: Sparkles }
                             ].map(tab => {
                                 const Icon = tab.icon;
                                 const isActive = activeTab === tab.id;
@@ -873,14 +1278,15 @@ const Toeic30DayMode = ({ words = [], speak }) => {
                                             setActiveTab(tab.id);
                                             setShowGrammarDrill(false);
                                             setActiveVocabStudyMode(null);
+                                            setPracticeMethod(null);
                                         }}
                                         className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex-1 justify-center whitespace-nowrap cursor-pointer ${
                                             isActive 
-                                                ? 'bg-green-600 text-white shadow-md' 
-                                                : 'text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:hover:text-white'
+                                                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20' 
+                                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
                                         }`}
                                     >
-                                        <Icon size={14} />
+                                        <Icon size={14} aria-hidden="true" />
                                         <span>{tab.label}</span>
                                     </button>
                                 );
@@ -889,19 +1295,19 @@ const Toeic30DayMode = ({ words = [], speak }) => {
                     )}
 
                     {/* TAB VIEWPORTS */}
-                    <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 md:p-8 shadow-sm border border-gray-200 dark:border-slate-800 min-h-[400px] flex flex-col justify-between transition-colors">
+                    <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200/80 dark:border-slate-800/80 min-h-[420px] flex flex-col justify-between transition-colors">
                         
                         {/* ── GRAMMAR DRILL VIEWPORT ── */}
                         {showGrammarDrill ? (
                             <div className="space-y-4 flex-1">
-                                <div className="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-slate-800">
+                                <div className="flex items-center justify-between pb-3 border-b border-slate-200/80 dark:border-slate-800/80">
                                     <button
                                         onClick={() => setShowGrammarDrill(false)}
-                                        className="text-xs font-bold text-gray-500 hover:text-indigo-600 flex items-center gap-1 cursor-pointer"
+                                        className="text-xs font-bold text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1 cursor-pointer transition"
                                     >
-                                        <ArrowLeft size={14} /> Quay lại bài học Ngày {selectedDay.day}
+                                        <ArrowLeft size={14} aria-hidden="true" /> Quay lại bài học Ngày {selectedDay.day}
                                     </button>
-                                    <span className="text-xs font-black text-indigo-600 bg-indigo-50 dark:bg-indigo-950/30 px-3 py-1 rounded-full">
+                                    <span className="text-xs font-black text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-3 py-1 rounded-full border border-indigo-200/50 dark:border-indigo-900/30">
                                         Chủ đề: {selectedDay.grammarFocus}
                                     </span>
                                 </div>
@@ -913,14 +1319,14 @@ const Toeic30DayMode = ({ words = [], speak }) => {
                             
                             // ── VOCAB STUDY MODE VIEWPORT ──
                             <div className="space-y-4 flex-1">
-                                <div className="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-slate-800">
+                                <div className="flex items-center justify-between pb-3 border-b border-slate-200/80 dark:border-slate-800/80">
                                     <button
                                         onClick={() => setActiveVocabStudyMode(null)}
-                                        className="text-xs font-bold text-slate-500 hover:text-green-600 flex items-center gap-1 cursor-pointer"
+                                        className="text-xs font-bold text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1 cursor-pointer transition"
                                     >
-                                        <ArrowLeft size={14} /> Quay lại danh sách từ vựng
+                                        <ArrowLeft size={14} aria-hidden="true" /> Quay lại danh sách từ vựng
                                     </button>
-                                    <span className="text-xs font-black text-green-600 bg-green-50 dark:bg-green-950/30 px-3 py-1 rounded-full capitalize">
+                                    <span className="text-xs font-black text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-3 py-1 rounded-full border border-indigo-200/50 dark:border-indigo-900/30 capitalize">
                                         Luyện tập: {activeVocabStudyMode === 'flashcards' ? 'Flashcard' : activeVocabStudyMode === 'quiz' ? 'Trắc nghiệm từ' : 'Gõ từ vựng'}
                                     </span>
                                 </div>
@@ -944,9 +1350,9 @@ const Toeic30DayMode = ({ words = [], speak }) => {
                                 {activeTab === 'theory' && (
                                     <div className="space-y-6 flex-1 flex flex-col justify-between">
                                         <div className="space-y-4">
-                                            <div className="bg-gray-50 dark:bg-slate-800/40 p-4 rounded-2xl border border-gray-200 dark:border-slate-800">
-                                                <h4 className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-1">Mục tiêu ngày học</h4>
-                                                <p className="text-sm font-semibold text-gray-700 dark:text-slate-300">{selectedDay.objective}</p>
+                                            <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800/80">
+                                                <h4 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Mục tiêu ngày học</h4>
+                                                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">{selectedDay.objective}</p>
                                             </div>
                                             
                                             <div className="prose dark:prose-invert max-w-none">
@@ -958,24 +1364,24 @@ const Toeic30DayMode = ({ words = [], speak }) => {
                                                 <div className="mt-8 bg-indigo-50/40 dark:bg-indigo-950/15 p-5 rounded-2xl border border-indigo-100/50 dark:border-indigo-900/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                                     <div className="space-y-1">
                                                         <h4 className="font-extrabold text-indigo-950 dark:text-indigo-300 text-sm">Luyện Ngữ Pháp Chuyên Sâu</h4>
-                                                        <p className="text-xs text-gray-500 dark:text-slate-400">Tự động khởi chạy bài tập trắc nghiệm ngữ pháp AI về chủ đề: **{selectedDay.grammarFocus}**.</p>
+                                                        <p className="text-xs text-slate-500 dark:text-slate-400">Tự động khởi chạy bài tập trắc nghiệm ngữ pháp AI về chủ đề: <strong className="text-indigo-600 dark:text-indigo-400">{selectedDay.grammarFocus}</strong>.</p>
                                                     </div>
                                                     <button
                                                         onClick={() => setShowGrammarDrill(true)}
-                                                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition shrink-0 cursor-pointer"
+                                                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm shadow-indigo-500/20 hover:scale-[1.01] transition shrink-0 cursor-pointer"
                                                     >
-                                                        <Sparkles size={14} /> Bắt đầu luyện ngay
+                                                        <Sparkles size={14} aria-hidden="true" /> Bắt đầu luyện ngay
                                                     </button>
                                                 </div>
                                             )}
                                         </div>
 
-                                        <div className="pt-6 border-t border-gray-200 dark:border-slate-800/80 flex justify-end">
+                                        <div className="pt-6 border-t border-slate-200/70 dark:border-slate-800/80 flex justify-end">
                                             <button 
                                                 onClick={() => setActiveTab('vocab')}
-                                                className="bg-green-600 text-white font-bold px-5 py-2.5 rounded-xl hover:bg-green-700 transition flex items-center gap-2 text-xs cursor-pointer"
+                                                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-2.5 rounded-xl shadow-sm shadow-indigo-500/20 hover:scale-[1.01] transition flex items-center gap-2 text-xs cursor-pointer"
                                             >
-                                                Chuyển sang Từ vựng <ArrowRight size={14} />
+                                                Chuyển sang Từ vựng <ArrowRight size={14} aria-hidden="true" />
                                             </button>
                                         </div>
                                     </div>
@@ -987,56 +1393,56 @@ const Toeic30DayMode = ({ words = [], speak }) => {
                                         <div className="space-y-6">
                                             
                                             {/* Sub-tab Toolbars */}
-                                            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-slate-100 dark:bg-slate-800/60 p-3 rounded-2xl border border-gray-200 dark:border-slate-800">
+                                            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-slate-100/80 dark:bg-slate-800/60 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800/80">
                                                 
                                                 {/* Visual Selector List/Slideshow */}
-                                                <div className="flex bg-white dark:bg-slate-900 p-1 rounded-xl border border-gray-200/50 dark:border-slate-800/80 w-fit">
+                                                <div className="flex bg-white dark:bg-slate-900 p-1 rounded-xl border border-slate-200/70 dark:border-slate-800/80 w-fit">
                                                     <button
                                                         onClick={() => setVocabSubTab('list')}
                                                         className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                                                             vocabSubTab === 'list'
-                                                                ? 'bg-green-600 text-white shadow-sm'
-                                                                : 'text-gray-600 dark:text-slate-400 hover:text-gray-800 dark:hover:text-white'
+                                                                ? 'bg-indigo-600 text-white shadow-sm'
+                                                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                                                         }`}
                                                     >
-                                                        <LayoutGrid size={13} />
+                                                        <LayoutGrid size={13} aria-hidden="true" />
                                                         <span>Danh sách từ</span>
                                                     </button>
                                                     <button
                                                         onClick={() => setVocabSubTab('context')}
                                                         className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                                                             vocabSubTab === 'context'
-                                                                ? 'bg-green-600 text-white shadow-sm'
-                                                                : 'text-gray-600 dark:text-slate-400 hover:text-gray-800 dark:hover:text-white'
+                                                                ? 'bg-indigo-600 text-white shadow-sm'
+                                                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                                                         }`}
                                                     >
-                                                        <BookOpenCheck size={13} />
+                                                        <BookOpenCheck size={13} aria-hidden="true" />
                                                         <span>Học theo ngữ cảnh (Slide)</span>
                                                     </button>
                                                 </div>
 
-                                                    {/* Mini sub-learning modes launcher */}
-                                                    <div className="flex flex-wrap items-center gap-2">
-                                                        <span className="text-[10px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest mr-1">Các chế độ ôn tập:</span>
-                                                        <button
-                                                            onClick={() => setActiveVocabStudyMode('flashcards')}
-                                                            className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200/40 dark:border-blue-900/40 rounded-lg text-[10px] font-bold hover:bg-blue-100/70 dark:hover:bg-blue-900/40 transition cursor-pointer"
-                                                        >
-                                                            Luyện Flashcard
-                                                        </button>
-                                                        <button
-                                                            onClick={() => setActiveVocabStudyMode('quiz')}
-                                                            className="px-3 py-1.5 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 border border-purple-200/40 dark:border-purple-900/40 rounded-lg text-[10px] font-bold hover:bg-purple-100/70 dark:hover:bg-purple-900/40 transition cursor-pointer"
-                                                        >
-                                                            Luyện Trắc nghiệm
-                                                        </button>
-                                                        <button
-                                                            onClick={() => setActiveVocabStudyMode('typing')}
-                                                            className="px-3 py-1.5 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-600 border border-amber-200/40 dark:border-amber-900/40 rounded-lg text-[10px] font-bold hover:bg-amber-100/70 dark:hover:bg-amber-900/40 transition cursor-pointer"
-                                                        >
-                                                            Luyện Gõ từ
-                                                        </button>
-                                                    </div>
+                                                {/* Mini sub-learning modes launcher */}
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mr-1">Các chế độ ôn tập:</span>
+                                                    <button
+                                                        onClick={() => setActiveVocabStudyMode('flashcards')}
+                                                        className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/60 rounded-xl text-[10px] font-black uppercase tracking-wider hover:bg-blue-100 dark:hover:bg-blue-900/50 transition cursor-pointer flex items-center gap-1"
+                                                    >
+                                                        <Layers size={11} aria-hidden="true" /> Luyện Flashcard
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setActiveVocabStudyMode('quiz')}
+                                                        className="px-3 py-1.5 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200/60 dark:border-purple-800/60 rounded-xl text-[10px] font-black uppercase tracking-wider hover:bg-purple-100 dark:hover:bg-purple-900/50 transition cursor-pointer flex items-center gap-1"
+                                                    >
+                                                        <CheckCircle2 size={11} aria-hidden="true" /> Luyện Trắc nghiệm
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setActiveVocabStudyMode('typing')}
+                                                        className="px-3 py-1.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/60 rounded-xl text-[10px] font-black uppercase tracking-wider hover:bg-amber-100 dark:hover:bg-amber-900/50 transition cursor-pointer flex items-center gap-1"
+                                                    >
+                                                        <Keyboard size={11} aria-hidden="true" /> Luyện Gõ từ
+                                                    </button>
+                                                </div>
                                             </div>
 
                                             {/* Phần chọn Part từ vựng */}
@@ -1046,8 +1452,8 @@ const Toeic30DayMode = ({ words = [], speak }) => {
                                                         onClick={() => { setVocabPartIndices([-1]); setContextIndex(0); }}
                                                         className={`px-4 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer border ${
                                                             vocabPartIndices.includes(-1)
-                                                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                                                                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
+                                                                ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                                                                : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
                                                         }`}
                                                     >
                                                         Tất cả ({dayWords.length} từ)
@@ -1068,8 +1474,8 @@ const Toeic30DayMode = ({ words = [], speak }) => {
                                                             }}
                                                             className={`px-4 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer border ${
                                                                 !vocabPartIndices.includes(-1) && vocabPartIndices.includes(i)
-                                                                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                                                                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
+                                                                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                                                                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
                                                             }`}
                                                         >
                                                             {part.label || `Phần ${i + 1}`} ({part.count} từ)
@@ -1082,10 +1488,10 @@ const Toeic30DayMode = ({ words = [], speak }) => {
                                             {vocabSubTab === 'list' && (
                                                 <div className="space-y-4">
                                                     <div className="flex items-center justify-between pb-2">
-                                                        <span className="text-xs font-black text-gray-500 dark:text-slate-500 uppercase tracking-wider">
+                                                        <span className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                                                             Chủ đề: {selectedDay.vocabTopic || "Học chung"}
                                                         </span>
-                                                        <span className="text-xs font-bold text-green-600 dark:text-green-400">
+                                                        <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
                                                             {currentPartWords.length} từ vựng
                                                         </span>
                                                     </div>
@@ -1097,27 +1503,27 @@ const Toeic30DayMode = ({ words = [], speak }) => {
                                                             {currentPartWords.map((item, idx) => (
                                                                 <div 
                                                                     key={idx} 
-                                                                    className="p-5 bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/80 rounded-2xl flex justify-between items-start group shadow-sm hover:scale-[1.01] transition-all"
+                                                                    className="p-5 bg-white dark:bg-slate-800/40 border border-slate-200/90 dark:border-slate-800/80 rounded-2xl flex justify-between items-start group shadow-[0_2px_8px_-2px_rgba(15,23,42,0.04)] hover:shadow-md hover:border-indigo-400/80 hover:scale-[1.01] transition-all"
                                                                 >
                                                                     <div className="space-y-2">
                                                                         <div className="flex items-center gap-2 flex-wrap">
-                                                                            <h4 className="text-lg font-black text-gray-900 dark:text-white leading-none">{item.en}</h4>
-                                                                            <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 px-2 py-0.5 rounded leading-none">
+                                                                            <h4 className="text-lg font-black text-slate-900 dark:text-white leading-none">{item.en}</h4>
+                                                                            <span className="text-[10px] font-bold text-indigo-800 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200/60 dark:border-indigo-900/30 px-2 py-0.5 rounded leading-none">
                                                                                 {item.category}
                                                                             </span>
                                                                             {item.ipa && (
-                                                                                <span className="text-xs font-mono text-gray-400 dark:text-slate-400">{item.ipa}</span>
+                                                                                <span className="text-xs font-mono text-slate-500 dark:text-slate-400">{item.ipa}</span>
                                                                             )}
                                                                         </div>
-                                                                        <p className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400">{item.vi}</p>
-                                                                        <p className="text-xs text-gray-500 dark:text-slate-400 italic leading-relaxed">
-                                                                            <strong className="not-italic text-[10px] font-bold uppercase tracking-wider text-gray-400 mr-1">Ex:</strong>
+                                                                        <p className="text-sm font-extrabold text-emerald-700 dark:text-emerald-400">{item.vi}</p>
+                                                                        <p className="text-xs text-slate-700 dark:text-slate-400 italic leading-relaxed">
+                                                                            <strong className="not-italic text-[10px] font-bold uppercase tracking-wider text-slate-500 mr-1">Ex:</strong>
                                                                             {item.example}
                                                                         </p>
                                                                     </div>
                                                                     <button 
                                                                         onClick={(e) => speak(item.en, e, 'en-US')}
-                                                                        className="p-2 bg-white dark:bg-slate-800 hover:bg-green-50 dark:hover:bg-green-950/30 text-gray-400 hover:text-green-600 dark:hover:text-green-400 rounded-full border border-gray-200 dark:border-slate-700 shadow-sm cursor-pointer shrink-0"
+                                                                        className="p-2 bg-slate-50 hover:bg-emerald-50 dark:bg-slate-800 dark:hover:bg-emerald-950/30 text-slate-500 hover:text-emerald-700 dark:text-slate-400 dark:hover:text-emerald-400 rounded-full border border-slate-200/90 dark:border-slate-700 shadow-2xs cursor-pointer shrink-0 transition-colors"
                                                                         title="Nghe phát âm"
                                                                     >
                                                                         <Volume2 size={14} />
@@ -1277,7 +1683,7 @@ const Toeic30DayMode = ({ words = [], speak }) => {
                                                         {contextIndex < currentPartWords.length - 1 ? (
                                                             <button
                                                                 onClick={() => setContextIndex(prev => prev + 1)}
-                                                                className="px-5 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs font-bold shadow-sm hover:shadow-green-500/20 transition cursor-pointer"
+                                                                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm shadow-indigo-500/20 hover:scale-[1.01] transition cursor-pointer"
                                                             >
                                                                 Từ tiếp theo
                                                             </button>
@@ -1287,9 +1693,9 @@ const Toeic30DayMode = ({ words = [], speak }) => {
                                                                     setVocabSubTab('list');
                                                                     toast.success("Tuyệt vời! Bạn đã hoàn thành 10 từ theo ngữ cảnh.");
                                                                 }}
-                                                                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                                                                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer shadow-sm shadow-emerald-500/20"
                                                             >
-                                                                <CheckCircle2 size={13} /> Hoàn thành 10 từ
+                                                                <CheckCircle2 size={13} aria-hidden="true" /> Hoàn thành 10 từ
                                                             </button>
                                                         )}
                                                     </div>
@@ -1297,18 +1703,21 @@ const Toeic30DayMode = ({ words = [], speak }) => {
                                             )}
                                         </div>
 
-                                        <div className="pt-6 border-t border-gray-100 dark:border-slate-800/80 flex justify-between items-center">
+                                        <div className="pt-6 border-t border-slate-200/70 dark:border-slate-800/80 flex justify-between items-center">
                                             <button 
                                                 onClick={() => setActiveTab('theory')}
-                                                className="text-xs font-bold text-slate-400 dark:text-slate-500 hover:text-green-600 dark:hover:text-green-400 cursor-pointer"
+                                                className="text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition cursor-pointer"
                                             >
                                                 Quay lại Lý thuyết
                                             </button>
                                             <button 
-                                                onClick={() => setActiveTab('practice')}
-                                                className="bg-green-600 text-white font-bold px-5 py-2.5 rounded-xl hover:bg-green-700 transition flex items-center gap-2 text-xs cursor-pointer shadow-sm"
+                                                onClick={() => {
+                                                    setActiveTab('practice');
+                                                    setPracticeMethod(null);
+                                                }}
+                                                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-2.5 rounded-xl hover:scale-[1.01] transition flex items-center gap-2 text-xs cursor-pointer shadow-sm shadow-indigo-500/20"
                                             >
-                                                Chuyển sang Luyện tập <ArrowRight size={14} />
+                                                Chuyển sang Ôn từ vựng <ArrowRight size={14} aria-hidden="true" />
                                             </button>
                                         </div>
                                     </div>
@@ -1317,198 +1726,549 @@ const Toeic30DayMode = ({ words = [], speak }) => {
                                 {/* 3. PRACTICE TAB */}
                                 {activeTab === 'practice' && (
                                     <div className="space-y-6 flex-1 flex flex-col justify-between">
-                                        
-                                        {/* AI LOADER */}
-                                        {loadingQuiz && (
-                                            <div className="flex-1 flex flex-col items-center justify-center py-12">
-                                                <RefreshCw className="animate-spin text-green-500 w-10 h-10 mb-4" />
-                                                <p className="text-gray-500 dark:text-slate-400 font-medium">Gemini AI đang biên soạn đề thi thử TOEIC...</p>
-                                            </div>
-                                        )}
+                                        {/* VIEW 1: METHOD SELECTION SCREEN */}
+                                        {!practiceMethod && (
+                                            <div className="space-y-6 animate-fade-in flex-1 flex flex-col justify-between">
+                                                <div className="space-y-6">
+                                                    {/* Header Banner */}
+                                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80 dark:border-slate-800/80">
+                                                        <div className="space-y-1">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-[10px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-3 py-0.5 rounded-full border border-indigo-200/50 dark:border-indigo-900/30">
+                                                                    Ôn Tập & Luyện Phản Xạ
+                                                                </span>
+                                                                <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                                                                    Ngày {selectedDay.day < 10 ? `0${selectedDay.day}` : selectedDay.day}
+                                                                </span>
+                                                            </div>
+                                                            <h3 className="text-xl font-black text-slate-900 dark:text-white">
+                                                                Chọn Phương Pháp Ôn Từ Vựng
+                                                            </h3>
+                                                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                                Lựa chọn hình thức ôn tập phù hợp để củng cố và đưa từ vựng hôm nay ({currentPartWords.length} từ) vào trí nhớ dài hạn.
+                                                            </p>
+                                                        </div>
 
-                                        {/* NOT GENERATED STATE */}
-                                        {!loadingQuiz && !quizData && (
-                                            <div className="flex-1 flex flex-col items-center justify-center text-center py-12 space-y-5">
-                                                <Sparkles className="text-amber-500 w-12 h-12 animate-pulse" />
-                                                <div className="space-y-2">
-                                                    <h3 className="text-lg font-bold text-gray-800 dark:text-white">Luyện tập trắc nghiệm bằng AI</h3>
-                                                    <p className="text-gray-500 dark:text-slate-400 max-w-md text-sm mx-auto">
-                                                        AI sẽ sinh đề thi thử gồm 5 câu trắc nghiệm bám sát mục tiêu **{selectedDay.grammarFocus}** (phương thức {selectedDay.practiceType}).
-                                                    </p>
-                                                </div>
-                                                <button
-                                                    onClick={handleGenerateQuiz}
-                                                    className="bg-indigo-600 text-white font-bold px-6 py-3 rounded-xl hover:bg-indigo-700 transition flex items-center gap-2 shadow-md text-sm cursor-pointer"
-                                                >
-                                                    <Sparkles size={16} /> Bắt đầu làm bài luyện tập
-                                                </button>
-                                            </div>
-                                        )}
+                                                        <div className="text-left sm:text-right shrink-0">
+                                                            <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
+                                                                Chủ đề từ vựng
+                                                            </span>
+                                                            <span className="text-sm font-black text-indigo-600 dark:text-indigo-400">
+                                                                {selectedDay.vocabTopic || "Từ vựng cốt lõi"}
+                                                            </span>
+                                                        </div>
+                                                    </div>
 
-                                        {/* QUIZ WORKSPACE */}
-                                        {!loadingQuiz && quizData && (
-                                            <div className="space-y-8 animate-fade-in">
-                                                <div className="border-b border-gray-100 dark:border-slate-800 pb-3 flex justify-between items-center">
-                                                    <h3 className="text-lg font-black text-gray-800 dark:text-white">{quizData.title}</h3>
-                                                    {showQuizResults && (
-                                                        <span className="text-sm font-black text-indigo-600 dark:text-indigo-400">
-                                                            Kết quả: {quizScore} / {quizData.questions.length} câu đúng
-                                                        </span>
+                                                    {/* Part selector if day has multiple parts */}
+                                                    {numParts > 1 && (
+                                                        <div className="bg-slate-50/80 dark:bg-slate-800/40 p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-2">
+                                                            <span className="text-[11px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-wider">
+                                                                Phạm vi từ vựng ({currentPartWords.length}/{dayWords.length} từ):
+                                                            </span>
+                                                            <div className="flex flex-wrap items-center gap-2">
+                                                                <button
+                                                                    onClick={() => setVocabPartIndices([-1])}
+                                                                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer border ${
+                                                                        vocabPartIndices.includes(-1)
+                                                                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                                                                            : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
+                                                                    }`}
+                                                                >
+                                                                    Tất cả ({dayWords.length} từ)
+                                                                </button>
+                                                                {partsInfo.map((part, i) => (
+                                                                    <button
+                                                                        key={i}
+                                                                        onClick={() => { 
+                                                                            setVocabPartIndices(prev => {
+                                                                                if (prev.includes(-1)) return [i];
+                                                                                if (prev.includes(i)) {
+                                                                                    const next = prev.filter(idx => idx !== i);
+                                                                                    return next.length === 0 ? [-1] : next;
+                                                                                }
+                                                                                return [...prev, i];
+                                                                            });
+                                                                        }}
+                                                                        className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer border ${
+                                                                            !vocabPartIndices.includes(-1) && vocabPartIndices.includes(i)
+                                                                                ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                                                                                : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
+                                                                        }`}
+                                                                    >
+                                                                        {part.label || `Phần ${i + 1}`} ({part.count} từ)
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        </div>
                                                     )}
+
+                                                    {/* 3 Main Method Cards */}
+                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                                                        {/* Card 1: Luyện Flashcard */}
+                                                        <div 
+                                                            onClick={() => setPracticeMethod('flashcards')}
+                                                            className="group relative bg-gradient-to-br from-blue-50/60 to-indigo-50/30 dark:from-slate-800/80 dark:to-blue-950/20 border-2 border-blue-200/80 dark:border-blue-900/40 hover:border-blue-500 dark:hover:border-blue-400 p-6 rounded-3xl cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 flex flex-col justify-between"
+                                                        >
+                                                            <div className="space-y-4">
+                                                                <div className="flex items-center justify-between">
+                                                                    <div className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20 group-hover:scale-110 transition-transform">
+                                                                        <Layers size={24} />
+                                                                    </div>
+                                                                    <span className="text-[10px] font-black uppercase tracking-wider text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/50 px-2.5 py-1 rounded-full">
+                                                                        Ghi nhớ nhanh
+                                                                    </span>
+                                                                </div>
+                                                                <div>
+                                                                    <h4 className="text-lg font-black text-gray-800 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                                                        Luyện Flashcard
+                                                                    </h4>
+                                                                    <p className="text-xs text-gray-600 dark:text-slate-400 mt-2 leading-relaxed">
+                                                                        Lật thẻ 2 mặt tương tác, nghe phát âm giọng chuẩn bản xứ, trau dồi phiên âm IPA và câu ví dụ thực tế.
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="mt-6 pt-4 border-t border-blue-100 dark:border-slate-800 flex items-center justify-between">
+                                                                <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
+                                                                    {currentPartWords.length} từ vựng
+                                                                </span>
+                                                                <span className="text-xs font-black text-blue-600 dark:text-blue-400 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                                                                    Bắt đầu <ArrowRight size={14} />
+                                                                </span>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Card 2: Luyện Trắc nghiệm */}
+                                                        <div 
+                                                            onClick={() => setPracticeMethod('quiz')}
+                                                            className="group relative bg-gradient-to-br from-purple-50/60 to-fuchsia-50/30 dark:from-slate-800/80 dark:to-purple-950/20 border-2 border-purple-200/80 dark:border-purple-900/40 hover:border-purple-500 dark:hover:border-purple-400 p-6 rounded-3xl cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 flex flex-col justify-between"
+                                                        >
+                                                            <div className="space-y-4">
+                                                                <div className="flex items-center justify-between">
+                                                                    <div className="w-12 h-12 rounded-2xl bg-purple-600 text-white flex items-center justify-center shadow-md shadow-purple-500/20 group-hover:scale-110 transition-transform">
+                                                                        <CheckCircle2 size={24} />
+                                                                    </div>
+                                                                    <span className="text-[10px] font-black uppercase tracking-wider text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/50 px-2.5 py-1 rounded-full">
+                                                                        Phản xạ 4 đáp án
+                                                                    </span>
+                                                                </div>
+                                                                <div>
+                                                                    <h4 className="text-lg font-black text-gray-800 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                                                                        Luyện Trắc nghiệm
+                                                                    </h4>
+                                                                    <p className="text-xs text-gray-600 dark:text-slate-400 mt-2 leading-relaxed">
+                                                                        Chọn đáp án đúng từ 4 phương án ngẫu nhiên, giúp rèn luyện phản xạ nhanh và củng cố nhận diện nghĩa của từ.
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="mt-6 pt-4 border-t border-purple-100 dark:border-slate-800 flex items-center justify-between">
+                                                                <span className="text-xs font-bold text-purple-600 dark:text-purple-400">
+                                                                    {currentPartWords.length} từ vựng
+                                                                </span>
+                                                                <span className="text-xs font-black text-purple-600 dark:text-purple-400 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                                                                    Bắt đầu <ArrowRight size={14} />
+                                                                </span>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Card 3: Luyện Gõ từ */}
+                                                        <div 
+                                                            onClick={() => setPracticeMethod('typing')}
+                                                            className="group relative bg-gradient-to-br from-amber-50/60 to-orange-50/30 dark:from-slate-800/80 dark:to-amber-950/20 border-2 border-amber-200/80 dark:border-amber-900/40 hover:border-amber-500 dark:hover:border-amber-400 p-6 rounded-3xl cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 flex flex-col justify-between"
+                                                        >
+                                                            <div className="space-y-4">
+                                                                <div className="flex items-center justify-between">
+                                                                    <div className="w-12 h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-md shadow-amber-500/20 group-hover:scale-110 transition-transform">
+                                                                        <Keyboard size={24} />
+                                                                    </div>
+                                                                    <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/50 px-2.5 py-1 rounded-full">
+                                                                        Chính tả & Gõ phím
+                                                                    </span>
+                                                                </div>
+                                                                <div>
+                                                                    <h4 className="text-lg font-black text-gray-800 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                                                                        Luyện Gõ từ
+                                                                    </h4>
+                                                                    <p className="text-xs text-gray-600 dark:text-slate-400 mt-2 leading-relaxed">
+                                                                        Luyện gõ chính xác từng ký tự theo gợi ý phiên âm và nghĩa tiếng Việt, giúp nhớ từ chuẩn xác và bền vững.
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="mt-6 pt-4 border-t border-amber-100 dark:border-slate-800 flex items-center justify-between">
+                                                                <span className="text-xs font-bold text-amber-600 dark:text-amber-400">
+                                                                    {currentPartWords.length} từ vựng
+                                                                </span>
+                                                                <span className="text-xs font-black text-amber-600 dark:text-amber-400 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                                                                    Bắt đầu <ArrowRight size={14} />
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Secondary Box: Đề thi thử TOEIC AI (5 câu) */}
+                                                    <div className={`p-5 rounded-3xl border transition flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
+                                                        isAiLocked 
+                                                            ? 'bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 opacity-80' 
+                                                            : 'bg-gradient-to-r from-indigo-50/60 via-purple-50/40 to-slate-50 dark:from-slate-800/80 dark:via-indigo-950/20 dark:to-slate-900 border-indigo-100 dark:border-indigo-900/30'
+                                                    }`}>
+                                                        <div className="flex items-start sm:items-center gap-3.5">
+                                                            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${
+                                                                isAiLocked ? 'bg-slate-400 dark:bg-slate-700 text-white' : 'bg-indigo-600 text-white'
+                                                            }`}>
+                                                                {isAiLocked ? <Lock size={18} /> : <Sparkles size={20} />}
+                                                            </div>
+                                                            <div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <h5 className="font-extrabold text-sm text-gray-800 dark:text-white">
+                                                                        Đề Thi Thử TOEIC AI (5 câu)
+                                                                    </h5>
+                                                                    {isAiLocked ? (
+                                                                        <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded-full border border-rose-200/50 dark:border-rose-900/30 flex items-center gap-1">
+                                                                            <Lock size={10} /> Đang tạm khóa bởi Quản trị viên
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded-full border border-indigo-200/50 dark:border-indigo-900/30">
+                                                                            Bổ trợ
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
+                                                                    {isAiLocked
+                                                                        ? 'Chức năng AI hiện đang tạm tắt để học viên ưu tiên rèn luyện từ vựng qua Flashcard, Trắc nghiệm và Gõ từ.'
+                                                                        : `Kiểm tra kiến thức ngữ pháp & kỹ năng (${selectedDay.grammarFocus}) do Gemini AI biên soạn.`}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+
+                                                        <button
+                                                            onClick={() => {
+                                                                if (isAiLocked) {
+                                                                    toast.warning("Tính năng AI hiện đang tạm khóa bởi Quản trị viên hệ thống!");
+                                                                    return;
+                                                                }
+                                                                setPracticeMethod('ai_quiz');
+                                                            }}
+                                                            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm shrink-0 cursor-pointer ${
+                                                                isAiLocked
+                                                                    ? 'bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-300 dark:hover:bg-slate-700'
+                                                                    : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                                                            }`}
+                                                        >
+                                                            {isAiLocked ? <Lock size={14} /> : <Sparkles size={14} />} 
+                                                            {isAiLocked ? 'AI Tạm Khóa' : 'Làm đề thi thử AI'}
+                                                        </button>
+                                                    </div>
                                                 </div>
 
-                                                {/* Passage reader if any (Listening transcript / reading comprehension) */}
-                                                {quizData.passage && (
-                                                    <div className="p-5 bg-slate-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-800 rounded-2xl space-y-3 relative group">
-                                                        <h4 className="text-xs font-black uppercase text-gray-400 dark:text-slate-500 tracking-wider">Đoạn văn / Đoạn hội thoại mẫu:</h4>
-                                                        <p className="text-sm text-gray-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{quizData.passage}</p>
-                                                        
-                                                        {/* Text to Speech player for Listening passages */}
-                                                        {selectedDay.practiceType.startsWith('listening') && (
-                                                            <button 
-                                                                onClick={() => playListeningAudio(quizData.passage)}
-                                                                disabled={playingAudio}
-                                                                className="absolute right-4 top-4 p-2 bg-white dark:bg-slate-700 hover:bg-green-50 dark:hover:bg-green-950/20 text-gray-500 hover:text-green-600 rounded-lg shadow-sm border border-gray-200 dark:border-slate-600 flex items-center gap-1 text-xs cursor-pointer"
-                                                            >
-                                                                <Play size={14} className={playingAudio ? 'animate-ping' : ''} />
-                                                                <span>{playingAudio ? 'Đang đọc...' : 'Nghe hội thoại'}</span>
-                                                            </button>
+                                                {/* Footer buttons */}
+                                                <div className="pt-6 border-t border-slate-200/70 dark:border-slate-800/80 flex justify-between items-center">
+                                                    <button 
+                                                        onClick={() => setActiveTab('vocab')}
+                                                        className="text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1.5 cursor-pointer transition"
+                                                    >
+                                                        <ArrowLeft size={14} aria-hidden="true" /> Quay lại danh sách từ vựng
+                                                    </button>
+                                                    <button
+                                                        onClick={handleMarkDayCompletedWithoutQuiz}
+                                                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-1.5 shadow-sm shadow-emerald-500/20 hover:scale-[1.01] transition cursor-pointer"
+                                                    >
+                                                        <CheckCircle2 size={14} aria-hidden="true" /> Đánh dấu hoàn thành ngày học
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* VIEW 2: FLASHCARD PRACTICE */}
+                                        {practiceMethod === 'flashcards' && (
+                                            <div className="space-y-4 flex-1 animate-fade-in">
+                                                <div className="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-slate-800">
+                                                    <button
+                                                        onClick={() => setPracticeMethod(null)}
+                                                        className="text-xs font-bold text-slate-500 hover:text-blue-600 flex items-center gap-1.5 cursor-pointer py-1 px-2.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                                                    >
+                                                        <ArrowLeft size={14} /> Quay lại chọn phương pháp
+                                                    </button>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-xs font-black text-blue-600 bg-blue-50 dark:bg-blue-950/30 px-3 py-1 rounded-full border border-blue-200/40 dark:border-blue-900/40 flex items-center gap-1.5">
+                                                            <Layers size={13} /> Luyện Flashcard ({currentPartWords.length} từ)
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div className="pt-2">
+                                                    <FlashcardMode words={currentPartWords} speak={speak} />
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* VIEW 3: QUIZ PRACTICE */}
+                                        {practiceMethod === 'quiz' && (
+                                            <div className="space-y-4 flex-1 animate-fade-in">
+                                                <div className="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-slate-800">
+                                                    <button
+                                                        onClick={() => setPracticeMethod(null)}
+                                                        className="text-xs font-bold text-slate-500 hover:text-purple-600 flex items-center gap-1.5 cursor-pointer py-1 px-2.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                                                    >
+                                                        <ArrowLeft size={14} /> Quay lại chọn phương pháp
+                                                    </button>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-xs font-black text-purple-600 bg-purple-50 dark:bg-purple-950/30 px-3 py-1 rounded-full border border-purple-200/40 dark:border-purple-900/40 flex items-center gap-1.5">
+                                                            <CheckCircle2 size={13} /> Luyện Trắc nghiệm ({currentPartWords.length} từ)
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div className="pt-2">
+                                                    <QuizMode words={currentPartWords} speak={speak} />
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* VIEW 4: TYPING PRACTICE */}
+                                        {practiceMethod === 'typing' && (
+                                            <div className="space-y-4 flex-1 animate-fade-in">
+                                                <div className="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-slate-800">
+                                                    <button
+                                                        onClick={() => setPracticeMethod(null)}
+                                                        className="text-xs font-bold text-slate-500 hover:text-amber-600 flex items-center gap-1.5 cursor-pointer py-1 px-2.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                                                    >
+                                                        <ArrowLeft size={14} /> Quay lại chọn phương pháp
+                                                    </button>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-xs font-black text-amber-600 bg-amber-50 dark:bg-amber-950/30 px-3 py-1 rounded-full border border-amber-200/40 dark:border-amber-900/40 flex items-center gap-1.5">
+                                                            <Keyboard size={13} /> Luyện Gõ từ ({currentPartWords.length} từ)
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div className="pt-2">
+                                                    <TypingMode words={currentPartWords} speak={speak} />
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* VIEW 5: AI QUIZ GENERATOR */}
+                                        {practiceMethod === 'ai_quiz' && (
+                                            <div className="space-y-6 flex-1 flex flex-col justify-between animate-fade-in">
+                                                <div className="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-slate-800">
+                                                    <button
+                                                        onClick={() => setPracticeMethod(null)}
+                                                        className="text-xs font-bold text-slate-500 hover:text-indigo-600 flex items-center gap-1.5 cursor-pointer py-1 px-2.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                                                    >
+                                                        <ArrowLeft size={14} /> Quay lại chọn phương pháp
+                                                    </button>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-xs font-black text-indigo-600 bg-indigo-50 dark:bg-indigo-950/30 px-3 py-1 rounded-full border border-indigo-200/40 dark:border-indigo-900/40 flex items-center gap-1.5">
+                                                            <Sparkles size={13} /> Đề thi thử TOEIC AI
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                {/* AI LOADER */}
+                                                {loadingQuiz && (
+                                                    <div className="flex-1 flex flex-col items-center justify-center py-12">
+                                                        <RefreshCw className="animate-spin text-green-500 w-10 h-10 mb-4" />
+                                                        <p className="text-gray-500 dark:text-slate-400 font-medium">Gemini AI đang biên soạn đề thi thử TOEIC...</p>
+                                                    </div>
+                                                )}
+
+                                                {/* NOT GENERATED STATE */}
+                                                {!loadingQuiz && !quizData && (
+                                                    <div className="flex-1 flex flex-col items-center justify-center text-center py-12 space-y-5">
+                                                        {isAiLocked ? (
+                                                            <div className="max-w-md mx-auto space-y-4 p-6 rounded-3xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/30 text-center animate-fade-in">
+                                                                <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto">
+                                                                    <Lock size={28} />
+                                                                </div>
+                                                                <div>
+                                                                    <h3 className="text-base font-black text-gray-800 dark:text-white">Tính Năng AI Đang Tạm Khóa</h3>
+                                                                    <p className="text-xs text-gray-600 dark:text-slate-400 mt-2 leading-relaxed">
+                                                                        Quản trị viên đang tạm khóa tính năng AI trên toàn hệ thống để học viên ưu tiên ôn luyện từ vựng qua Flashcard, Trắc nghiệm và Luyện gõ từ vựng.
+                                                                    </p>
+                                                                </div>
+                                                                <button
+                                                                    onClick={() => setPracticeMethod(null)}
+                                                                    className="px-5 py-2.5 bg-white dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-200 border border-gray-200 dark:border-slate-700 rounded-xl text-xs font-bold transition cursor-pointer shadow-sm"
+                                                                >
+                                                                    Chọn Phương Pháp Ôn Tập Khác
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <>
+                                                                <Sparkles className="text-amber-500 w-12 h-12 animate-pulse" />
+                                                                <div className="space-y-2">
+                                                                    <h3 className="text-lg font-bold text-gray-800 dark:text-white">Luyện tập trắc nghiệm bằng AI</h3>
+                                                                    <p className="text-gray-500 dark:text-slate-400 max-w-md text-sm mx-auto">
+                                                                        AI sẽ sinh đề thi thử gồm 5 câu trắc nghiệm bám sát mục tiêu **{selectedDay.grammarFocus}** (phương thức {selectedDay.practiceType}).
+                                                                    </p>
+                                                                </div>
+                                                                <button
+                                                                    onClick={handleGenerateQuiz}
+                                                                    className="bg-indigo-600 text-white font-bold px-6 py-3 rounded-xl hover:bg-indigo-700 transition flex items-center gap-2 shadow-md text-sm cursor-pointer"
+                                                                >
+                                                                    <Sparkles size={16} /> Bắt đầu làm bài luyện tập
+                                                                </button>
+                                                            </>
                                                         )}
                                                     </div>
                                                 )}
 
-                                                {/* Question Cards */}
-                                                <div className="space-y-8">
-                                                    {quizData.questions.map((q, index) => (
-                                                        <div key={q.id} className="border-b border-gray-100 dark:border-slate-800 pb-6 last:border-none">
-                                                            
-                                                            {/* Question Title & TTS Player */}
-                                                            <div className="flex items-start justify-between gap-4 mb-4">
-                                                                <p className="text-sm font-bold text-gray-800 dark:text-white leading-relaxed">
-                                                                    <span className="text-green-600 dark:text-green-400 font-black mr-2">Câu {index + 1}:</span>
-                                                                    {q.question}
-                                                                </p>
+                                                {/* QUIZ WORKSPACE */}
+                                                {!loadingQuiz && quizData && (
+                                                    <div className="space-y-8 animate-fade-in">
+                                                        <div className="border-b border-gray-100 dark:border-slate-800 pb-3 flex justify-between items-center">
+                                                            <h3 className="text-lg font-black text-gray-800 dark:text-white">{quizData.title}</h3>
+                                                            {showQuizResults && (
+                                                                <span className="text-sm font-black text-indigo-600 dark:text-indigo-400">
+                                                                    Kết quả: {quizScore} / {quizData.questions.length} câu đúng
+                                                                </span>
+                                                            )}
+                                                        </div>
 
-                                                                {/* Listen single question audio Text */}
-                                                                {selectedDay.practiceType.startsWith('listening') && q.audioText && !quizData.passage && (
+                                                        {/* Passage reader if any (Listening transcript / reading comprehension) */}
+                                                        {quizData.passage && (
+                                                            <div className="p-5 bg-slate-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-800 rounded-2xl space-y-3 relative group">
+                                                                <h4 className="text-xs font-black uppercase text-gray-400 dark:text-slate-500 tracking-wider">Đoạn văn / Đoạn hội thoại mẫu:</h4>
+                                                                <p className="text-sm text-gray-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{quizData.passage}</p>
+                                                                
+                                                                {/* Text to Speech player for Listening passages */}
+                                                                {selectedDay.practiceType.startsWith('listening') && (
                                                                     <button 
-                                                                        onClick={() => playListeningAudio(q.audioText)}
+                                                                        onClick={() => playListeningAudio(quizData.passage)}
                                                                         disabled={playingAudio}
-                                                                        className="p-2 bg-gray-50 hover:bg-green-50 dark:bg-slate-800 dark:hover:bg-green-950/20 text-gray-500 hover:text-green-600 rounded-full border border-gray-200 dark:border-slate-700 flex items-center gap-1 text-xs shrink-0 cursor-pointer"
-                                                                        title="Nghe câu hỏi"
+                                                                        className="absolute right-4 top-4 p-2 bg-white dark:bg-slate-700 hover:bg-green-50 dark:hover:bg-green-950/20 text-gray-500 hover:text-green-600 rounded-lg shadow-sm border border-gray-200 dark:border-slate-600 flex items-center gap-1 text-xs cursor-pointer"
                                                                     >
-                                                                        <Volume2 size={14} className={playingAudio ? 'animate-pulse' : ''} />
+                                                                        <Play size={14} className={playingAudio ? 'animate-ping' : ''} />
+                                                                        <span>{playingAudio ? 'Đang đọc...' : 'Nghe hội thoại'}</span>
                                                                     </button>
                                                                 )}
                                                             </div>
+                                                        )}
 
-                                                            {/* Option Grid */}
-                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                                {q.options.map((opt, optIdx) => {
-                                                                    const isSelected = userAnswers[q.id] === optIdx;
-                                                                    const isCorrect = q.correctAnswerIndex === optIdx;
-                                                                    const isWrongSelected = showQuizResults && isSelected && !isCorrect;
-                                                                    const isCorrectSelected = showQuizResults && isCorrect;
+                                                        {/* Question Cards */}
+                                                        <div className="space-y-8">
+                                                            {quizData.questions.map((q, index) => (
+                                                                <div key={q.id} className="border-b border-gray-100 dark:border-slate-800 pb-6 last:border-none">
+                                                                    
+                                                                    {/* Question Title & TTS Player */}
+                                                                    <div className="flex items-start justify-between gap-4 mb-4">
+                                                                        <p className="text-sm font-bold text-gray-800 dark:text-white leading-relaxed">
+                                                                            <span className="text-green-600 dark:text-green-400 font-black mr-2">Câu {index + 1}:</span>
+                                                                            {q.question}
+                                                                        </p>
 
-                                                                    let btnClass = "p-3.5 text-left border-2 rounded-xl text-xs font-semibold transition-all ";
-                                                                    if (!showQuizResults) {
-                                                                        btnClass += isSelected
-                                                                            ? "border-green-500 bg-green-50/50 dark:bg-green-900/20 text-green-700 dark:text-green-400 cursor-pointer"
-                                                                            : "border-gray-200/70 dark:border-slate-800 hover:border-green-300 dark:hover:border-green-500 bg-white dark:bg-slate-900 text-gray-700 dark:text-slate-300 cursor-pointer";
-                                                                    } else {
-                                                                        if (isCorrectSelected) {
-                                                                            btnClass += "border-green-500 bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400 font-extrabold";
-                                                                        } else if (isWrongSelected) {
-                                                                            btnClass += "border-red-500 bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400 font-bold";
-                                                                        } else {
-                                                                            btnClass += "border-gray-200/50 dark:border-slate-800 text-gray-400 dark:text-slate-500 opacity-40 bg-white dark:bg-slate-900";
-                                                                        }
-                                                                    }
-
-                                                                    return (
-                                                                        <button
-                                                                            key={optIdx}
-                                                                            onClick={() => handleSelectOption(q.id, optIdx)}
-                                                                            disabled={showQuizResults}
-                                                                            className={btnClass}
-                                                                        >
-                                                                            <div className="flex items-center justify-between">
-                                                                                <span>{String.fromCharCode(65 + optIdx)}. {opt}</span>
-                                                                                {showQuizResults && isCorrectSelected && <CheckCircle2 size={16} className="text-green-500" />}
-                                                                                {showQuizResults && isWrongSelected && <XCircle size={16} className="text-red-500" />}
-                                                                            </div>
-                                                                        </button>
-                                                                    );
-                                                                })}
-                                                            </div>
-
-                                                            {/* Explanations */}
-                                                            {showQuizResults && (
-                                                                <div className="mt-4 p-4 bg-indigo-50/40 dark:bg-indigo-950/10 border border-indigo-200 dark:border-indigo-900/30 rounded-2xl flex gap-3 items-start animate-fade-in shadow-sm">
-                                                                    <HelpCircle className="text-indigo-500 shrink-0 mt-0.5" size={16} />
-                                                                    <div className="text-xs">
-                                                                        <p className="font-extrabold text-indigo-900 dark:text-indigo-300 mb-1">Giải thích chi tiết:</p>
-                                                                        <p className="text-indigo-800 dark:text-indigo-400/90 leading-relaxed">{q.explanation}</p>
+                                                                        {/* Listen single question audio Text */}
+                                                                        {selectedDay.practiceType.startsWith('listening') && q.audioText && !quizData.passage && (
+                                                                            <button 
+                                                                                onClick={() => playListeningAudio(q.audioText)}
+                                                                                disabled={playingAudio}
+                                                                                className="p-2 bg-gray-50 hover:bg-green-50 dark:bg-slate-800 dark:hover:bg-green-950/20 text-gray-500 hover:text-green-600 rounded-full border border-gray-200 dark:border-slate-700 flex items-center gap-1 text-xs shrink-0 cursor-pointer"
+                                                                                title="Nghe câu hỏi"
+                                                                            >
+                                                                                <Volume2 size={14} className={playingAudio ? 'animate-pulse' : ''} />
+                                                                            </button>
+                                                                        )}
                                                                     </div>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    ))}
-                                                </div>
 
-                                                {/* Action buttons footer */}
-                                                {!showQuizResults ? (
-                                                    <div className="text-center pt-6 border-t border-gray-100 dark:border-slate-800">
-                                                        <button 
-                                                            onClick={handleSubmitQuiz}
-                                                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-12 rounded-xl text-xs shadow-md transition cursor-pointer"
-                                                        >
-                                                            Nộp bài chấm điểm
-                                                        </button>
-                                                    </div>
-                                                ) : (
-                                                    <div className="mt-8 p-6 bg-slate-50/50 dark:bg-slate-900 rounded-3xl border border-gray-200 dark:border-slate-800 text-center transition-all shadow-inner animate-fade-in">
-                                                        {quizScore === quizData.questions.length && (
-                                                            <div className="flex justify-center mb-2 text-amber-500 animate-bounce">
-                                                                <Award size={48} />
+                                                                    {/* Option Grid */}
+                                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                                        {q.options.map((opt, optIdx) => {
+                                                                            const isSelected = userAnswers[q.id] === optIdx;
+                                                                            const isCorrect = q.correctAnswerIndex === optIdx;
+                                                                            const isWrongSelected = showQuizResults && isSelected && !isCorrect;
+                                                                            const isCorrectSelected = showQuizResults && isCorrect;
+
+                                                                            let btnClass = "p-3.5 text-left border-2 rounded-xl text-xs font-semibold transition-all ";
+                                                                            if (!showQuizResults) {
+                                                                                btnClass += isSelected
+                                                                                    ? "border-green-500 bg-green-50/50 dark:bg-green-900/20 text-green-700 dark:text-green-400 cursor-pointer"
+                                                                                    : "border-gray-200/70 dark:border-slate-800 hover:border-green-300 dark:hover:border-green-500 bg-white dark:bg-slate-900 text-gray-700 dark:text-slate-300 cursor-pointer";
+                                                                            } else {
+                                                                                if (isCorrectSelected) {
+                                                                                    btnClass += "border-green-500 bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400 font-extrabold";
+                                                                                } else if (isWrongSelected) {
+                                                                                    btnClass += "border-red-500 bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400 font-bold";
+                                                                                } else {
+                                                                                    btnClass += "border-gray-200/50 dark:border-slate-800 text-gray-400 dark:text-slate-500 opacity-40 bg-white dark:bg-slate-900";
+                                                                                }
+                                                                            }
+
+                                                                            return (
+                                                                                <button
+                                                                                    key={optIdx}
+                                                                                    onClick={() => handleSelectOption(q.id, optIdx)}
+                                                                                    disabled={showQuizResults}
+                                                                                    className={btnClass}
+                                                                                >
+                                                                                    <div className="flex items-center justify-between">
+                                                                                        <span>{String.fromCharCode(65 + optIdx)}. {opt}</span>
+                                                                                        {showQuizResults && isCorrectSelected && <CheckCircle2 size={16} className="text-green-500" />}
+                                                                                        {showQuizResults && isWrongSelected && <XCircle size={16} className="text-red-500" />}
+                                                                                    </div>
+                                                                                </button>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+
+                                                                    {/* Explanations */}
+                                                                    {showQuizResults && (
+                                                                        <div className="mt-4 p-4 bg-indigo-50/40 dark:bg-indigo-950/10 border border-indigo-200 dark:border-indigo-900/30 rounded-2xl flex gap-3 items-start animate-fade-in shadow-sm">
+                                                                            <HelpCircle className="text-indigo-500 shrink-0 mt-0.5" size={16} />
+                                                                            <div className="text-xs">
+                                                                                <p className="font-extrabold text-indigo-900 dark:text-indigo-300 mb-1">Giải thích chi tiết:</p>
+                                                                                <p className="text-indigo-800 dark:text-indigo-400/90 leading-relaxed">{q.explanation}</p>
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+
+                                                        {/* Action buttons footer */}
+                                                        {!showQuizResults ? (
+                                                            <div className="text-center pt-6 border-t border-gray-100 dark:border-slate-800">
+                                                                <button 
+                                                                    onClick={handleSubmitQuiz}
+                                                                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-12 rounded-xl text-xs shadow-md transition cursor-pointer"
+                                                                >
+                                                                    Nộp bài chấm điểm
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="mt-8 p-6 bg-slate-50/70 dark:bg-slate-800/50 rounded-3xl border border-slate-200/80 dark:border-slate-800 text-center transition-all shadow-sm animate-fade-in">
+                                                                {quizScore === quizData.questions.length && (
+                                                                    <div className="flex justify-center mb-2 text-amber-500 animate-bounce">
+                                                                        <Award size={48} aria-hidden="true" />
+                                                                    </div>
+                                                                )}
+                                                                <h4 className="text-lg font-black text-slate-900 dark:text-white mb-2">Báo Cáo Điểm Số</h4>
+                                                                <p className="text-4xl font-black text-emerald-600 dark:text-emerald-400 mb-2">
+                                                                    {quizScore} / {quizData.questions.length}
+                                                                </p>
+                                                                <p className="text-xs text-slate-600 dark:text-slate-400 mb-6 max-w-sm mx-auto font-medium">
+                                                                    {quizScore === quizData.questions.length ? "🌟 Hoàn hảo! Bạn đã sẵn sàng chinh phục ngày tiếp theo." : 
+                                                                     quizScore >= quizData.questions.length / 2 ? "👍 Rất tốt! Hãy nghiên cứu thêm giải thích bên dưới để sửa các lỗi sai." : 
+                                                                     "💪 Tiếp tục cố gắng nhé! Đọc kỹ phần giải thích đáp án và ôn lại lý thuyết."}
+                                                                </p>
+                                                                <div className="flex items-center justify-center gap-3">
+                                                                    <button 
+                                                                        onClick={handleGenerateQuiz}
+                                                                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-6 rounded-xl shadow-sm shadow-indigo-500/20 hover:scale-[1.01] transition text-xs flex items-center gap-1.5 cursor-pointer"
+                                                                    >
+                                                                        <RefreshCw size={12} aria-hidden="true" /> Làm đề khác
+                                                                    </button>
+                                                                    <button 
+                                                                        onClick={handleBackToDashboard}
+                                                                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-6 rounded-xl shadow-sm shadow-emerald-500/20 hover:scale-[1.01] transition text-xs flex items-center gap-1.5 cursor-pointer"
+                                                                    >
+                                                                        Hoàn thành bài & Quay lại
+                                                                    </button>
+                                                                </div>
                                                             </div>
                                                         )}
-                                                        <h4 className="text-lg font-black text-gray-800 dark:text-white mb-2">Báo Cáo Điểm Số</h4>
-                                                        <p className="text-4xl font-black text-green-600 dark:text-green-400 mb-2">
-                                                            {quizScore} / {quizData.questions.length}
-                                                        </p>
-                                                        <p className="text-xs text-gray-600 dark:text-slate-400 mb-6 max-w-sm mx-auto font-medium">
-                                                            {quizScore === quizData.questions.length ? "🌟 Hoàn hảo! Bạn đã sẵn sàng chinh phục ngày tiếp theo." : 
-                                                             quizScore >= quizData.questions.length / 2 ? "👍 Rất tốt! Hãy nghiên cứu thêm giải thích bên dưới để sửa các lỗi sai." : 
-                                                             "💪 Tiếp tục cố gắng nhé! Đọc kỹ phần giải thích đáp án và ôn lại lý thuyết."}
-                                                        </p>
-                                                        <div className="flex items-center justify-center gap-3">
-                                                            <button 
-                                                                onClick={handleGenerateQuiz}
-                                                                className="bg-indigo-600 text-white font-bold py-2.5 px-6 rounded-xl hover:bg-indigo-700 transition text-xs flex items-center gap-1.5 shadow-sm cursor-pointer"
-                                                            >
-                                                                <RefreshCw size={12} /> Làm đề khác
-                                                            </button>
-                                                            <button 
-                                                                onClick={handleBackToDashboard}
-                                                                className="bg-green-600 text-white font-bold py-2.5 px-6 rounded-xl hover:bg-green-700 transition text-xs flex items-center gap-1.5 shadow-sm cursor-pointer"
-                                                            >
-                                                                Hoàn thành bài & Quay lại
-                                                            </button>
-                                                        </div>
                                                     </div>
                                                 )}
                                             </div>
                                         )}
-
-                                        <div className="pt-6 border-t border-gray-100 dark:border-slate-800/80 flex justify-between items-center">
-                                            <button 
-                                                onClick={() => setActiveTab('vocab')}
-                                                className="text-xs font-bold text-gray-500 hover:underline cursor-pointer"
-                                            >
-                                                Quay lại từ vựng
-                                            </button>
-                                        </div>
                                     </div>
                                 )}
                             </>

@@ -1,0 +1,219 @@
+/**
+ * Bluebell Pro - Unified Design System Tokens
+ * Architecture: 3-Layer Token Hierarchy (Primitive -> Semantic -> Component)
+ * Compliant with @design-system specification
+ */
+
+:root {
+  /* ==========================================================================
+     1. PRIMITIVE TOKENS (Raw values)
+     ========================================================================== */
+
+  /* Brand: Indigo Palette */
+  --primitive-indigo-50: #eef2ff;
+  --primitive-indigo-100: #e0e7ff;
+  --primitive-indigo-200: #c7d2fe;
+  --primitive-indigo-300: #a5b4fc;
+  --primitive-indigo-400: #818cf8;
+  --primitive-indigo-500: #6366f1;
+  --primitive-indigo-600: #4f46e5;
+  --primitive-indigo-700: #4338ca;
+  --primitive-indigo-800: #3730a3;
+  --primitive-indigo-900: #312e81;
+  --primitive-indigo-950: #1e1b4b;
+
+  /* Accent: Blue Palette */
+  --primitive-blue-50: #eff6ff;
+  --primitive-blue-100: #dbeafe;
+  --primitive-blue-200: #bfdbfe;
+  --primitive-blue-300: #93c5fd;
+  --primitive-blue-400: #60a5fa;
+  --primitive-blue-500: #3b82f6;
+  --primitive-blue-600: #2563eb;
+  --primitive-blue-700: #1d4ed8;
+  --primitive-blue-800: #1e40af;
+  --primitive-blue-900: #1e3a8a;
+  --primitive-blue-950: #172554;
+
+  /* Accent: Cyan Palette */
+  --primitive-cyan-500: #06b6d4;
+  --primitive-cyan-400: #22d3ee;
+  --primitive-cyan-600: #0891b2;
+
+  /* Feedback: Emerald (Success) */
+  --primitive-emerald-50: #ecfdf5;
+  --primitive-emerald-100: #d1fae5;
+  --primitive-emerald-500: #10b981;
+  --primitive-emerald-600: #059669;
+  --primitive-emerald-700: #047857;
+
+  /* Feedback: Amber (Warning / Streak / Pro) */
+  --primitive-amber-50: #fffbeb;
+  --primitive-amber-100: #fef3c7;
+  --primitive-amber-400: #fbbf24;
+  --primitive-amber-500: #f59e0b;
+  --primitive-amber-600: #d97706;
+  --primitive-amber-700: #b45309;
+  --primitive-amber-950: #451a03;
+
+  /* Feedback: Rose (Danger / Error) */
+  --primitive-rose-50: #fff1f2;
+  --primitive-rose-100: #ffe4e6;
+  --primitive-rose-500: #f43f5e;
+  --primitive-rose-600: #e11d48;
+  --primitive-rose-700: #be123c;
+
+  /* Neutrals: Slate Palette */
+  --primitive-slate-50: #f8fafc;
+  --primitive-slate-100: #f1f5f9;
+  --primitive-slate-200: #e2e8f0;
+  --primitive-slate-300: #cbd5e1;
+  --primitive-slate-400: #94a3b8;
+  --primitive-slate-500: #64748b;
+  --primitive-slate-600: #475569;
+  --primitive-slate-700: #334155;
+  --primitive-slate-800: #1e293b;
+  --primitive-slate-900: #0f172a;
+  --primitive-slate-950: #020617;
+
+  /* Pure */
+  --primitive-white: #ffffff;
+  --primitive-black: #000000;
+
+  /* Spacing Scale */
+  --space-1: 0.25rem;  /* 4px */
+  --space-2: 0.5rem;   /* 8px */
+  --space-3: 0.75rem;  /* 12px */
+  --space-4: 1rem;     /* 16px */
+  --space-5: 1.25rem;  /* 20px */
+  --space-6: 1.5rem;   /* 24px */
+  --space-8: 2rem;     /* 32px */
+  --space-10: 2.5rem;  /* 40px */
+  --space-12: 3rem;    /* 48px */
+  --space-16: 4rem;    /* 64px */
+
+  /* Border Radii */
+  --radius-sm: 0.375rem; /* 6px */
+  --radius-md: 0.625rem; /* 10px */
+  --radius-lg: 0.875rem; /* 14px */
+  --radius-xl: 1.125rem; /* 18px */
+  --radius-2xl: 1.5rem;  /* 24px */
+  --radius-full: 9999px;
+
+  /* Typography */
+  --font-family-base: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-family-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* ==========================================================================
+     2. SEMANTIC TOKENS (Purpose-driven aliases - Light Mode default)
+     ========================================================================== */
+  /* Surfaces & Backgrounds */
+  --color-bg-base: #f8fafc;
+  --color-bg-surface: #ffffff;
+  --color-bg-card: rgba(248, 250, 252, 0.85);
+  --color-bg-subtle: #f1f5f9;
+  --color-bg-muted: #e2e8f0;
+  --color-bg-elevated: #ffffff;
+
+  /* Typography & Text */
+  --color-text-main: #0f172a;
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #334155;
+  --color-text-muted: #64748b;
+  --color-text-faint: #94a3b8;
+  --color-text-inverted: #ffffff;
+
+  /* Borders & Dividers */
+  --color-border-subtle: rgba(226, 232, 240, 0.9);
+  --color-border-default: #cbd5e1;
+  --color-border-strong: #94a3b8;
+
+  /* Brand & Feedback Accents */
+  --color-primary: var(--primitive-indigo-600);
+  --color-primary-hover: var(--primitive-indigo-700);
+  --color-primary-subtle: var(--primitive-indigo-50);
+  --color-primary-text: var(--primitive-indigo-600);
+
+  --color-secondary: var(--primitive-blue-600);
+  --color-secondary-hover: var(--primitive-blue-700);
+
+  --color-success: var(--primitive-emerald-600);
+  --color-success-subtle: var(--primitive-emerald-50);
+  --color-warning: var(--primitive-amber-500);
+  --color-warning-subtle: var(--primitive-amber-50);
+  --color-danger: var(--primitive-rose-600);
+  --color-danger-subtle: var(--primitive-rose-50);
+
+  /* Shadows */
+  --shadow-subtle: 0 1px 3px 0 rgba(15, 23, 42, 0.05);
+  --shadow-card: 0 4px 20px -4px rgba(15, 23, 42, 0.06);
+  --shadow-float: 0 12px 30px -8px rgba(15, 23, 42, 0.12);
+  --shadow-glow-primary: 0 0 25px -5px rgba(99, 102, 241, 0.35);
+
+  /* ==========================================================================
+     3. COMPONENT TOKENS (Component-specific bindings)
+     ========================================================================== */
+  --card-bg: var(--color-bg-surface);
+  --card-border: var(--color-border-subtle);
+  --card-radius: var(--radius-2xl);
+  --card-shadow: var(--shadow-card);
+
+  --btn-radius: var(--radius-xl);
+  --btn-primary-bg: linear-gradient(135deg, var(--primitive-indigo-600) 0%, var(--primitive-blue-600) 100%);
+  --btn-primary-hover: linear-gradient(135deg, var(--primitive-indigo-700) 0%, var(--primitive-blue-700) 100%);
+  --btn-primary-text: var(--primitive-white);
+
+  --badge-radius: var(--radius-full);
+  --toggle-track-off: var(--primitive-slate-300);
+  --toggle-track-on: var(--primitive-indigo-600);
+  --toggle-knob: var(--primitive-white);
+}
+
+/* ==========================================================================
+   DARK MODE OVERRIDES (Semantic & Component token redirection)
+   ========================================================================== */
+.dark {
+  /* Surfaces & Backgrounds */
+  --color-bg-base: #020617;
+  --color-bg-surface: #0f172a;
+  --color-bg-card: rgba(30, 41, 59, 0.75);
+  --color-bg-subtle: #1e293b;
+  --color-bg-muted: #334155;
+  --color-bg-elevated: #1e293b;
+
+  /* Typography & Text */
+  --color-text-main: #f8fafc;
+  --color-text-primary: #f8fafc;
+  --color-text-secondary: #cbd5e1;
+  --color-text-muted: #94a3b8;
+  --color-text-faint: #64748b;
+  --color-text-inverted: #0f172a;
+
+  /* Borders & Dividers */
+  --color-border-subtle: rgba(51, 65, 85, 0.7);
+  --color-border-default: #475569;
+  --color-border-strong: #64748b;
+
+  /* Brand & Feedback Accents */
+  --color-primary: var(--primitive-indigo-400);
+  --color-primary-hover: var(--primitive-indigo-300);
+  --color-primary-subtle: rgba(99, 102, 241, 0.15);
+  --color-primary-text: var(--primitive-indigo-300);
+
+  --color-success: var(--primitive-emerald-400);
+  --color-success-subtle: rgba(16, 185, 129, 0.15);
+  --color-warning: var(--primitive-amber-400);
+  --color-warning-subtle: rgba(245, 158, 11, 0.15);
+  --color-danger: var(--primitive-rose-400);
+  --color-danger-subtle: rgba(244, 63, 94, 0.15);
+
+  --shadow-subtle: 0 1px 3px 0 rgba(0, 0, 0, 0.4);
+  --shadow-card: 0 8px 24px -4px rgba(0, 0, 0, 0.45);
+  --shadow-float: 0 16px 36px -8px rgba(0, 0, 0, 0.6);
+  --shadow-glow-primary: 0 0 30px -5px rgba(99, 102, 241, 0.35);
+
+  --card-bg: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(11, 17, 32, 0.98) 100%);
+  --card-border: rgba(51, 65, 85, 0.7);
+  --toggle-track-off: #334155;
+  --toggle-track-on: var(--primitive-indigo-500);
+}

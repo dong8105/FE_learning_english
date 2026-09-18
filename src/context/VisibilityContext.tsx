@@ -1,141 +1,205 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from './AuthContext';
+import { 
+  IVisibilitySettings, 
+  IVisibilityContext, 
+  IVisibilityService, 
+  SectionKey,
+  VocabCategoryKey 
+} from '../types/visibility.types';
+import { 
+  VisibilityPolicy, 
+  defaultVisibilityPolicy, 
+  DEFAULT_TOPIC_ALIASES,
+  isSpecialTopicGroup,
+  getVocabCategory
+} from '../domain/visibilityPolicy';
+import { 
+  VisibilityService, 
+  defaultVisibilityService, 
+  DEFAULT_VISIBILITY_SETTINGS 
+} from '../services/visibilityService';
 
-export interface VisibilitySettings {
-  hiddenTopics: string[]; // List of topic names or IDs that are hidden from regular users
-  showGrammar: boolean;   // Toggle for "Luyện câu & Ngữ pháp" section
-  showGames: boolean;     // Toggle for "Khu vực Trò chơi" section
+// Backward compatibility re-exports
+export type VisibilitySettings = IVisibilitySettings;
+export const TOPIC_ALIASES_MAP = DEFAULT_TOPIC_ALIASES;
+export { isSpecialTopicGroup, getVocabCategory };
+
+const VisibilityContext = createContext<IVisibilityContext | undefined>(undefined);
+
+interface VisibilityProviderProps {
+  children: React.ReactNode;
+  service?: IVisibilityService; // DIP: can inject custom/mock service for testing
+  policy?: VisibilityPolicy;    // DIP: can inject custom policy
 }
 
-interface VisibilityContextType {
-  settings: VisibilitySettings;
-  loading: boolean;
-  updateSettings: (newSettings: Partial<VisibilitySettings>) => Promise<boolean>;
-  refetchSettings: () => Promise<void>;
-  isTopicVisible: (topicNameOrId: string) => boolean;
-  isSectionVisible: (sectionKey: 'grammar' | 'games') => boolean;
-}
-
-const DEFAULT_SETTINGS: VisibilitySettings = {
-  hiddenTopics: [],
-  showGrammar: true,
-  showGames: true,
-};
-
-const STORAGE_KEY = 'engmaster_visibility_settings';
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-
-const VisibilityContext = createContext<VisibilityContextType | undefined>(undefined);
-
-export const VisibilityProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const VisibilityProvider: React.FC<VisibilityProviderProps> = ({ 
+  children,
+  service = defaultVisibilityService,
+  policy = defaultVisibilityPolicy,
+}) => {
   const { user, isAdmin } = useAuth();
-  const [settings, setSettings] = useState<VisibilitySettings>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.error('Failed to parse cached visibility settings', e);
+  const [settings, setSettings] = useState<IVisibilitySettings>(() => {
+    if (service instanceof VisibilityService) {
+      return service.getCachedSettings();
     }
-    return DEFAULT_SETTINGS;
+    return DEFAULT_VISIBILITY_SETTINGS;
   });
   const [loading, setLoading] = useState(false);
 
-  // Fetch settings from Backend API with optional auth token
-  const fetchSettings = async () => {
+  // Fetch settings from Backend Service
+  const refetchSettings = useCallback(async () => {
+    setLoading(true);
     try {
       const token = localStorage.getItem('engmaster_token');
-      const headers: Record<string, string> = {};
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      const res = await fetch(`${API_BASE_URL}/api/settings/visibility`, { headers });
-      if (res.ok) {
-        const data = await res.json();
-        const merged: VisibilitySettings = {
-          hiddenTopics: Array.isArray(data.hiddenTopics) ? data.hiddenTopics : [],
-          showGrammar: data.showGrammar !== false,
-          showGames: data.showGames !== false,
-        };
-        setSettings(merged);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-      }
-    } catch (err) {
-      // Offline fallback: keep localStorage settings
-      console.log('API settings unavailable, using local cache');
+      const latest = await service.fetchSettings(token);
+      setSettings(latest);
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [service]);
 
   useEffect(() => {
-    fetchSettings();
+    refetchSettings();
     const handleAuthChange = () => {
-      fetchSettings();
+      refetchSettings();
     };
     window.addEventListener('engmaster_auth_changed', handleAuthChange);
     return () => {
       window.removeEventListener('engmaster_auth_changed', handleAuthChange);
     };
-  }, [user?.id, isAdmin]);
+  }, [user?.id, isAdmin, refetchSettings]);
 
-  const updateSettings = async (newPartial: Partial<VisibilitySettings>): Promise<boolean> => {
-    const updated: VisibilitySettings = {
+  // Update settings via Service
+  const updateSettings = useCallback(async (newPartial: Partial<IVisibilitySettings>): Promise<boolean> => {
+    const updated: IVisibilitySettings = {
       ...settings,
       ...newPartial,
     };
     setSettings(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
 
-    try {
-      const token = localStorage.getItem('engmaster_token');
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      const res = await fetch(`${API_BASE_URL}/api/settings/visibility`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(updated),
-      });
-      if (!res.ok) {
-        throw new Error('Failed to save to server');
-      }
-      return true;
-    } catch (err) {
-      console.warn('Saved visibility settings locally (offline/error)');
-      return true;
-    }
-  };
+    const token = localStorage.getItem('engmaster_token');
+    return await service.saveSettings(updated, token);
+  }, [settings, service]);
 
-  // Helper: check if a topic is visible
-  // Admin ALWAYS sees everything. Regular users only see topics that are NOT hidden.
-  const isTopicVisible = (topicNameOrId: string): boolean => {
-    if (isAdmin) return true;
-    if (!topicNameOrId) return true;
-    return !settings.hiddenTopics.includes(topicNameOrId);
-  };
+  // Admin bypass calculation (delegated to Policy)
+  const shouldAdminBypass = useMemo(() => {
+    return policy.shouldAdminBypass(isAdmin, settings);
+  }, [isAdmin, settings, policy]);
 
-  // Helper: check if a section is visible
-  const isSectionVisible = (sectionKey: 'grammar' | 'games'): boolean => {
-    if (isAdmin) return true;
-    if (sectionKey === 'grammar') return settings.showGrammar;
-    if (sectionKey === 'games') return settings.showGames;
-    return true;
-  };
+  // Domain evaluation functions (delegated to Policy)
+  const isTopicVisible = useCallback((topicNameOrId: string): boolean => {
+    return policy.isTopicVisible(topicNameOrId, settings, shouldAdminBypass);
+  }, [policy, settings, shouldAdminBypass]);
+
+  const isTopicVisibleInSidebar = useCallback((topicNameOrId: string): boolean => {
+    return policy.isTopicVisibleInSidebar(topicNameOrId, settings, shouldAdminBypass);
+  }, [policy, settings, shouldAdminBypass]);
+
+  const isSectionVisible = useCallback((sectionKey: SectionKey): boolean => {
+    return policy.isSectionVisible(sectionKey, settings, shouldAdminBypass);
+  }, [policy, settings, shouldAdminBypass]);
+
+  const isPracticeItemVisible = useCallback((itemKey: string): boolean => {
+    return policy.isPracticeItemVisible(itemKey, settings, shouldAdminBypass);
+  }, [policy, settings, shouldAdminBypass]);
+
+  const isVoiceSettingsVisible = useCallback((lang: 'en' | 'ja'): boolean => {
+    return policy.isVoiceSettingsVisible(lang, settings, shouldAdminBypass);
+  }, [policy, settings, shouldAdminBypass]);
+
+  const isTopicHidden = useCallback((topicNameOrId: string): boolean => {
+    return policy.isTopicHidden(topicNameOrId, settings);
+  }, [policy, settings]);
+
+  const isTopicHiddenInSidebar = useCallback((topicNameOrId: string): boolean => {
+    return policy.isTopicHiddenInSidebar(topicNameOrId, settings);
+  }, [policy, settings]);
+
+  const isSectionHidden = useCallback((sectionKey: SectionKey): boolean => {
+    return policy.isSectionHidden(sectionKey, settings);
+  }, [policy, settings]);
+
+  const isPracticeItemHidden = useCallback((itemKey: string): boolean => {
+    return policy.isPracticeItemHidden(itemKey, settings);
+  }, [policy, settings]);
+
+  const isVoiceSettingsHidden = useCallback((lang: 'en' | 'ja'): boolean => {
+    return policy.isVoiceSettingsHidden(lang, settings);
+  }, [policy, settings]);
+
+  const isWordCountVisible = useCallback((): boolean => {
+    return policy.isWordCountVisible(settings, shouldAdminBypass);
+  }, [policy, settings, shouldAdminBypass]);
+
+  const isWordCountHidden = useCallback((): boolean => {
+    return policy.isWordCountHidden(settings);
+  }, [policy, settings]);
+
+  const isVocabCategoryVisible = useCallback((category: VocabCategoryKey): boolean => {
+    return policy.isVocabCategoryVisible(category, settings, shouldAdminBypass);
+  }, [policy, settings, shouldAdminBypass]);
+
+  const isVocabCategoryHidden = useCallback((category: VocabCategoryKey): boolean => {
+    return policy.isVocabCategoryHidden(category, settings);
+  }, [policy, settings]);
+
+  const isAiLocked = useMemo(() => {
+    return policy.isAiLocked(settings, shouldAdminBypass);
+  }, [policy, settings, shouldAdminBypass]);
+
+  const contextValue: IVisibilityContext = useMemo(() => ({
+    settings,
+    loading,
+    updateSettings,
+    refetchSettings,
+    isTopicVisible,
+    isTopicVisibleInSidebar,
+    isSectionVisible,
+    isPracticeItemVisible,
+    isVoiceSettingsVisible,
+    isWordCountVisible,
+    isVocabCategoryVisible,
+    isTopicHidden,
+    isTopicHiddenInSidebar,
+    isSectionHidden,
+    isPracticeItemHidden,
+    isVoiceSettingsHidden,
+    isWordCountHidden,
+    isVocabCategoryHidden,
+    shouldAdminBypass,
+    isAiLocked
+  }), [
+    settings,
+    loading,
+    updateSettings,
+    refetchSettings,
+    isTopicVisible,
+    isTopicVisibleInSidebar,
+    isSectionVisible,
+    isPracticeItemVisible,
+    isVoiceSettingsVisible,
+    isWordCountVisible,
+    isVocabCategoryVisible,
+    isTopicHidden,
+    isTopicHiddenInSidebar,
+    isSectionHidden,
+    isPracticeItemHidden,
+    isVoiceSettingsHidden,
+    isWordCountHidden,
+    isVocabCategoryHidden,
+    shouldAdminBypass,
+    isAiLocked
+  ]);
 
   return (
-    <VisibilityContext.Provider value={{
-      settings,
-      loading,
-      updateSettings,
-      refetchSettings: fetchSettings,
-      isTopicVisible,
-      isSectionVisible
-    }}>
+    <VisibilityContext.Provider value={contextValue}>
       {children}
     </VisibilityContext.Provider>
   );
 };
 
-export const useVisibility = () => {
+export const useVisibility = (): IVisibilityContext => {
   const context = useContext(VisibilityContext);
   if (!context) {
     throw new Error('useVisibility must be used within a VisibilityProvider');

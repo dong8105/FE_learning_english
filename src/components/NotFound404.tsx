@@ -65,7 +65,7 @@ export default function NotFound404({
             </>
           ) : (
             <>
-              Đường dẫn <code className="px-2 py-0.5 font-mono text-xs bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400 rounded-md font-bold">{path}</code> không tồn tại trên hệ thống học tập EngMaster.
+              Đường dẫn <code className="px-2 py-0.5 font-mono text-xs bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400 rounded-md font-bold">{path}</code> không tồn tại trên hệ thống học tập Bluebell.
             </>
           )}
         </p>
@@ -100,7 +100,7 @@ export default function NotFound404({
         {/* Security watermark */}
         <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-center gap-2 text-[11px] text-slate-400 dark:text-slate-500 font-medium">
           <Sparkles size={13} className="text-amber-500" />
-          <span>Hệ thống bảo vệ truy cập tự động EngMaster 2026</span>
+          <span>Hệ thống bảo vệ truy cập tự động Bluebell 2026</span>
         </div>
       </div>
     </div>

@@ -195,16 +195,30 @@ const SpeakingMode = ({ words = [] }) => {
                     ]
                 }`;
 
+            const token = localStorage.getItem('engmaster_token') || localStorage.getItem('token');
             const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/generate`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
                 body: JSON.stringify({ 
                     prompt, 
                     jsonMode: true 
                 })
             });
             
-            if (!response.ok) throw new Error('API Error');
+            if (!response.ok) {
+                if (response.status === 403) {
+                    const errJson = await response.json().catch(() => ({}));
+                    if (errJson.aiLocked) {
+                        toast.error(errJson.error || "Tính năng AI đang tạm khóa bởi Quản trị viên!");
+                        return;
+                    }
+                }
+                throw new Error('API Error');
+            }
             const data = await response.json();
             if (data.metadata) reportAiUsage(data.metadata);
             const parsedData = JSON.parse(data.text);
@@ -328,9 +342,14 @@ Trả về kết quả dưới dạng JSON với cấu trúc:
     ]
 }`;
 
+            const token = localStorage.getItem('engmaster_token') || localStorage.getItem('token');
             const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/audio`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
                 body: JSON.stringify({ 
                     base64Audio,
                     mimeType,
@@ -339,7 +358,16 @@ Trả về kết quả dưới dạng JSON với cấu trúc:
                 })
             });
             
-            if (!response.ok) throw new Error('API Error');
+            if (!response.ok) {
+                if (response.status === 403) {
+                    const errJson = await response.json().catch(() => ({}));
+                    if (errJson.aiLocked) {
+                        toast.error(errJson.error || "Tính năng AI đang tạm khóa bởi Quản trị viên!");
+                        return;
+                    }
+                }
+                throw new Error('API Error');
+            }
             const data = await response.json();
             if (data.metadata) reportAiUsage(data.metadata);
             const parsedResult = JSON.parse(data.text);
@@ -425,16 +453,30 @@ Trả về kết quả dưới dạng JSON với cấu trúc:
     ]
 }`;
 
+            const token = localStorage.getItem('engmaster_token') || localStorage.getItem('token');
             const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/generate`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
                 body: JSON.stringify({ 
                     prompt, 
                     jsonMode: true 
                 })
             });
             
-            if (!response.ok) throw new Error('API Error');
+            if (!response.ok) {
+                if (response.status === 403) {
+                    const errJson = await response.json().catch(() => ({}));
+                    if (errJson.aiLocked) {
+                        toast.error(errJson.error || "Tính năng AI đang tạm khóa bởi Quản trị viên!");
+                        return;
+                    }
+                }
+                throw new Error('API Error');
+            }
             const data = await response.json();
             const parsedFeedback = JSON.parse(data.text);
             const numScore = parseInt(parsedFeedback.score.toString().replace('/100', ''), 10) || 70;
@@ -540,7 +582,7 @@ Trả về kết quả dưới dạng JSON với cấu trúc:
                 <div className="lg:col-span-1 flex flex-col gap-4 bg-slate-50 dark:bg-slate-800/40 p-5 rounded-2xl border border-gray-150 dark:border-slate-800 transition-colors">
                     <div className="flex items-center gap-1.5 border-b border-gray-200/50 dark:border-slate-700 pb-2">
                         <Settings size={16} className="text-blue-500" />
-                        <h3 className="font-extrabold text-sm text-gray-700 dark:text-slate-350">Cài đặt câu giao tiếp</h3>
+                        <h3 className="font-extrabold text-sm text-gray-700 dark:text-slate-200">Cài đặt câu giao tiếp</h3>
                     </div>
                     
                     <div>
@@ -592,7 +634,7 @@ Trả về kết quả dưới dạng JSON với cấu trúc:
                     </div>
 
                     <div className="border-t border-gray-150 dark:border-slate-700 pt-3 space-y-3">
-                        <h3 className="font-extrabold text-xs text-gray-700 dark:text-slate-350 flex items-center gap-1.5">
+                        <h3 className="font-extrabold text-xs text-gray-700 dark:text-slate-200 flex items-center gap-1.5">
                             <Volume2 size={14} className="text-blue-500"/> Giọng đọc mẫu (AI)
                         </h3>
                         <div>
@@ -622,10 +664,10 @@ Trả về kết quả dưới dạng JSON với cấu trúc:
                     </div>
 
                     <div className="border-t border-gray-150 dark:border-slate-700 pt-3 space-y-2">
-                        <h3 className="font-extrabold text-xs text-gray-700 dark:text-slate-350 flex items-center gap-1.5">
+                        <h3 className="font-extrabold text-xs text-gray-700 dark:text-slate-200 flex items-center gap-1.5">
                             <AudioLines size={14} className="text-blue-500"/> Lọc âm nâng cao
                         </h3>
-                        <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-gray-600 dark:text-slate-350">
+                        <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-gray-600 dark:text-slate-300">
                             <input 
                                 type="checkbox" 
                                 checked={noiseSuppression} 
@@ -814,7 +856,7 @@ Trả về kết quả dưới dạng JSON với cấu trúc:
 
                                     {currentEval.aiFeedback && (
                                         <div className="space-y-3">
-                                            <p className="text-gray-750 dark:text-slate-350 text-xs italic bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100/50 dark:border-blue-900/20 leading-relaxed shadow-sm">
+                                            <p className="text-gray-750 dark:text-slate-200 text-xs italic bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100/50 dark:border-blue-900/20 leading-relaxed shadow-sm">
                                                 "{currentEval.aiFeedback.feedback}"
                                             </p>
                                             
@@ -825,7 +867,7 @@ Trả về kết quả dưới dạng JSON với cấu trúc:
                                                         {currentEval.aiFeedback.mispronounced_words.map((item, idx) => (
                                                             <div key={idx} className="bg-orange-50 dark:bg-orange-950/20 p-3 rounded-xl border border-orange-100 dark:border-orange-900/20 text-xs shadow-sm">
                                                                 <p className="font-extrabold text-orange-700 dark:text-orange-400 mb-1 text-sm">{item.word}</p>
-                                                                <p className="text-gray-650 dark:text-slate-350">{item.suggestion}</p>
+                                                                <p className="text-gray-650 dark:text-slate-300">{item.suggestion}</p>
                                                             </div>
                                                         ))}
                                                     </div>

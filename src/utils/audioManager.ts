@@ -1,11 +1,16 @@
 // Pure Web Audio API Sound Effects Engine (Zero external assets required)
+import { IAudioManager } from '../types/audio.types';
+import { IStorageService, defaultStorage } from '../services/storageService';
 
-class AudioManager {
+export class AudioManager implements IAudioManager {
   private ctx: AudioContext | null = null;
   private _isMuted: boolean = false;
+  private storage: IStorageService;
+  private static readonly STORAGE_KEY = 'app_sfx_muted';
 
-  constructor() {
-    const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('app_sfx_muted') : null;
+  constructor(storage: IStorageService = defaultStorage) {
+    this.storage = storage;
+    const saved = this.storage.getItem<string>(AudioManager.STORAGE_KEY);
     this._isMuted = saved === 'true';
   }
 
@@ -33,9 +38,7 @@ class AudioManager {
 
   public toggleMute(): boolean {
     this._isMuted = !this._isMuted;
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('app_sfx_muted', this._isMuted.toString());
-    }
+    this.storage.setItem(AudioManager.STORAGE_KEY, this._isMuted.toString());
     return this._isMuted;
   }
 
@@ -45,9 +48,7 @@ class AudioManager {
 
   public setMuted(muted: boolean): void {
     this._isMuted = muted;
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('app_sfx_muted', muted.toString());
-    }
+    this.storage.setItem(AudioManager.STORAGE_KEY, muted.toString());
   }
 
   // Click sound
@@ -102,7 +103,12 @@ class AudioManager {
     } catch {}
   }
 
-  // Wrong answer buzz (Soft low tone)
+  // Success operation chime (alias to playCorrect)
+  public playSuccess(): void {
+    this.playCorrect();
+  }
+
+  // Wrong answer buzz (Low descending discordant tones)
   public playWrong(): void {
     const ctx = this.getContext();
     if (!ctx) return;
@@ -111,22 +117,22 @@ class AudioManager {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
 
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(220, ctx.currentTime);
-      osc.frequency.linearRampToValueAtTime(140, ctx.currentTime + 0.2);
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(180, ctx.currentTime);
+      osc.frequency.linearRampToValueAtTime(110, ctx.currentTime + 0.25);
 
       gain.gain.setValueAtTime(0.2, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.22);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
 
       osc.connect(gain);
       gain.connect(ctx.destination);
 
       osc.start();
-      osc.stop(ctx.currentTime + 0.22);
+      osc.stop(ctx.currentTime + 0.25);
     } catch {}
   }
 
-  // Victory Fanfare
+  // Victory fanfare (Fanfare arpeggio for quiz completion / streak)
   public playVictory(): void {
     const ctx = this.getContext();
     if (!ctx) return;
@@ -183,4 +189,4 @@ class AudioManager {
   }
 }
 
-export const audioManager = new AudioManager();
+export const audioManager: IAudioManager = new AudioManager();

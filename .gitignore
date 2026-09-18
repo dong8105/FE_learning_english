@@ -1,5 +1,59 @@
+# Dependencies
+node_modules/
+jspm_packages/
+
+# Production & Build Output
+dist/
+dist-ssr/
+build/
+coverage/
+*.tsbuildinfo
+
+# Environment & Credentials
+.env
+.env.*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+!.env.example
+!.env.template
+*.pem
+*.key
+*.cert
+
+# Cache directories
+.vite/
+.eslintcache
+.parcel-cache/
+.turbo/
+.npm/
+
+# IDE & Editor files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.history/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.swo
+*.swp
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
 # Logs
-logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -7,30 +61,14 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Dependencies
-node_modules
-dist
-dist-ssr
-*.local
+# Compressed & backup archives
+*.rar
+*.zip
+*.7z
+*.tar.gz
+*.bak
+*.tmp
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-# env
-.env
-.env.*
-!.env.example
-!.env.template
-
-# Build
-build/
-coverage/
+# AI Tools & Agents Cache
 .agents/
+.codegraph/

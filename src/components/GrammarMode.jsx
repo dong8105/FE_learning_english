@@ -117,9 +117,14 @@ Trả về định dạng JSON BẮT BUỘC như sau:
     ]
 }`;
 
+            const token = localStorage.getItem('engmaster_token') || localStorage.getItem('token');
             const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/generate`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
                 body: JSON.stringify({ 
                     prompt, 
                     systemInstruction: "Bạn là một giáo viên tiếng Anh chuyên ra đề thi ngữ pháp. Luôn trả về JSON hợp lệ.", 
@@ -127,7 +132,16 @@ Trả về định dạng JSON BẮT BUỘC như sau:
                 })
             });
             
-            if (!response.ok) throw new Error('API Error');
+            if (!response.ok) {
+                if (response.status === 403) {
+                    const errJson = await response.json().catch(() => ({}));
+                    if (errJson.aiLocked) {
+                        toast.error(errJson.error || "Tính năng AI đang tạm khóa bởi Quản trị viên!");
+                        return;
+                    }
+                }
+                throw new Error('API Error');
+            }
             const data = await response.json();
             if (data.metadata) reportAiUsage(data.metadata);
             const parsedData = JSON.parse(data.text);

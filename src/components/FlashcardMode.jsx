@@ -23,7 +23,7 @@ const FlashcardMode = ({ words, speak }) => {
     const currentWord = words[currentIndex];
 
     const handlePlayAudio = () => {
-        if (currentWord) speak(currentWord.en);
+        if (currentWord) speak(currentWord.speechText || currentWord.hiragana || currentWord.kanji || currentWord.en);
     };
 
     useEffect(() => {
@@ -86,7 +86,7 @@ const FlashcardMode = ({ words, speak }) => {
                             <button
                                 className="p-2 md:p-2.5 bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/50 hover:text-blue-600 dark:hover:text-blue-400 transition shadow-sm"
                                 title="Nghe phát âm"
-                                onClick={(e) => { e.stopPropagation(); speak(currentWord.en); }}
+                                onClick={(e) => { e.stopPropagation(); handlePlayAudio(); }}
                             >
                                 <Volume2 size={18} />
                             </button>

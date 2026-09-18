@@ -163,9 +163,9 @@ export default function Toeic500Mode({ words = [], speak }) {
             </div>
 
             {/* 2. Thanh Nút Chọn Nhanh Chế Độ Học Chuyên Sâu */}
-            <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-6 shadow-[0_4px_20px_-4px_rgba(15,23,42,0.05)] space-y-4">
                 <div className="flex items-center justify-between">
-                    <h3 className="text-base font-black text-gray-900 dark:text-white flex items-center gap-2">
+                    <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
                         <Zap className="text-amber-500 fill-amber-400" size={20} />
                         <span>Chọn Chế Độ Ôn Tập Chuyên Sâu ({currentWords.length} từ)</span>
                     </h3>
@@ -174,16 +174,16 @@ export default function Toeic500Mode({ words = [], speak }) {
                 <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-8 gap-3">
                     <button
                         onClick={() => setActiveStudyMode('sequential3')}
-                        className="p-3.5 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white hover:shadow-lg hover:scale-[1.03] transition cursor-pointer flex flex-col items-center justify-center text-center space-y-1.5 col-span-2 sm:col-span-2"
+                        className="p-3.5 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white hover:shadow-lg hover:scale-[1.03] transition cursor-pointer flex flex-col items-center justify-center text-center space-y-1.5 col-span-2 sm:col-span-2 shadow-xs"
                     >
                         <Flame size={22} className="fill-white" />
                         <span className="text-xs font-black">Lộ trình 3 Bước 🔥</span>
-                        <span className="text-[10px] opacity-90 font-medium">Flashcard ➔ Nghe ➔ Gõ</span>
+                        <span className="text-[10px] opacity-95 font-semibold">Flashcard ➔ Nghe ➔ Gõ</span>
                     </button>
 
                     <button
                         onClick={() => setActiveStudyMode('optimal')}
-                        className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 hover:scale-[1.03] transition cursor-pointer flex flex-col items-center justify-center text-center space-y-1"
+                        className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200/80 dark:border-emerald-800 text-emerald-900 dark:text-emerald-300 hover:bg-emerald-100/80 dark:hover:bg-emerald-900/50 hover:scale-[1.03] transition cursor-pointer flex flex-col items-center justify-center text-center space-y-1 shadow-2xs"
                     >
                         <Sparkles size={20} className="text-emerald-600 dark:text-emerald-400" />
                         <span className="text-xs font-bold">Học 5in1</span>
@@ -191,7 +191,7 @@ export default function Toeic500Mode({ words = [], speak }) {
 
                     <button
                         onClick={() => setActiveStudyMode('flashcards')}
-                        className="p-3.5 rounded-2xl bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 hover:scale-[1.03] transition cursor-pointer flex flex-col items-center justify-center text-center space-y-1"
+                        className="p-3.5 rounded-2xl bg-blue-50 dark:bg-blue-900/30 border border-blue-200/80 dark:border-blue-800 text-blue-900 dark:text-blue-300 hover:bg-blue-100/80 dark:hover:bg-blue-900/50 hover:scale-[1.03] transition cursor-pointer flex flex-col items-center justify-center text-center space-y-1 shadow-2xs"
                     >
                         <Layers size={20} className="text-blue-600 dark:text-blue-400" />
                         <span className="text-xs font-bold">Flashcard</span>
@@ -199,7 +199,7 @@ export default function Toeic500Mode({ words = [], speak }) {
 
                     <button
                         onClick={() => setActiveStudyMode('quiz')}
-                        className="p-3.5 rounded-2xl bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800 text-purple-800 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/50 hover:scale-[1.03] transition cursor-pointer flex flex-col items-center justify-center text-center space-y-1"
+                        className="p-3.5 rounded-2xl bg-purple-50 dark:bg-purple-900/30 border border-purple-200/80 dark:border-purple-800 text-purple-900 dark:text-purple-300 hover:bg-purple-100/80 dark:hover:bg-purple-900/50 hover:scale-[1.03] transition cursor-pointer flex flex-col items-center justify-center text-center space-y-1 shadow-2xs"
                     >
                         <CheckCircle2 size={20} className="text-purple-600 dark:text-purple-400" />
                         <span className="text-xs font-bold">Trắc nghiệm</span>
@@ -207,7 +207,7 @@ export default function Toeic500Mode({ words = [], speak }) {
 
                     <button
                         onClick={() => setActiveStudyMode('match')}
-                        className="p-3.5 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800 text-indigo-800 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 hover:scale-[1.03] transition cursor-pointer flex flex-col items-center justify-center text-center space-y-1"
+                        className="p-3.5 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200/80 dark:border-indigo-800 text-indigo-900 dark:text-indigo-300 hover:bg-indigo-100/80 dark:hover:bg-indigo-900/50 hover:scale-[1.03] transition cursor-pointer flex flex-col items-center justify-center text-center space-y-1 shadow-2xs"
                     >
                         <Gamepad2 size={20} className="text-indigo-600 dark:text-indigo-400" />
                         <span className="text-xs font-bold">Nối từ</span>
@@ -215,7 +215,7 @@ export default function Toeic500Mode({ words = [], speak }) {
 
                     <button
                         onClick={() => setActiveStudyMode('typing')}
-                        className="p-3.5 rounded-2xl bg-teal-50 dark:bg-teal-900/30 border border-teal-200 dark:border-teal-800 text-teal-800 dark:text-teal-300 hover:bg-teal-100 dark:hover:bg-teal-900/50 hover:scale-[1.03] transition cursor-pointer flex flex-col items-center justify-center text-center space-y-1"
+                        className="p-3.5 rounded-2xl bg-teal-50 dark:bg-teal-900/30 border border-teal-200/80 dark:border-teal-800 text-teal-900 dark:text-teal-300 hover:bg-teal-100/80 dark:hover:bg-teal-900/50 hover:scale-[1.03] transition cursor-pointer flex flex-col items-center justify-center text-center space-y-1 shadow-2xs"
                     >
                         <Keyboard size={20} className="text-teal-600 dark:text-teal-400" />
                         <span className="text-xs font-bold">Gõ từ</span>
@@ -223,7 +223,7 @@ export default function Toeic500Mode({ words = [], speak }) {
 
                     <button
                         onClick={() => setActiveStudyMode('dictation')}
-                        className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/50 hover:scale-[1.03] transition cursor-pointer flex flex-col items-center justify-center text-center space-y-1"
+                        className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-900/30 border border-rose-200/80 dark:border-rose-800 text-rose-900 dark:text-rose-300 hover:bg-rose-100/80 dark:hover:bg-rose-900/50 hover:scale-[1.03] transition cursor-pointer flex flex-col items-center justify-center text-center space-y-1 shadow-2xs"
                     >
                         <Mic size={20} className="text-rose-600 dark:text-rose-400" />
                         <span className="text-xs font-bold">Nghe viết</span>
@@ -232,19 +232,19 @@ export default function Toeic500Mode({ words = [], speak }) {
             </div>
 
             {/* 3. Bộ Lọc Theo 20 Story Ngữ Cảnh (Multi-Select Supported) */}
-            <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-6 shadow-[0_4px_20px_-4px_rgba(15,23,42,0.05)] space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-2">
                         <Filter className="text-emerald-600" size={20} />
                         <div>
-                            <h3 className="text-base font-black text-gray-900 dark:text-white flex items-center gap-2">
+                            <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
                                 <span>Danh Sách 20 Câu Chuyện Ngữ Cảnh</span>
-                                <span className="text-xs font-normal text-gray-500 dark:text-slate-400 bg-gray-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-full">
+                                <span className="text-xs font-normal text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-full">
                                     Cho phép chọn nhiều
                                 </span>
                             </h3>
                             {selectedStories.length > 0 && (
-                                <p className="text-xs text-emerald-600 dark:text-emerald-400 font-bold mt-0.5 flex items-center gap-2">
+                                <p className="text-xs text-emerald-700 dark:text-emerald-400 font-bold mt-0.5 flex items-center gap-2">
                                     <span>Đang chọn {selectedStories.length} / {storiesList.length} Story ({currentWords.length} từ)</span>
                                     <button
                                         onClick={() => setSelectedStories([])}
@@ -258,13 +258,13 @@ export default function Toeic500Mode({ words = [], speak }) {
                     </div>
 
                     <div className="relative w-full sm:w-72">
-                        <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                         <input
                             type="text"
                             placeholder="Tìm từ vựng hoặc nghĩa..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-9 pr-4 py-2 rounded-xl bg-gray-100 dark:bg-slate-800 border border-transparent focus:border-emerald-500 text-xs font-bold text-gray-800 dark:text-slate-200 focus:outline-none transition"
+                            className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-50 hover:bg-white focus:bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 focus:border-emerald-500 text-xs font-bold text-slate-900 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none transition shadow-2xs"
                         />
                     </div>
                 </div>
@@ -275,8 +275,8 @@ export default function Toeic500Mode({ words = [], speak }) {
                         onClick={() => handleToggleStory('all')}
                         className={`px-4 py-2 rounded-2xl text-xs font-black transition cursor-pointer border ${
                             selectedStories.length === 0
-                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-md scale-105'
-                                : 'bg-gray-50 dark:bg-slate-800 text-gray-700 dark:text-slate-300 border-gray-200 dark:border-slate-700 hover:border-emerald-400'
+                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                                : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200/90 dark:border-slate-700 hover:border-emerald-400 shadow-2xs'
                         }`}
                     >
                         🌟 Tất cả 20 Story ({toeic500Words.length} từ)
@@ -291,13 +291,13 @@ export default function Toeic500Mode({ words = [], speak }) {
                                 onClick={() => handleToggleStory(story)}
                                 className={`px-3.5 py-2 rounded-2xl text-xs font-bold transition cursor-pointer border flex items-center gap-1.5 ${
                                     isSelected
-                                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-md scale-105 font-black'
-                                        : 'bg-gray-50 dark:bg-slate-800 text-gray-700 dark:text-slate-300 border-gray-200 dark:border-slate-700 hover:border-emerald-400'
+                                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm font-black'
+                                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200/90 dark:border-slate-700 hover:border-emerald-400 shadow-2xs'
                                 }`}
                             >
                                 {isSelected && <Check size={14} className="shrink-0 text-white" />}
                                 <span>{story}</span>
-                                <span className="opacity-75 font-normal">({count})</span>
+                                <span className="opacity-80 font-normal">({count})</span>
                             </button>
                         );
                     })}
@@ -305,14 +305,14 @@ export default function Toeic500Mode({ words = [], speak }) {
 
                 {/* Filter Pills Từ Loại (POS) */}
                 {categoriesList.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-gray-100 dark:border-slate-800">
-                        <span className="text-xs font-bold text-gray-400 mr-1">Từ loại:</span>
+                    <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 mr-1">Từ loại:</span>
                         <button
                             onClick={() => setSelectedCategory('all')}
                             className={`px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${
                                 selectedCategory === 'all'
-                                    ? 'bg-gray-900 dark:bg-slate-100 text-white dark:text-slate-900 font-black'
-                                    : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400 hover:bg-gray-200'
+                                    ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 font-black'
+                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-400 hover:bg-slate-200'
                             }`}
                         >
                             Tất cả từ loại
@@ -323,8 +323,8 @@ export default function Toeic500Mode({ words = [], speak }) {
                                 onClick={() => setSelectedCategory(cat)}
                                 className={`px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${
                                     selectedCategory === cat
-                                        ? 'bg-teal-600 text-white font-black shadow-xs'
-                                        : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400 hover:bg-gray-200'
+                                        ? 'bg-teal-600 text-white font-black shadow-2xs'
+                                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-400 hover:bg-slate-200'
                                 }`}
                             >
                                 {cat}
@@ -335,17 +335,17 @@ export default function Toeic500Mode({ words = [], speak }) {
             </div>
 
             {/* 4. Danh Sách Từ Vựng Trong Story Đã Chọn */}
-            <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
-                <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-800 pb-4">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-6 shadow-[0_4px_20px_-4px_rgba(15,23,42,0.05)] space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
                     <div>
-                        <h3 className="text-lg font-black text-gray-900 dark:text-white">
+                        <h3 className="text-lg font-black text-slate-900 dark:text-white">
                             {selectedStories.length === 0
                                 ? 'Tất Cả 500+ Từ Vựng TOEIC Mất Gốc'
                                 : selectedStories.length === 1
                                     ? selectedStories[0]
                                     : `Tổng hợp ${selectedStories.length} Story Đã Chọn`}
                         </h3>
-                        <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                             Hiển thị {currentWords.length} từ vựng
                         </p>
                     </div>
@@ -360,7 +360,7 @@ export default function Toeic500Mode({ words = [], speak }) {
                 </div>
 
                 {currentWords.length === 0 ? (
-                    <div className="py-12 text-center text-sm text-gray-400 space-y-2">
+                    <div className="py-12 text-center text-sm text-slate-400 space-y-2">
                         <p>Không tìm thấy từ vựng nào khớp với bộ lọc hoặc từ khóa tìm kiếm.</p>
                         {searchQuery && (
                             <button
@@ -376,16 +376,16 @@ export default function Toeic500Mode({ words = [], speak }) {
                         {currentWords.map((w, idx) => (
                             <div
                                 key={w.id || idx}
-                                className="p-4 rounded-2xl border border-gray-200 dark:border-slate-800 bg-gray-50/60 dark:bg-slate-800/40 hover:border-emerald-400 transition space-y-2 flex flex-col justify-between"
+                                className="p-4 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-800/40 hover:border-emerald-500/80 hover:shadow-md transition space-y-2 flex flex-col justify-between shadow-[0_2px_8px_-2px_rgba(15,23,42,0.04)]"
                             >
                                 <div className="space-y-1">
                                     <div className="flex items-start justify-between gap-2">
-                                        <h4 className="font-black text-base text-gray-900 dark:text-white">
+                                        <h4 className="font-black text-base text-slate-900 dark:text-white">
                                             {w.en}
                                         </h4>
                                         <button
                                             onClick={() => speak && speak(w.en)}
-                                            className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-300 hover:bg-emerald-200 transition shrink-0 cursor-pointer"
+                                            className="p-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 transition shrink-0 cursor-pointer border border-emerald-200/70 dark:border-transparent shadow-2xs"
                                             title="Phát âm"
                                         >
                                             <Volume2 size={16} />
@@ -393,29 +393,29 @@ export default function Toeic500Mode({ words = [], speak }) {
                                     </div>
 
                                     {w.ipa && (
-                                        <div className="text-xs font-mono text-emerald-600 dark:text-emerald-400">
+                                        <div className="text-xs font-mono text-emerald-700 dark:text-emerald-400 font-medium">
                                             {w.ipa}
                                         </div>
                                     )}
 
-                                    <div className="text-xs font-bold text-gray-700 dark:text-slate-300">
+                                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-snug">
                                         {w.vi}
                                     </div>
 
                                     {w.example_en && (
-                                        <div className="pt-1.5 border-t border-gray-100 dark:border-slate-800/80 text-[11px] space-y-0.5">
-                                            <p className="text-emerald-700 dark:text-emerald-300 italic font-medium flex items-center gap-1">
+                                        <div className="pt-1.5 border-t border-slate-100 dark:border-slate-800/80 text-[11px] space-y-0.5">
+                                            <p className="text-emerald-800 dark:text-emerald-300 italic font-medium flex items-center gap-1">
                                                 <span>“{w.example_en}”</span>
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); speak && speak(w.example_en); }}
-                                                    className="text-emerald-500 hover:text-emerald-600 p-0.5 rounded transition inline-block"
+                                                    className="text-emerald-600 hover:text-emerald-700 p-0.5 rounded transition inline-block cursor-pointer"
                                                     title="Nghe câu ví dụ"
                                                 >
                                                     <Volume2 size={12} />
                                                 </button>
                                             </p>
                                             {w.example_vi && (
-                                                <p className="text-gray-500 dark:text-slate-400 font-normal">
+                                                <p className="text-slate-600 dark:text-slate-400 font-normal">
                                                     ➔ {w.example_vi}
                                                 </p>
                                             )}
@@ -423,8 +423,8 @@ export default function Toeic500Mode({ words = [], speak }) {
                                     )}
                                 </div>
 
-                                <div className="pt-2 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-gray-400 font-semibold">
-                                    <span className="px-2 py-0.5 rounded-md bg-gray-200/70 dark:bg-slate-700 text-gray-600 dark:text-slate-300">
+                                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-semibold">
+                                    <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-slate-600">
                                         {w.category || 'Từ vựng'}
                                     </span>
                                     <span className="truncate max-w-[120px]" title={w.sub_group}>

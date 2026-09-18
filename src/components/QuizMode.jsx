@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { CheckCircle2, Volume2, XCircle, Sparkles, BookOpen, RefreshCw, Headphones, Tag, MessageSquare, Settings2, ChevronDown, ChevronUp } from "lucide-react";
 import IpaGuide from "./IpaGuide";
 import { recordWordResult } from "../utils/progressTracker";
@@ -462,7 +462,7 @@ const QuizModeInner = ({ words, speak }) => {
                                 className={`select-none w-full p-4 text-left border-2 rounded-2xl transition-all cursor-pointer flex items-center gap-4 ${
                                     isSelected
                                         ? 'border-green-500 bg-green-50/20 text-green-700 dark:text-green-400 dark:bg-green-950/10'
-                                        : 'border-gray-200 dark:border-slate-800 hover:border-gray-300 dark:hover:border-slate-700 text-gray-700 dark:text-slate-350 bg-white dark:bg-slate-900'
+                                        : 'border-gray-200 dark:border-slate-800 hover:border-gray-300 dark:hover:border-slate-700 text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-900'
                                 }`}
                             >
                                 <div className={`p-2.5 rounded-xl shrink-0 ${mode.color}`}>
@@ -603,7 +603,7 @@ const QuizModeInner = ({ words, speak }) => {
     return (
         <div className="max-w-2xl mx-auto animate-fade-in space-y-3 md:space-y-6 pb-20 md:pb-0">
             <div className="flex justify-between items-end px-2 md:px-0">
-                <span className="text-xs font-mono font-black text-gray-400 dark:text-slate-550 uppercase tracking-widest">
+                <span className="text-xs font-mono font-black text-gray-400 dark:text-slate-400 uppercase tracking-widest">
                     CÂU HỎI {currentQ + 1} / {questions.length}
                 </span>
                 <span className="text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 px-3 py-1 rounded-full border border-blue-100 dark:border-blue-900/30">
@@ -699,7 +699,7 @@ const QuizModeInner = ({ words, speak }) => {
                         : opt.en === q.target.en;
                     const isSelectedOpt = opt.en === selectedOptionId;
                     
-                    let buttonClass = "p-3 md:p-4 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-sm hover:border-indigo-500 dark:hover:border-indigo-500 hover:shadow-md transition text-gray-700 dark:text-slate-350 text-left relative overflow-hidden cursor-pointer";
+                    let buttonClass = "p-3 md:p-4 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-sm hover:border-indigo-500 dark:hover:border-indigo-500 hover:shadow-md transition text-gray-700 dark:text-slate-200 text-left relative overflow-hidden cursor-pointer";
                     let icon = null;
                     
                     if (selectedOptionId !== null) {
@@ -713,7 +713,7 @@ const QuizModeInner = ({ words, speak }) => {
                             icon = <XCircle className="absolute right-4 top-1/2 -translate-y-1/2 text-red-500" size={20} />;
                         } else {
                             // Dim out other options
-                            buttonClass = "p-3 md:p-4 bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 rounded-2xl shadow-sm text-gray-400 dark:text-slate-550 text-left opacity-40 relative overflow-hidden";
+                            buttonClass = "p-3 md:p-4 bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 rounded-2xl shadow-sm text-gray-400 dark:text-slate-500 text-left opacity-40 relative overflow-hidden";
                         }
                     }
 
@@ -747,7 +747,7 @@ const QuizModeInner = ({ words, speak }) => {
             {selectedOptionId !== null && selectedOptionId !== (q.type === 'en_to_category' ? (q.target.category || "Từ vựng") : q.target.en) && (
                 <div className="p-4 bg-red-50 dark:bg-red-950/25 border border-red-200 dark:border-red-900/40 rounded-2xl text-center animate-fade-in shadow-sm">
                     <p className="text-red-600 dark:text-red-400 font-extrabold text-sm">Rất tiếc, đáp án chưa chính xác!</p>
-                    <p className="text-gray-750 dark:text-slate-350 text-xs mt-1">
+                    <p className="text-slate-700 dark:text-slate-300 text-xs mt-1">
                         Đáp án đúng là: <span className="font-extrabold text-green-600 dark:text-green-400">{
                             q.type === 'en_to_category' ? (q.target.category || "Từ vựng") :
                             (q.type === 'en_to_vi' || q.type === 'listen_to_vi' ? q.target.vi : q.target.en)

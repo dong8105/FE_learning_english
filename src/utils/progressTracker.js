@@ -24,17 +24,14 @@ export const saveProgress = (progress) => {
     localStorage.setItem(key, JSON.stringify(progress));
 
     try {
-        const token = localStorage.getItem('engmaster_token');
-        if (token) {
-            fetch('http://localhost:5000/api/progress/vocab', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ data: progress })
-            }).catch(() => {});
-        }
+        fetch('http://localhost:5000/api/progress/vocab', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ data: progress })
+        }).catch(() => {});
     } catch {}
 };
 

@@ -166,13 +166,13 @@ export default function Ets2026Mode({ words = [], speak }) {
 
             {/* 2. Main Skill Selection Tabs (LC / RC / ALL) */}
             <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-                <div className="flex bg-gray-200/80 dark:bg-slate-800/80 p-1.5 rounded-2xl w-fit border border-gray-300/50 dark:border-slate-700/50">
+                <div className="flex bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-2xl w-fit border border-slate-200/90 dark:border-slate-700/50 shadow-2xs">
                     <button
                         onClick={() => { setSkillTab('lc'); setSearchQuery(''); }}
                         className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                             skillTab === 'lc'
-                                ? 'bg-blue-600 text-white shadow-md'
-                                : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
+                                ? 'bg-blue-600 text-white shadow-xs font-black'
+                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                         }`}
                     >
                         <Headphones size={16} />
@@ -186,8 +186,8 @@ export default function Ets2026Mode({ words = [], speak }) {
                         onClick={() => { setSkillTab('rc'); setSearchQuery(''); }}
                         className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                             skillTab === 'rc'
-                                ? 'bg-purple-600 text-white shadow-md'
-                                : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
+                                ? 'bg-purple-600 text-white shadow-xs font-black'
+                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                         }`}
                     >
                         <BookOpen size={16} />
@@ -201,8 +201,8 @@ export default function Ets2026Mode({ words = [], speak }) {
                         onClick={() => { setSkillTab('all'); setSearchQuery(''); }}
                         className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                             skillTab === 'all'
-                                ? 'bg-indigo-600 text-white shadow-md'
-                                : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
+                                ? 'bg-indigo-600 text-white shadow-xs font-black'
+                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                         }`}
                     >
                         <Sparkles size={16} />
@@ -212,30 +212,30 @@ export default function Ets2026Mode({ words = [], speak }) {
 
                 {/* Search box */}
                 <div className="relative w-full md:w-72">
-                    <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input
                         type="text"
                         placeholder="Tìm từ vựng hoặc tiếng Việt..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-semibold text-gray-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-blue-500/40"
+                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-slate-50 hover:bg-white focus:bg-white dark:bg-slate-900 text-xs font-semibold text-slate-900 dark:text-slate-200 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-500/30 shadow-2xs transition-all"
                     />
                 </div>
             </div>
 
             {/* 3. Phần Selector pills (khi chọn LC hoặc RC) */}
             {skillTab === 'lc' && lcSubGroups.length > 0 && (
-                <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm">
+                <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 shadow-[0_2px_8px_-2px_rgba(15,23,42,0.04)]">
                     <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-black text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+                        <span className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                             Chọn Phần học Listening (Mỗi phần ~40 từ vựng)
                         </span>
                         <button
                             onClick={() => setSelectedLcPart('all')}
-                            className={`text-xs font-bold px-3 py-1 rounded-lg transition cursor-pointer ${
+                            className={`text-xs font-bold px-3 py-1 rounded-lg transition cursor-pointer border ${
                                 selectedLcPart === 'all'
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400 hover:bg-gray-200'
+                                    ? 'bg-blue-600 text-white border-blue-600 shadow-2xs font-black'
+                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-400 border-slate-200/80 hover:bg-slate-200'
                             }`}
                         >
                             Tất cả LC ({lcWords.length} từ)
@@ -250,15 +250,15 @@ export default function Ets2026Mode({ words = [], speak }) {
                                 <button
                                     key={sub}
                                     onClick={() => setSelectedLcPart(sub)}
-                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer border ${
                                         isSelected
-                                            ? 'bg-blue-600 text-white shadow-sm scale-105'
-                                            : 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40'
+                                            ? 'bg-blue-600 text-white border-blue-600 shadow-2xs scale-105 font-black'
+                                            : 'bg-blue-50/80 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 border-blue-200/70 dark:border-blue-800/40 hover:bg-blue-100'
                                     }`}
                                 >
                                     <span>{formatPartLabel(sub)}</span>
-                                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                                        isSelected ? 'bg-white/20 text-white' : 'bg-blue-200/50 dark:bg-blue-800/50 text-blue-800 dark:text-blue-200'
+                                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-semibold ${
+                                        isSelected ? 'bg-white/20 text-white' : 'bg-blue-200/60 dark:bg-blue-800/50 text-blue-900 dark:text-blue-200'
                                     }`}>
                                         {count}
                                     </span>
@@ -270,17 +270,17 @@ export default function Ets2026Mode({ words = [], speak }) {
             )}
 
             {skillTab === 'rc' && rcSubGroups.length > 0 && (
-                <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm">
+                <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 shadow-[0_2px_8px_-2px_rgba(15,23,42,0.04)]">
                     <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-black text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+                        <span className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                             Chọn Phần học Reading (Mỗi phần ~40 từ vựng)
                         </span>
                         <button
                             onClick={() => setSelectedRcPart('all')}
-                            className={`text-xs font-bold px-3 py-1 rounded-lg transition cursor-pointer ${
+                            className={`text-xs font-bold px-3 py-1 rounded-lg transition cursor-pointer border ${
                                 selectedRcPart === 'all'
-                                    ? 'bg-purple-600 text-white'
-                                    : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400 hover:bg-gray-200'
+                                    ? 'bg-purple-600 text-white border-purple-600 shadow-2xs font-black'
+                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-400 border-slate-200/80 hover:bg-slate-200'
                             }`}
                         >
                             Tất cả RC ({rcWords.length} từ)
@@ -295,15 +295,15 @@ export default function Ets2026Mode({ words = [], speak }) {
                                 <button
                                     key={sub}
                                     onClick={() => setSelectedRcPart(sub)}
-                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer border ${
                                         isSelected
-                                            ? 'bg-purple-600 text-white shadow-sm scale-105'
-                                            : 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/40'
+                                            ? 'bg-purple-600 text-white border-purple-600 shadow-2xs scale-105 font-black'
+                                            : 'bg-purple-50/80 dark:bg-purple-900/20 text-purple-800 dark:text-purple-300 border-purple-200/70 dark:border-purple-800/40 hover:bg-purple-100'
                                     }`}
                                 >
                                     <span>{formatPartLabel(sub)}</span>
-                                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                                        isSelected ? 'bg-white/20 text-white' : 'bg-purple-200/50 dark:bg-purple-800/50 text-purple-800 dark:text-purple-200'
+                                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-semibold ${
+                                        isSelected ? 'bg-white/20 text-white' : 'bg-purple-200/60 dark:border-purple-800/50 text-purple-900 dark:text-purple-200'
                                     }`}>
                                         {count}
                                     </span>
@@ -315,13 +315,13 @@ export default function Ets2026Mode({ words = [], speak }) {
             )}
 
             {/* 4. Action Bar Luyện Tập Nhanh */}
-            <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 shadow-[0_4px_20px_-4px_rgba(15,23,42,0.05)]">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                     <div>
-                        <h3 className="text-sm font-black text-gray-800 dark:text-slate-200">
+                        <h3 className="text-sm font-black text-slate-900 dark:text-slate-200">
                             Chọn Chế Độ Luyện Tập
                         </h3>
-                        <p className="text-xs text-gray-500 dark:text-slate-400 font-medium">
+                        <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
                             Đang chọn: <span className="font-bold text-blue-600 dark:text-blue-400">
                                 {skillTab === 'lc'
                                     ? (selectedLcPart === 'all' ? 'Toàn bộ 800 từ LC' : selectedLcPart)
@@ -337,7 +337,7 @@ export default function Ets2026Mode({ words = [], speak }) {
                     <button
                         onClick={() => setActiveStudyMode('sequential3')}
                         disabled={currentWords.length === 0}
-                        className="flex flex-col items-center justify-center gap-2 p-3.5 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white font-bold text-xs hover:shadow-lg hover:scale-[1.02] transition disabled:opacity-50 cursor-pointer"
+                        className="flex flex-col items-center justify-center gap-2 p-3.5 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white font-bold text-xs hover:shadow-lg hover:scale-[1.02] transition disabled:opacity-50 cursor-pointer shadow-xs"
                     >
                         <Flame size={20} />
                         <span>Lộ Trình 3 Bước</span>
@@ -346,7 +346,7 @@ export default function Ets2026Mode({ words = [], speak }) {
                     <button
                         onClick={() => setActiveStudyMode('ipa')}
                         disabled={currentWords.length === 0}
-                        className="flex flex-col items-center justify-center gap-2 p-3.5 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white font-bold text-xs hover:shadow-lg hover:scale-[1.02] transition disabled:opacity-50 cursor-pointer"
+                        className="flex flex-col items-center justify-center gap-2 p-3.5 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white font-bold text-xs hover:shadow-lg hover:scale-[1.02] transition disabled:opacity-50 cursor-pointer shadow-xs"
                     >
                         <Volume2 size={20} />
                         <span>Luyện Phát Âm IPA</span>
@@ -355,7 +355,7 @@ export default function Ets2026Mode({ words = [], speak }) {
                     <button
                         onClick={() => setActiveStudyMode('optimal')}
                         disabled={currentWords.length === 0}
-                        className="flex flex-col items-center justify-center gap-2 p-3.5 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white font-bold text-xs hover:shadow-lg hover:scale-[1.02] transition disabled:opacity-50 cursor-pointer"
+                        className="flex flex-col items-center justify-center gap-2 p-3.5 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white font-bold text-xs hover:shadow-lg hover:scale-[1.02] transition disabled:opacity-50 cursor-pointer shadow-xs"
                     >
                         <Sparkles size={20} />
                         <span>Học Tối Ưu (5in1)</span>
@@ -364,7 +364,7 @@ export default function Ets2026Mode({ words = [], speak }) {
                     <button
                         onClick={() => setActiveStudyMode('flashcards')}
                         disabled={currentWords.length === 0}
-                        className="flex flex-col items-center justify-center gap-2 p-3.5 rounded-2xl bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/40 font-bold text-xs hover:bg-blue-100/80 transition disabled:opacity-50 cursor-pointer"
+                        className="flex flex-col items-center justify-center gap-2 p-3.5 rounded-2xl bg-blue-50 dark:bg-blue-900/20 text-blue-900 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/40 font-bold text-xs hover:bg-blue-100/80 transition disabled:opacity-50 cursor-pointer shadow-2xs"
                     >
                         <Layers size={20} />
                         <span>Flashcard</span>
@@ -373,7 +373,7 @@ export default function Ets2026Mode({ words = [], speak }) {
                     <button
                         onClick={() => setActiveStudyMode('quiz')}
                         disabled={currentWords.length === 0}
-                        className="flex flex-col items-center justify-center gap-2 p-3.5 rounded-2xl bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/40 font-bold text-xs hover:bg-purple-100/80 transition disabled:opacity-50 cursor-pointer"
+                        className="flex flex-col items-center justify-center gap-2 p-3.5 rounded-2xl bg-purple-50 dark:bg-purple-900/20 text-purple-900 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800/40 font-bold text-xs hover:bg-purple-100/80 transition disabled:opacity-50 cursor-pointer shadow-2xs"
                     >
                         <CheckCircle2 size={20} />
                         <span>Trắc Nghiệm</span>
@@ -382,7 +382,7 @@ export default function Ets2026Mode({ words = [], speak }) {
                     <button
                         onClick={() => setActiveStudyMode('match')}
                         disabled={currentWords.length === 0}
-                        className="flex flex-col items-center justify-center gap-2 p-3.5 rounded-2xl bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-300 border border-pink-200 dark:border-pink-800/40 font-bold text-xs hover:bg-pink-100/80 transition disabled:opacity-50 cursor-pointer"
+                        className="flex flex-col items-center justify-center gap-2 p-3.5 rounded-2xl bg-pink-50 dark:bg-pink-900/20 text-pink-900 dark:text-pink-300 border border-pink-200/80 dark:border-pink-800/40 font-bold text-xs hover:bg-pink-100/80 transition disabled:opacity-50 cursor-pointer shadow-2xs"
                     >
                         <Gamepad2 size={20} />
                         <span>Nối Từ</span>
@@ -391,7 +391,7 @@ export default function Ets2026Mode({ words = [], speak }) {
                     <button
                         onClick={() => setActiveStudyMode('typing')}
                         disabled={currentWords.length === 0}
-                        className="flex flex-col items-center justify-center gap-2 p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40 font-bold text-xs hover:bg-amber-100/80 transition disabled:opacity-50 cursor-pointer"
+                        className="flex flex-col items-center justify-center gap-2 p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-900/20 text-amber-900 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/40 font-bold text-xs hover:bg-amber-100/80 transition disabled:opacity-50 cursor-pointer shadow-2xs"
                     >
                         <Keyboard size={20} />
                         <span>Gõ Từ Vựng</span>
@@ -400,7 +400,7 @@ export default function Ets2026Mode({ words = [], speak }) {
                     <button
                         onClick={() => setActiveStudyMode('dictation')}
                         disabled={currentWords.length === 0}
-                        className="flex flex-col items-center justify-center gap-2 p-3.5 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/40 font-bold text-xs hover:bg-indigo-100/80 transition disabled:opacity-50 cursor-pointer"
+                        className="flex flex-col items-center justify-center gap-2 p-3.5 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-900 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800/40 font-bold text-xs hover:bg-indigo-100/80 transition disabled:opacity-50 cursor-pointer shadow-2xs"
                     >
                         <Mic size={20} />
                         <span>Nghe Viết</span>
@@ -409,30 +409,30 @@ export default function Ets2026Mode({ words = [], speak }) {
             </div>
 
             {/* 5. Word List Table */}
-            <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
-                <div className="px-6 py-4 border-b border-gray-150 dark:border-slate-800 flex items-center justify-between">
-                    <h3 className="text-sm font-black text-gray-800 dark:text-slate-200 flex items-center gap-2">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl overflow-hidden shadow-[0_4px_20px_-4px_rgba(15,23,42,0.05)]">
+                <div className="px-6 py-4 border-b border-slate-200/90 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60 flex items-center justify-between">
+                    <h3 className="text-sm font-black text-slate-900 dark:text-slate-200 flex items-center gap-2">
                         <BookOpenCheck size={18} className="text-blue-600 dark:text-blue-400" />
                         <span>Danh Sách Từ Vựng Đang Chọn</span>
-                        <span className="text-xs text-gray-400 font-bold">({currentWords.length} từ)</span>
+                        <span className="text-xs text-slate-500 font-bold">({currentWords.length} từ)</span>
                     </h3>
                 </div>
 
                 {currentWords.length === 0 ? (
-                    <div className="p-12 text-center text-gray-400 dark:text-slate-500 font-medium">
+                    <div className="p-12 text-center text-slate-400 dark:text-slate-500 font-medium">
                         Không tìm thấy từ vựng nào phù hợp trong bộ lọc này.
                     </div>
                 ) : (
-                    <div className="divide-y divide-gray-100 dark:divide-slate-800/60 max-h-[600px] overflow-y-auto">
+                    <div className="divide-y divide-slate-100 dark:divide-slate-800/60 max-h-[600px] overflow-y-auto">
                         {currentWords.map((w, index) => (
                             <div
                                 key={w.id || index}
-                                className="p-4 px-6 flex items-center justify-between gap-4 hover:bg-gray-50/70 dark:hover:bg-slate-800/40 transition"
+                                className="p-4 px-6 flex items-center justify-between gap-4 hover:bg-blue-50/30 dark:hover:bg-slate-800/40 transition"
                             >
                                 <div className="flex items-center gap-3">
                                     <button
                                         onClick={() => speak && speak(w.en)}
-                                        className="p-2 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:scale-110 transition shrink-0 cursor-pointer"
+                                        className="p-2 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:scale-110 transition shrink-0 cursor-pointer border border-blue-100 dark:border-transparent shadow-2xs"
                                         title="Nghe phát âm"
                                     >
                                         <Volume2 size={16} />
@@ -440,21 +440,21 @@ export default function Ets2026Mode({ words = [], speak }) {
 
                                     <div>
                                         <div className="flex items-center gap-2 flex-wrap">
-                                            <span className="font-bold text-sm text-gray-900 dark:text-white">
+                                            <span className="font-bold text-sm text-slate-900 dark:text-white">
                                                 {w.en}
                                             </span>
                                             {w.ipa && (
-                                                <span className="text-xs font-mono text-gray-400 dark:text-slate-500">
+                                                <span className="text-xs font-mono text-slate-500 dark:text-slate-500">
                                                     {w.ipa}
                                                 </span>
                                             )}
                                             {w.sub_group && (
-                                                <span className="text-[10px] px-2 py-0.5 rounded-md font-bold bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800/40">
+                                                <span className="text-[10px] px-2 py-0.5 rounded-md font-bold bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 border border-purple-200/80 dark:border-purple-800/40">
                                                     {formatPartLabel(w.sub_group)}
                                                 </span>
                                             )}
                                         </div>
-                                        <p className="text-xs text-gray-600 dark:text-slate-300 mt-0.5 font-medium">
+                                        <p className="text-xs text-slate-700 dark:text-slate-300 mt-0.5 font-medium">
                                             {w.vi}
                                         </p>
                                     </div>
@@ -463,7 +463,7 @@ export default function Ets2026Mode({ words = [], speak }) {
                                 <div className="flex items-center gap-2">
                                     <button
                                         onClick={() => speak && speak(w.en)}
-                                        className="text-xs font-bold px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 transition cursor-pointer"
+                                        className="text-xs font-bold px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 transition cursor-pointer border border-slate-200/80 dark:border-transparent"
                                     >
                                         Nghe
                                     </button>

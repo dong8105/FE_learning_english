@@ -101,9 +101,14 @@ const ReadingMode = ({ words = [], speak }) => {
                     - Yêu cầu thêm từ người dùng: ${prompt || "Không có"}
                   `;
 
+            const token = localStorage.getItem('engmaster_token') || localStorage.getItem('token');
             const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/generate`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
                 body: JSON.stringify({ 
                     prompt: finalPrompt, 
                     systemInstruction: `Bạn là một trợ giảng ngôn ngữ Anh. Người dùng sẽ gửi chủ đề.
@@ -120,7 +125,16 @@ const ReadingMode = ({ words = [], speak }) => {
                 })
             });
             
-            if (!response.ok) throw new Error('API Error');
+            if (!response.ok) {
+                if (response.status === 403) {
+                    const errJson = await response.json().catch(() => ({}));
+                    if (errJson.aiLocked) {
+                        toast.error(errJson.error || "Tính năng AI đang tạm khóa bởi Quản trị viên!");
+                        return;
+                    }
+                }
+                throw new Error('API Error');
+            }
             const data = await response.json();
             if (data.metadata) reportAiUsage(data.metadata);
 
@@ -242,16 +256,30 @@ Trả về kết quả dưới dạng JSON với cấu trúc:
     ]
 }`;
 
+            const token = localStorage.getItem('engmaster_token') || localStorage.getItem('token');
             const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/generate`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
                 body: JSON.stringify({ 
                     prompt, 
                     jsonMode: true 
                 })
             });
             
-            if (!response.ok) throw new Error('API Error');
+            if (!response.ok) {
+                if (response.status === 403) {
+                    const errJson = await response.json().catch(() => ({}));
+                    if (errJson.aiLocked) {
+                        toast.error(errJson.error || "Tính năng AI đang tạm khóa bởi Quản trị viên!");
+                        return;
+                    }
+                }
+                throw new Error('API Error');
+            }
             const data = await response.json();
             if (data.metadata) reportAiUsage(data.metadata);
 
@@ -286,7 +314,7 @@ Trả về kết quả dưới dạng JSON với cấu trúc:
                             </span>
                             <button 
                                 onClick={handleCompareText}
-                                className="bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-750 text-gray-700 dark:text-slate-300 text-xs px-3.5 py-2 rounded-xl font-bold border border-gray-200 dark:border-slate-700 shadow-sm transition-all"
+                                className="bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300 text-xs px-3.5 py-2 rounded-xl font-bold border border-gray-200 dark:border-slate-700 shadow-sm transition-all"
                             >
                                 So sánh nhanh
                             </button>
@@ -450,7 +478,7 @@ Trả về kết quả dưới dạng JSON với cấu trúc:
                                                     <span className="text-xs font-bold text-blue-600 dark:text-blue-400">Giải thích:</span>
                                                     <span className="text-[9px] font-bold bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 px-2 py-0.5 rounded-full border border-red-150 dark:border-red-900/30">{err.error_type}</span>
                                                 </div>
-                                                <p className="text-gray-600 dark:text-slate-350 text-xs leading-relaxed">{err.explanation}</p>
+                                                <p className="text-gray-600 dark:text-slate-300 text-xs leading-relaxed">{err.explanation}</p>
                                             </div>
                                         </div>
                                     ))
@@ -476,7 +504,7 @@ Trả về kết quả dưới dạng JSON với cấu trúc:
                         {resultData && (
                             <button 
                                 onClick={(e) => speak(resultData.sentences.map(s => s.en).join(' '), e)}
-                                className="text-xs bg-white dark:bg-slate-850 hover:bg-gray-100 dark:hover:bg-slate-750 px-3 py-1.5 rounded-xl text-gray-700 dark:text-slate-300 font-bold border border-gray-200 dark:border-slate-700 flex items-center gap-1 shadow-sm transition"
+                                className="text-xs bg-white dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 px-3 py-1.5 rounded-xl text-gray-700 dark:text-slate-300 font-bold border border-gray-200 dark:border-slate-700 flex items-center gap-1 shadow-sm transition"
                             >
                                 <Volume2 size={13} /> Đọc toàn bài
                             </button>
@@ -596,7 +624,7 @@ Trả về kết quả dưới dạng JSON với cấu trúc:
                                             <div className="fixed inset-0 z-10" onClick={() => setIsGrammarOpen(false)}></div>
                                             <div className="absolute z-20 w-full mt-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl max-h-60 overflow-y-auto custom-scrollbar p-2 flex flex-col gap-2">
                                                 <div 
-                                                    className={`p-2 text-xs font-bold rounded-lg cursor-pointer transition ${selectedGrammars.length === 0 ? 'bg-green-600 text-white' : 'hover:bg-gray-100 dark:hover:bg-slate-750 text-gray-650 dark:text-slate-300'}`}
+                                                    className={`p-2 text-xs font-bold rounded-lg cursor-pointer transition ${selectedGrammars.length === 0 ? 'bg-green-600 text-white' : 'hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-650 dark:text-slate-300'}`}
                                                     onClick={() => {
                                                         setSelectedGrammars([]);
                                                         setIsGrammarOpen(false);
@@ -612,7 +640,7 @@ Trả về kết quả dưới dạng JSON với cấu trúc:
                                                             return (
                                                                 <div 
                                                                     key={opt.value}
-                                                                    className={`p-2 text-xs font-medium rounded-lg cursor-pointer transition flex items-center gap-2 ${isSelected ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-300' : 'hover:bg-gray-100 dark:hover:bg-slate-750 text-gray-650 dark:text-slate-350'}`}
+                                                                    className={`p-2 text-xs font-medium rounded-lg cursor-pointer transition flex items-center gap-2 ${isSelected ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-300' : 'hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-650 dark:text-slate-300'}`}
                                                                     onClick={() => {
                                                                         if (isSelected) {
                                                                             setSelectedGrammars(selectedGrammars.filter(g => g !== opt.value));

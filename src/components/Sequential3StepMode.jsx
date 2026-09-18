@@ -4,6 +4,7 @@ import {
     Trophy, Sparkles, RefreshCw, Flame, Check, Volume2, HelpCircle,
     Eye, EyeOff, AlertCircle, Command
 } from 'lucide-react';
+import { isAnswerCorrect } from '../utils/answerChecker';
 
 export default function Sequential3StepMode({ words = [], speak, onExit }) {
     const [wordIndex, setWordIndex] = useState(0);
@@ -30,6 +31,12 @@ export default function Sequential3StepMode({ words = [], speak, onExit }) {
     const [showShortcuts, setShowShortcuts] = useState(false);
 
     const currentWord = words[wordIndex] || {};
+    const isJapanese = Boolean(
+        currentWord.isJapanese ||
+        currentWord.master_group === 'Từ Vựng Tiếng Nhật Minna No Nihongo' ||
+        /[\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf]/.test(currentWord.en || '')
+    );
+    const speechTarget = currentWord.speechText || currentWord.hiragana || currentWord.kanji || currentWord.en;
 
     const renderCategoryBadge = (cat, isFlippedCard = false) => {
         if (!cat) return null;
@@ -88,11 +95,11 @@ export default function Sequential3StepMode({ words = [], speak, onExit }) {
         setTypingInput('');
         setTypingStatus('idle');
 
-        if (microStep === 1 && currentWord.en && speak) {
-            speak(currentWord.en);
+        if (microStep === 1 && speechTarget && speak) {
+            speak(speechTarget);
         } else if (microStep === 2) {
-            if (currentWord.en && speak) {
-                speak(currentWord.en);
+            if (speechTarget && speak) {
+                speak(speechTarget);
             }
             setTimeout(() => {
                 dictationRef.current?.focus();
@@ -112,7 +119,7 @@ export default function Sequential3StepMode({ words = [], speak, onExit }) {
             // Global shortcut: Ctrl+Space or Alt+P -> Play audio anytime
             if ((e.ctrlKey && e.code === 'Space') || (e.altKey && e.key.toLowerCase() === 'p')) {
                 e.preventDefault();
-                if (currentWord.en && speak) speak(currentWord.en);
+                if (speechTarget && speak) speak(speechTarget);
                 return;
             }
 
@@ -122,8 +129,8 @@ export default function Sequential3StepMode({ words = [], speak, onExit }) {
                     e.preventDefault();
                     if (microStep === 1) {
                         setIsFlipped(prev => !prev);
-                    } else if (currentWord.en && speak) {
-                        speak(currentWord.en);
+                    } else if (speechTarget && speak) {
+                        speak(speechTarget);
                     }
                 } else if (e.key === 'Enter') {
                     e.preventDefault();
@@ -141,7 +148,7 @@ export default function Sequential3StepMode({ words = [], speak, onExit }) {
                     setMicroStep(3);
                 } else if (e.key.toLowerCase() === 'p') {
                     e.preventDefault();
-                    if (currentWord.en && speak) speak(currentWord.en);
+                    if (speechTarget && speak) speak(speechTarget);
                 } else if (e.key === 'ArrowRight') {
                     e.preventDefault();
                     if (microStep < 3) {
@@ -164,17 +171,14 @@ export default function Sequential3StepMode({ words = [], speak, onExit }) {
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [microStep, wordIndex, words.length, currentWord, speak]);
+    }, [microStep, wordIndex, words.length, currentWord, speechTarget, speak]);
 
     // Step 2: Handle check Dictation (Nghe Viết)
     const handleCheckDictation = (e) => {
         if (e) e.preventDefault();
-        if (!currentWord.en) return;
+        if (!currentWord.en && !currentWord.hiragana) return;
 
-        const cleanUser = dictationInput.trim().toLowerCase().replace(/[.,!?;:]/g, '').replace(/\s+/g, ' ');
-        const cleanTarget = currentWord.en.trim().toLowerCase().replace(/[.,!?;:]/g, '').replace(/\s+/g, ' ');
-
-        if (cleanUser === cleanTarget || (cleanTarget.includes('(') && cleanUser === cleanTarget.replace(/\(.*?\)/g, '').trim())) {
+        if (isAnswerCorrect(dictationInput, currentWord)) {
             setDictationStatus('correct');
             playSuccessSound();
             setTimeout(() => {
@@ -189,12 +193,9 @@ export default function Sequential3StepMode({ words = [], speak, onExit }) {
     // Step 3: Handle check Typing (Gõ Từ)
     const handleCheckTyping = (e) => {
         if (e) e.preventDefault();
-        if (!currentWord.en) return;
+        if (!currentWord.en && !currentWord.hiragana) return;
 
-        const cleanUser = typingInput.trim().toLowerCase().replace(/[.,!?;:]/g, '').replace(/\s+/g, ' ');
-        const cleanTarget = currentWord.en.trim().toLowerCase().replace(/[.,!?;:]/g, '').replace(/\s+/g, ' ');
-
-        if (cleanUser === cleanTarget || (cleanTarget.includes('(') && cleanUser === cleanTarget.replace(/\(.*?\)/g, '').trim())) {
+        if (isAnswerCorrect(typingInput, currentWord)) {
             setTypingStatus('correct');
             playSuccessSound();
 
@@ -525,7 +526,7 @@ export default function Sequential3StepMode({ words = [], speak, onExit }) {
                             onClick={() => setIsFlipped(!isFlipped)}
                             className="px-5 py-2.5 rounded-xl bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 font-bold text-xs hover:bg-gray-200 transition cursor-pointer"
                         >
-                            {isFlipped ? 'Quay mặt tiếng Anh [Space]' : 'Lật xem tiếng Việt [Space]'}
+                            {isFlipped ? (isJapanese ? 'Quay mặt tiếng Nhật [Space]' : 'Quay mặt tiếng Anh [Space]') : 'Lật xem tiếng Việt [Space]'}
                         </button>
 
                         <button
@@ -559,7 +560,7 @@ export default function Sequential3StepMode({ words = [], speak, onExit }) {
                     {/* Audio play button */}
                     <div className="text-center space-y-4">
                         <button
-                            onClick={() => speak && speak(currentWord.en)}
+                            onClick={() => speak && speak(speechTarget)}
                             className="mx-auto p-6 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 hover:scale-110 active:scale-95 transition shadow-lg cursor-pointer"
                             title="Nghe lại âm thanh (Ctrl+Space)"
                         >
@@ -571,7 +572,7 @@ export default function Sequential3StepMode({ words = [], speak, onExit }) {
                         </div>
 
                         <p className="text-xs font-bold text-gray-500 dark:text-slate-400">
-                            Nhấn để nghe phát âm và gõ lại từ tiếng Anh <kbd className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-slate-800 text-[10px] font-mono">Ctrl+Space</kbd>
+                            Nhấn để nghe phát âm và gõ lại từ {isJapanese ? 'tiếng Nhật' : 'tiếng Anh'} <kbd className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-slate-800 text-[10px] font-mono">Ctrl+Space</kbd>
                         </p>
 
                         {showDictationHint && (
@@ -587,7 +588,7 @@ export default function Sequential3StepMode({ words = [], speak, onExit }) {
                             <input
                                 ref={dictationRef}
                                 type="text"
-                                placeholder="Lắng nghe & gõ từ vựng tiếng Anh..."
+                                placeholder={isJapanese ? "Lắng nghe & gõ tiếng Nhật (Hiragana, Kanji hoặc Romaji)..." : "Lắng nghe & gõ từ vựng tiếng Anh..."}
                                 value={dictationInput}
                                 onChange={(e) => setDictationInput(e.target.value)}
                                 className={`w-full px-5 py-4 rounded-2xl text-center text-lg font-bold border-2 outline-none transition ${
@@ -662,7 +663,7 @@ export default function Sequential3StepMode({ words = [], speak, onExit }) {
 
                     <div className="text-center space-y-3">
                         <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-                            Dịch sang tiếng Anh
+                            {isJapanese ? "Dịch sang tiếng Nhật" : "Dịch sang tiếng Anh"}
                         </p>
                         <div className="flex justify-center">
                             {renderCategoryBadge(currentWord.category)}
@@ -683,7 +684,7 @@ export default function Sequential3StepMode({ words = [], speak, onExit }) {
                             <input
                                 ref={typingRef}
                                 type="text"
-                                placeholder="Gõ từ tiếng Anh vào đây..."
+                                placeholder={isJapanese ? "Gõ Hiragana, Kanji hoặc Romaji..." : "Gõ từ tiếng Anh vào đây..."}
                                 value={typingInput}
                                 onChange={(e) => setTypingInput(e.target.value)}
                                 className={`w-full px-5 py-4 rounded-2xl text-center text-lg font-bold border-2 outline-none transition ${
@@ -705,7 +706,7 @@ export default function Sequential3StepMode({ words = [], speak, onExit }) {
 
                         {typingStatus === 'wrong' && (
                             <div className="flex items-center justify-center gap-2 text-xs font-bold text-rose-500">
-                                <AlertCircle size={16} /> Chưa chính xác, hãy thử lại! (Gợi ý chữ đầu: {currentWord.en?.[0]?.toUpperCase()})
+                                <AlertCircle size={16} /> {isJapanese ? `Chưa chính xác, hãy thử lại! (Gợi ý: ${currentWord.hiragana || currentWord.kanji || currentWord.en})` : `Chưa chính xác, hãy thử lại! (Gợi ý chữ đầu: ${currentWord.en?.[0]?.toUpperCase()})`}
                             </div>
                         )}
 
@@ -722,7 +723,7 @@ export default function Sequential3StepMode({ words = [], speak, onExit }) {
 
                     <div className="flex justify-between items-center pt-4 border-t border-gray-100 dark:border-slate-800 text-xs">
                         <button
-                            onClick={() => setTypingInput(currentWord.en || '')}
+                            onClick={() => setTypingInput(currentWord.hiragana || currentWord.kanji || currentWord.en || '')}
                             className="text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 font-bold transition cursor-pointer"
                         >
                             Xem đáp án
