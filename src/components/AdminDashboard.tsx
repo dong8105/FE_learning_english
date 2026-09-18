@@ -56,24 +56,67 @@ import {
   Globe,
   Filter,
   TrendingUp,
-  Zap
+  Zap,
+  Terminal,
+  Hash
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { audioManager } from '../utils/audioManager';
 import { useAuth, User } from '../context/AuthContext';
 import { useVisibility } from '../context/VisibilityContext';
+import AdminLogViewer from './AdminLogViewer';
+
+export type AdminSubTab = 'overview' | 'users' | 'online' | 'backup' | 'settings' | 'visibility' | 'logs';
 
 interface AdminDashboardProps {
   words: any[];
   speak?: (text: string) => void;
   setActiveTab: (tab: string) => void;
+  initialSubTab?: AdminSubTab;
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-export default function AdminDashboard({ words, setActiveTab }: AdminDashboardProps) {
+export default function AdminDashboard({ words, setActiveTab, initialSubTab }: AdminDashboardProps) {
   const { user, getAuthHeaders } = useAuth();
-  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'users' | 'online' | 'backup' | 'settings' | 'visibility'>('overview');
+
+  const getStartingSubTab = (): AdminSubTab => {
+    if (initialSubTab) return initialSubTab;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const qTab = params.get('tab') || params.get('subtab');
+      if (qTab && ['overview', 'users', 'online', 'backup', 'settings', 'visibility', 'logs'].includes(qTab.toLowerCase())) {
+        return qTab.toLowerCase() as AdminSubTab;
+      }
+      const path = window.location.pathname.toLowerCase();
+      if (path.includes('visibility') || path.includes('phanquyen') || path.includes('phan-quyen') || path.includes('permissions')) {
+        return 'visibility';
+      }
+      if (path.includes('logs') || path.includes('log')) return 'logs';
+      if (path.includes('users')) return 'users';
+      if (path.includes('online')) return 'online';
+      if (path.includes('backup')) return 'backup';
+      if (path.includes('settings')) return 'settings';
+    } catch {}
+    return 'overview';
+  };
+
+  const [activeSubTab, setActiveSubTab] = useState<AdminSubTab>(getStartingSubTab);
+
+  // Đồng bộ khi initialSubTab thay đổi từ bên ngoài (ví dụ click từ Sidebar)
+  useEffect(() => {
+    if (initialSubTab && initialSubTab !== activeSubTab) {
+      setActiveSubTab(initialSubTab);
+    }
+  }, [initialSubTab]);
+
+  const handleSwitchSubTab = (newTab: AdminSubTab) => {
+    setActiveSubTab(newTab);
+    try {
+      const targetUrl = newTab === 'overview' ? '/admin' : `/admin?tab=${newTab}`;
+      window.history.replaceState(null, '', targetUrl);
+    } catch {}
+  };
   const [serverMetrics, setServerMetrics] = useState<any>(null);
   const [usersList, setUsersList] = useState<User[]>([]);
   const [loadingMetrics, setLoadingMetrics] = useState(false);
@@ -1070,7 +1113,7 @@ export default function AdminDashboard({ words, setActiveTab }: AdminDashboardPr
 
         {/* Card 3: Live Online Users (NEW) */}
         <div 
-          onClick={() => { audioManager.playClick(); setActiveSubTab('online'); }}
+          onClick={() => { audioManager.playClick(); handleSwitchSubTab('online'); }}
           className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between cursor-pointer hover:border-emerald-400 dark:hover:border-emerald-500/60 hover:-translate-y-0.5 transition-all group"
         >
           <div>
@@ -1134,7 +1177,7 @@ export default function AdminDashboard({ words, setActiveTab }: AdminDashboardPr
         <button
           onClick={() => {
             audioManager.playClick();
-            setActiveSubTab('overview');
+            handleSwitchSubTab('overview');
           }}
           className={`flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-all whitespace-nowrap cursor-pointer ${
             activeSubTab === 'overview'
@@ -1149,7 +1192,7 @@ export default function AdminDashboard({ words, setActiveTab }: AdminDashboardPr
         <button
           onClick={() => {
             audioManager.playClick();
-            setActiveSubTab('users');
+            handleSwitchSubTab('users');
           }}
           className={`flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-all whitespace-nowrap cursor-pointer ${
             activeSubTab === 'users'
@@ -1164,7 +1207,7 @@ export default function AdminDashboard({ words, setActiveTab }: AdminDashboardPr
         <button
           onClick={() => {
             audioManager.playClick();
-            setActiveSubTab('online');
+            handleSwitchSubTab('online');
           }}
           className={`flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-all whitespace-nowrap cursor-pointer ${
             activeSubTab === 'online'
@@ -1182,7 +1225,7 @@ export default function AdminDashboard({ words, setActiveTab }: AdminDashboardPr
         <button
           onClick={() => {
             audioManager.playClick();
-            setActiveSubTab('backup');
+            handleSwitchSubTab('backup');
           }}
           className={`flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-all whitespace-nowrap cursor-pointer ${
             activeSubTab === 'backup'
@@ -1197,7 +1240,7 @@ export default function AdminDashboard({ words, setActiveTab }: AdminDashboardPr
         <button
           onClick={() => {
             audioManager.playClick();
-            setActiveSubTab('visibility');
+            handleSwitchSubTab('visibility');
           }}
           className={`flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-all whitespace-nowrap cursor-pointer ${
             activeSubTab === 'visibility'
@@ -1212,7 +1255,7 @@ export default function AdminDashboard({ words, setActiveTab }: AdminDashboardPr
         <button
           onClick={() => {
             audioManager.playClick();
-            setActiveSubTab('settings');
+            handleSwitchSubTab('settings');
           }}
           className={`flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-all whitespace-nowrap cursor-pointer ${
             activeSubTab === 'settings'
@@ -1222,6 +1265,21 @@ export default function AdminDashboard({ words, setActiveTab }: AdminDashboardPr
         >
           <Cpu size={18} />
           <span>Cấu hình & AI</span>
+        </button>
+
+        <button
+          onClick={() => {
+            audioManager.playClick();
+            handleSwitchSubTab('logs');
+          }}
+          className={`flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-all whitespace-nowrap cursor-pointer ${
+            activeSubTab === 'logs'
+              ? 'border-indigo-500 text-indigo-500 dark:text-indigo-400'
+              : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+          }`}
+        >
+          <Terminal size={18} />
+          <span>Nhật Ký & Gỡ Lỗi</span>
         </button>
       </div>
 
@@ -1331,7 +1389,7 @@ export default function AdminDashboard({ words, setActiveTab }: AdminDashboardPr
                   </div>
                 </div>
                 <button
-                  onClick={() => { audioManager.playClick(); setActiveSubTab('online'); }}
+                  onClick={() => { audioManager.playClick(); handleSwitchSubTab('online'); }}
                   className="text-xs font-bold text-emerald-300 hover:text-white flex items-center gap-1 group transition-colors"
                 >
                   <span>Xem chi tiết</span>
@@ -1381,7 +1439,7 @@ export default function AdminDashboard({ words, setActiveTab }: AdminDashboardPr
                   </div>
                 </div>
                 <button
-                  onClick={() => { audioManager.playClick(); setActiveSubTab('users'); }}
+                  onClick={() => { audioManager.playClick(); handleSwitchSubTab('users'); }}
                   className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 group"
                 >
                   <span>Bảng học viên</span>
@@ -1929,7 +1987,7 @@ export default function AdminDashboard({ words, setActiveTab }: AdminDashboardPr
                                   <button
                                     onClick={() => {
                                       audioManager.playClick();
-                                      setActiveSubTab('visibility');
+                                      handleSwitchSubTab('visibility');
                                       handleSelectVisibilityUser(u.id);
                                     }}
                                     className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-xl transition-colors"
@@ -3605,6 +3663,11 @@ export default function AdminDashboard({ words, setActiveTab }: AdminDashboardPr
             </div>
           </div>
         </div>
+      )}
+
+      {/* Tab 7: System Logs & Live Debugging */}
+      {activeSubTab === 'logs' && (
+        <AdminLogViewer />
       )}
     </div>
   );

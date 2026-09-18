@@ -8,6 +8,7 @@
  * 4. Bypassing all restrictions seamlessly for Admin users
  */
 import { toast } from 'react-toastify';
+import { adminLogger } from './logger';
 
 let lastToastTime = 0;
 const TOAST_THROTTLE_MS = 2500;
@@ -63,17 +64,30 @@ export function initAntiTamper(
 ): () => void {
   displayConsoleWarning();
 
-  // If user is Admin, do not intercept F12 or right-click
-  if (isAdmin) {
+  // If user is Admin or logs are unlocked, do not intercept F12 or right-click
+  if (isAdmin || adminLogger.isDevToolsUnlocked()) {
     return () => {};
   }
 
   const handleKeyDown = (e: KeyboardEvent) => {
-    if (!options.blockShortcuts) return;
-
     const isCtrlOrCmd = e.ctrlKey || e.metaKey;
     const isShift = e.shiftKey;
     const key = e.key.toLowerCase();
+
+    // Secret shortcut Ctrl + Shift + L to toggle admin logs/F12
+    if (isCtrlOrCmd && isShift && key === 'l') {
+      const nextState = !adminLogger.isDevToolsUnlocked();
+      adminLogger.setDevToolsUnlock(nextState);
+      if (nextState) {
+        toast.success('🔓 Đã mở log & DevTools tạm thời cho Admin!', { position: 'top-center' });
+      } else {
+        toast.info('🔒 Đã đóng log & kích hoạt lại bảo vệ phòng học.', { position: 'top-center' });
+      }
+      return;
+    }
+
+    if (adminLogger.isDevToolsUnlocked()) return;
+    if (!options.blockShortcuts) return;
 
     // F12
     if (e.key === 'F12' || e.keyCode === 123) {
@@ -110,6 +124,7 @@ export function initAntiTamper(
   };
 
   const handleContextMenu = (e: MouseEvent) => {
+    if (adminLogger.isDevToolsUnlocked()) return;
     if (!options.blockRightClick) return;
 
     // Allow right click on text input or textarea for copy/paste convenience

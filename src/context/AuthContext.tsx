@@ -106,7 +106,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [token]);
 
-  const login = async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
+  const login = async (username: string, password: string): Promise<{ success: boolean; user?: User; error?: string }> => {
     const trimmedUsername = username.trim();
     const trimmedPassword = password.trim();
 
@@ -177,7 +177,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return { success: false, error: 'Tên đăng nhập hoặc mật khẩu không chính xác' };
   };
 
-  const register = async (username: string, password: string, name?: string): Promise<{ success: boolean; error?: string }> => {
+  const register = async (username: string, password: string, name?: string): Promise<{ success: boolean; user?: User; error?: string }> => {
     const trimmedUsername = username.trim();
     const trimmedPassword = password.trim();
     const displayName = name?.trim() || trimmedUsername;

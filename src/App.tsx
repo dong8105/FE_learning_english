@@ -21,6 +21,9 @@ import { defaultRoutePolicy, IRouteResolution } from './domain/routePolicy';
 import { vocabularyApi } from './api/vocabularyApi';
 import { initAntiTamper } from './utils/antiTamper';
 import { usePresenceHeartbeat } from './hooks/usePresenceHeartbeat';
+import { Terminal } from 'lucide-react';
+import AdminLogModal from './components/AdminLogModal';
+import { adminLogger } from './utils/logger';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -59,7 +62,7 @@ const WordScrambleGame = lazy(() => import('./components/games/WordScrambleGame'
 
 // Static module-level constants (outside component to guarantee stable references and avoid hook churn)
 const VALID_TABS = new Set([
-  'home', 'login', 'dashboard', 'admin_dashboard', 'toeic30', 'toeic500', 'toeic600', 'ets2026', 'japaneseMinna',
+  'home', 'login', 'dashboard', 'admin_dashboard', 'admin_visibility', 'toeic30', 'toeic500', 'toeic600', 'ets2026', 'japaneseMinna',
   'optimal', 'sequential3', 'flashcards', 'quiz', 'dictation', 'ipa',
   'match', 'typing', 'related', 'recommendations', 'srs', 'manage',
   'reading', 'grammar', 'mixed', 'speaking',
@@ -77,8 +80,16 @@ function AppContent() {
 
   // Activate Anti-Tamper & Anti-Cheat protection (F12, right-click, console warning)
   useEffect(() => {
-    const cleanup = initAntiTamper(isAdmin);
-    return cleanup;
+    let cleanup = initAntiTamper(isAdmin);
+    const handleToggle = () => {
+      if (cleanup) cleanup();
+      cleanup = initAntiTamper(isAdmin);
+    };
+    window.addEventListener('admin_logs_toggle', handleToggle);
+    return () => {
+      window.removeEventListener('admin_logs_toggle', handleToggle);
+      if (cleanup) cleanup();
+    };
   }, [isAdmin]);
 
   // Router resolution logic with 403 / 404 / Auth checks (Delegated to RoutePolicy - SRP)
@@ -110,6 +121,7 @@ function AppContent() {
 
   const [routeState, setRouteState] = useState(() => resolveRoute(window.location.pathname));
   const [activeTab, setActiveTab] = useState(() => routeState.tab);
+  const [adminInitialSubTab, setAdminInitialSubTab] = useState<any>(() => routeState.subTab);
 
   // Mở luồng heartbeat theo dõi trạng thái hiện diện người dùng theo tab thực tế
   usePresenceHeartbeat(activeTab);
@@ -121,6 +133,9 @@ function AppContent() {
       setRouteState(res);
       if (res.status === 'ok') {
         setActiveTab(res.tab);
+        if (res.subTab) {
+          setAdminInitialSubTab(res.subTab);
+        }
         if (res.requiredAuth) {
           window.history.replaceState(null, '', '/login');
         }
@@ -136,12 +151,14 @@ function AppContent() {
     setRouteState(res);
     if (res.status === 'ok') {
       setActiveTab(res.tab);
+      if (res.subTab) {
+        setAdminInitialSubTab(res.subTab);
+      }
       if (res.requiredAuth) {
         window.history.replaceState(null, '', '/login');
       }
     } else if (res.status === 'forbidden') {
-      setActiveTab('dashboard');
-      window.history.replaceState(null, '', '/');
+      toast.warning('Đường dẫn này yêu cầu tài khoản Quản trị viên (Admin).');
     }
   }, [user, isAdmin, resolveRoute]);
 
@@ -189,6 +206,24 @@ function AppContent() {
       return;
     }
 
+    // 🔒 Kiểm tra quyền Admin trước khi vào các trang quản trị
+    if ((tab === 'admin_dashboard' || tab === 'admin_visibility' || tab === 'manage') && !effectiveAdmin) {
+      toast.error('Trang Quản trị & Phân quyền chỉ dành riêng cho Quản trị viên (Admin). Vui lòng đăng nhập tài khoản Admin!');
+      openAuthModal();
+      return;
+    }
+
+    // Điều hướng trực tiếp đến tab Phân Quyền trong Admin Dashboard
+    if (tab === 'admin_visibility') {
+      setAdminInitialSubTab('visibility');
+      window.history.pushState(null, '', '/admin?tab=visibility');
+      const res = resolveRoute('/admin?tab=visibility');
+      setRouteState(res);
+      setActiveTab('admin_dashboard');
+      setIsSidebarOpen(false);
+      return;
+    }
+
     // 🔒 Kiểm tra nếu chuyên đề đang bị Admin ẩn thì không cho học viên vào
     if (!effectiveAdmin) {
       if (CHUYEN_DE_TABS.includes(tab) && (!isTopicVisible(tab) || !isVocabCategoryVisible('chuyende'))) {
@@ -207,7 +242,10 @@ function AppContent() {
 
     let targetUrl = `/${tab}`;
     if (tab === 'dashboard') targetUrl = '/';
-    else if (tab === 'admin_dashboard') targetUrl = '/admin';
+    else if (tab === 'admin_dashboard') {
+      setAdminInitialSubTab(undefined);
+      targetUrl = '/admin';
+    }
     else if (tab === 'home') targetUrl = '/home';
     else if (tab === 'login') targetUrl = '/login';
 
@@ -271,6 +309,7 @@ function AppContent() {
   };
   const [streak, setStreak] = useState(0);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isAdminLogOpen, setIsAdminLogOpen] = useState(false);
   const [isSfxMuted, setIsSfxMuted] = useState(() => 
     typeof audioManager?.isMuted === 'function' ? audioManager.isMuted() : false
   );
@@ -282,12 +321,18 @@ function AppContent() {
     setIsSfxMuted(nextState);
   };
 
-  // Global keyboard shortcut Ctrl+K / Cmd+K to open Quick Search
+  // Global keyboard shortcut Ctrl+K to open Quick Search, Ctrl+Shift+L to open Admin Logs
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      const isCtrlOrCmd = e.ctrlKey || e.metaKey;
+      if (isCtrlOrCmd && !e.shiftKey && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setIsSearchOpen(prev => !prev);
+      }
+      // Ctrl + Shift + L to toggle Admin Logs
+      if (isCtrlOrCmd && e.shiftKey && e.key.toLowerCase() === 'l') {
+        e.preventDefault();
+        setIsAdminLogOpen(prev => !prev);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -641,7 +686,7 @@ function AppContent() {
                   {activeTab === 'home' && <HomePage wordCount={words.length} onNavigate={handleNavigateTab} speak={speak} />}
                   {activeTab === 'login' && <LoginPage onNavigate={handleNavigateTab} />}
                   {activeTab === 'dashboard' && <DashboardMode words={words} speak={speak} setActiveTab={handleNavigateTab} onRefreshData={handleRefreshData} />}
-                  {activeTab === 'admin_dashboard' && <AdminDashboard words={words} speak={speak} setActiveTab={handleNavigateTab} />}
+                  {activeTab === 'admin_dashboard' && <AdminDashboard words={words} speak={speak} setActiveTab={handleNavigateTab} initialSubTab={adminInitialSubTab} />}
                   {activeTab === 'toeic30' && <Toeic30DayMode words={words} speak={speak} onNavigate={handleNavigateTab} setActiveTab={handleNavigateTab} />}
                   {activeTab === 'toeic500' && <Toeic500Mode words={words} speak={speak} />}
                   {activeTab === 'toeic600' && <Toeic600Mode words={words} speak={speak} />}
@@ -734,6 +779,31 @@ function AppContent() {
         isAdmin={isAdmin}
         onToggleAdminVoiceVisibility={handleToggleAdminVoiceVisibility}
       />
+
+      {/* Admin Floating Debug & Log Trigger Button */}
+      {(isAdmin || adminLogger.isDevToolsUnlocked()) && (
+        <button
+          onClick={() => setIsAdminLogOpen(true)}
+          className="fixed bottom-20 md:bottom-6 right-5 z-[9999] flex items-center gap-2 px-3 py-2 bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700 shadow-2xl rounded-full text-xs font-bold backdrop-blur-md transition-all hover:scale-105 active:scale-95 cursor-pointer group"
+          title="Mở nhật ký & gỡ lỗi Admin (Ctrl + Shift + L)"
+        >
+          <div className="relative">
+            <Terminal size={15} className="text-indigo-400 group-hover:text-indigo-300" />
+            <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+          </div>
+          <span className="hidden sm:inline text-[11px] font-mono">Admin Logs</span>
+          <kbd className="hidden lg:inline text-[9px] bg-slate-800 border border-slate-700 px-1 py-0.5 rounded text-slate-400 font-mono">
+            Ctrl+Shift+L
+          </kbd>
+        </button>
+      )}
+
+      {/* Admin Log Modal */}
+      <AdminLogModal 
+        isOpen={isAdminLogOpen} 
+        onClose={() => setIsAdminLogOpen(false)} 
+      />
+
       <ToastContainer position="bottom-right" aria-label="Notifications" />
     </div>
   );

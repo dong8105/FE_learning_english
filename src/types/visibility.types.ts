@@ -21,6 +21,7 @@ export interface IVisibilitySettings {
 
 export type SectionKey = 'grammar' | 'games' | 'vocabPractice' | 'practice';
 export type VocabCategoryKey = 'chuyende' | 'daily' | 'master';
+export type VocabCategoryType = VocabCategoryKey;
 
 /**
  * Reader interface: For components that only consume visibility rules

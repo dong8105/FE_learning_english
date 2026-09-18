@@ -15,7 +15,8 @@ import {
     User as UserIcon, 
     Crown,
     ChevronDown,
-    Home
+    Home,
+    Eye
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useVisibility } from '../context/VisibilityContext';
@@ -272,16 +273,28 @@ export default function Header({
                                     )}
 
                                     {isAdmin && onNavigateTab && (
-                                        <button
-                                            onClick={() => {
-                                                onNavigateTab('admin_dashboard');
-                                                setIsUserMenuOpen(false);
-                                            }}
-                                            className="w-full text-left px-3 py-2 rounded-xl text-amber-800 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 font-bold flex items-center gap-2.5 transition-colors mt-0.5"
-                                        >
-                                            <ShieldCheck size={15} className="text-amber-500 shrink-0" />
-                                            <span>Admin Dashboard</span>
-                                        </button>
+                                        <>
+                                            <button
+                                                onClick={() => {
+                                                    onNavigateTab('admin_dashboard');
+                                                    setIsUserMenuOpen(false);
+                                                }}
+                                                className="w-full text-left px-3 py-2 rounded-xl text-amber-800 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 font-bold flex items-center gap-2.5 transition-colors mt-0.5 cursor-pointer"
+                                            >
+                                                <ShieldCheck size={15} className="text-amber-500 shrink-0" />
+                                                <span>Admin Dashboard</span>
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    onNavigateTab('admin_visibility');
+                                                    setIsUserMenuOpen(false);
+                                                }}
+                                                className="w-full text-left px-3 py-2 rounded-xl text-amber-800 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 font-bold flex items-center gap-2.5 transition-colors mt-0.5 cursor-pointer"
+                                            >
+                                                <Eye size={15} className="text-amber-500 shrink-0" />
+                                                <span>Phân Quyền & Hiển Thị</span>
+                                            </button>
+                                        </>
                                     )}
 
                                     <div className="my-1.5 border-t border-slate-100 dark:border-slate-800" />

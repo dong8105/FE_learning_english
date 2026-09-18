@@ -4,6 +4,7 @@ import { VisibilityPolicy, defaultVisibilityPolicy } from './visibilityPolicy';
 export interface IRouteResolution {
   status: 'ok' | 'not_found' | 'forbidden';
   tab: string;
+  subTab?: string;
   requiredAuth?: boolean;
 }
 
@@ -25,7 +26,7 @@ export class RoutePolicy {
   public resolveRoute(params: IRoutePolicyParams): IRouteResolution {
     const { pathname, user, isAdmin, validTabs, visibilitySettings } = params;
 
-    let clean = (pathname || '/').toLowerCase().replace(/^\/+/, '').split('?')[0].split('#')[0];
+    let clean = (pathname || '/').toLowerCase().trim().replace(/^\/+|\/+$/g, '').split('?')[0].split('#')[0];
 
     // Root path handling
     if (!clean) {
@@ -55,6 +56,23 @@ export class RoutePolicy {
     const URL_ALIASES: Record<string, string> = {
       'admin': 'admin_dashboard',
       'admindashboard': 'admin_dashboard',
+      'phanquyen': 'admin_dashboard',
+      'phan-quyen': 'admin_dashboard',
+      'permissions': 'admin_dashboard',
+      'visibility': 'admin_dashboard',
+      'admin-visibility': 'admin_dashboard',
+      'admin_visibility': 'admin_dashboard',
+      'admin/visibility': 'admin_dashboard',
+      'admin/phanquyen': 'admin_dashboard',
+      'admin/phan-quyen': 'admin_dashboard',
+      'admin/permissions': 'admin_dashboard',
+      'admin/users': 'admin_dashboard',
+      'admin/online': 'admin_dashboard',
+      'admin/backup': 'admin_dashboard',
+      'admin/settings': 'admin_dashboard',
+      'admin/logs': 'admin_dashboard',
+      'admin/log': 'admin_dashboard',
+      'logs': 'admin_dashboard',
       'japaneseminna': 'japaneseMinna',
       'minna': 'japaneseMinna',
       'japanese': 'japaneseMinna',
@@ -87,20 +105,51 @@ export class RoutePolicy {
 
     const normalizedSlug = canonicalTab.toLowerCase();
 
-    // 1. Mandatory Authentication Check for learning modes
-    if (!user) {
-      if (typeof window !== 'undefined' && window.sessionStorage) {
-        window.sessionStorage.setItem('redirectAfterLogin', canonicalTab);
+    // 1. Admin Route Protection (Priority check: Requires Admin privileges)
+    if (canonicalTab === 'admin_dashboard' || canonicalTab === 'manage' || canonicalTab === 'admin_visibility') {
+      let subTab: string | undefined = undefined;
+      const cleanLower = clean.toLowerCase();
+      if (
+        cleanLower === 'phanquyen' || 
+        cleanLower === 'phan-quyen' || 
+        cleanLower === 'permissions' || 
+        cleanLower === 'visibility' || 
+        cleanLower === 'admin-visibility' || 
+        cleanLower === 'admin_visibility' || 
+        cleanLower === 'admin/visibility' || 
+        cleanLower === 'admin/phanquyen' ||
+        cleanLower === 'admin/phan-quyen' ||
+        cleanLower === 'admin/permissions'
+      ) {
+        subTab = 'visibility';
+      } else if (cleanLower === 'admin/users') {
+        subTab = 'users';
+      } else if (cleanLower === 'admin/online') {
+        subTab = 'online';
+      } else if (cleanLower === 'admin/backup') {
+        subTab = 'backup';
+      } else if (cleanLower === 'admin/settings') {
+        subTab = 'settings';
+      } else if (cleanLower === 'admin/logs' || cleanLower === 'admin/log' || cleanLower === 'logs') {
+        subTab = 'logs';
       }
-      return { status: 'ok', tab: 'login', requiredAuth: true };
+
+      if (!isAdmin) {
+        if (typeof window !== 'undefined' && window.sessionStorage) {
+          window.sessionStorage.setItem('redirectAfterLogin', pathname || '/admin');
+        }
+        return { status: 'forbidden', tab: canonicalTab, subTab };
+      }
+
+      return { status: 'ok', tab: 'admin_dashboard', subTab };
     }
 
-    // 2. Admin Route Protection
-    if (canonicalTab === 'admin_dashboard' || canonicalTab === 'manage') {
-      if (!isAdmin) {
-        return { status: 'forbidden', tab: canonicalTab };
+    // 2. Mandatory Authentication Check for learning modes
+    if (!user) {
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        window.sessionStorage.setItem('redirectAfterLogin', pathname || canonicalTab);
       }
-      return { status: 'ok', tab: canonicalTab };
+      return { status: 'ok', tab: 'login', requiredAuth: true };
     }
 
     // 3. Admin Bypass Check

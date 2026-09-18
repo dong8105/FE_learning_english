@@ -27,7 +27,8 @@ import {
     Target,
     Home,
     LogIn,
-    User as UserIcon
+    User as UserIcon,
+    Eye
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useVisibility } from '../context/VisibilityContext';
@@ -114,8 +115,8 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, onClose }) {
                         <div className="flex flex-col gap-1">
                             <button
                                 onClick={() => setActiveTab('admin_dashboard')}
-                                className={`flex items-center gap-2.5 px-3 py-2 rounded-xl font-bold text-xs transition-all w-full text-left ${
-                                    activeTab === 'admin_dashboard'
+                                className={`flex items-center gap-2.5 px-3 py-2 rounded-xl font-bold text-xs transition-all w-full text-left cursor-pointer ${
+                                    activeTab === 'admin_dashboard' && (!window.location.search || !window.location.search.includes('tab=visibility'))
                                         ? 'bg-amber-500 text-slate-950 shadow-xs'
                                         : 'text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/50'
                                 }`}
@@ -124,8 +125,19 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, onClose }) {
                                 <span>Admin Dashboard</span>
                             </button>
                             <button
+                                onClick={() => setActiveTab('admin_visibility')}
+                                className={`flex items-center gap-2.5 px-3 py-2 rounded-xl font-bold text-xs transition-all w-full text-left cursor-pointer ${
+                                    activeTab === 'admin_visibility' || (activeTab === 'admin_dashboard' && window.location.search && window.location.search.includes('tab=visibility'))
+                                        ? 'bg-amber-500 text-slate-950 shadow-xs'
+                                        : 'text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/50'
+                                }`}
+                            >
+                                <Eye size={16} />
+                                <span>Phân Quyền & Hiển Thị</span>
+                            </button>
+                            <button
                                 onClick={() => setActiveTab('manage')}
-                                className={`flex items-center gap-2.5 px-3 py-2 rounded-xl font-bold text-xs transition-all w-full text-left ${
+                                className={`flex items-center gap-2.5 px-3 py-2 rounded-xl font-bold text-xs transition-all w-full text-left cursor-pointer ${
                                     activeTab === 'manage'
                                         ? 'bg-amber-500 text-slate-950 shadow-xs'
                                         : 'text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/50'
