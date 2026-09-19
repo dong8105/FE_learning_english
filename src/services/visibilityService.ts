@@ -19,7 +19,7 @@ export const DEFAULT_VISIBILITY_SETTINGS: IVisibilitySettings = {
 };
 
 const STORAGE_KEY = 'engmaster_visibility_settings';
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/+$/, '');
 
 export class VisibilityService implements IVisibilityService {
   private storage: IStorageService;

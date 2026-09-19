@@ -92,7 +92,7 @@ Hãy trả về một đối tượng JSON BẮT BUỘC có cấu trúc:
 }`;
 
             const token = localStorage.getItem('engmaster_token') || localStorage.getItem('token');
-            const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/generate`, {
+            const response = await fetch(`${(import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/+$/, '')}/api/ai/generate`, {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
@@ -123,7 +123,7 @@ Hãy trả về một đối tượng JSON BẮT BUỘC có cấu trúc:
             setHelperData(parsed);
 
             // Save to database cache
-            await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/words/${currentWord.id}/helpers`, {
+            await fetch(`${(import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/+$/, '')}/api/words/${currentWord.id}/helpers`, {
                 method: 'PUT',
                 headers: { 
                     'Content-Type': 'application/json',
@@ -189,7 +189,7 @@ Hãy trả về một đối tượng JSON BẮT BUỘC có cấu trúc:
 }`;
 
             const token = localStorage.getItem('engmaster_token') || localStorage.getItem('token');
-            const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/generate`, {
+            const response = await fetch(`${(import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/+$/, '')}/api/ai/generate`, {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',

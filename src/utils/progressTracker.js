@@ -25,7 +25,7 @@ export const saveProgress = (progress) => {
 
     try {
         const token = localStorage.getItem('engmaster_token') || localStorage.getItem('token');
-        const apiUrl = (import.meta.env?.VITE_API_URL || 'http://localhost:5000') + '/api/progress/vocab';
+        const apiUrl = (import.meta.env?.VITE_API_URL || 'http://localhost:5000').replace(/\/+$/, '') + '/api/progress/vocab';
         fetch(apiUrl, {
             method: 'POST',
             headers: {

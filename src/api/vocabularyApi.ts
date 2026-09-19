@@ -21,7 +21,7 @@ export interface IVocabularyApi {
   deleteWord(id: number | string): Promise<{ success: boolean; error?: string }>;
 }
 
-const API_BASE_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/words`;
+const API_BASE_URL = `${(import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/+$/, '')}/api/words`;
 
 export class VocabularyApiService implements IVocabularyApi {
   private baseUrl: string;

@@ -115,6 +115,8 @@ const STATIC_EXAMPLE_TRANSLATIONS = {
     "Follow the recipe to cook this.": "Hãy làm theo công thức để nấu món này."
 };
 
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/+$/, '');
+
 const Toeic30DayMode = ({ words = [], speak, onNavigate, setActiveTab: setParentActiveTab }) => {
     const navigateTab = onNavigate || setParentActiveTab;
     const { reportAiUsage } = useAiStatus();
@@ -220,7 +222,7 @@ const Toeic30DayMode = ({ words = [], speak, onNavigate, setActiveTab: setParent
 
         // Sync with backend database if user is logged in
         if (token) {
-            fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/progress/toeic30`, {
+            fetch(`${API_BASE_URL}/api/progress/toeic30`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             })
             .then(res => res.ok ? res.json() : null)
@@ -315,7 +317,7 @@ const Toeic30DayMode = ({ words = [], speak, onNavigate, setActiveTab: setParent
 
         // Sync to MySQL if user is logged in
         if (token) {
-            fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/progress/toeic30`, {
+            fetch(`${API_BASE_URL}/api/progress/toeic30`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -346,7 +348,7 @@ const Toeic30DayMode = ({ words = [], speak, onNavigate, setActiveTab: setParent
             localStorage.removeItem(QUIZZES_STATE_KEY);
 
             if (token) {
-                fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/progress/toeic30`, {
+                fetch(`${API_BASE_URL}/api/progress/toeic30`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -540,7 +542,7 @@ const Toeic30DayMode = ({ words = [], speak, onNavigate, setActiveTab: setParent
                 ]
             }`;
 
-            const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/generate`, {
+            const response = await fetch(`${API_BASE_URL}/api/ai/generate`, {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',

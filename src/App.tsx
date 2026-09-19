@@ -25,7 +25,7 @@ import { Terminal } from 'lucide-react';
 import AdminLogModal from './components/AdminLogModal';
 import { adminLogger } from './utils/logger';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/+$/, '');
 
 // Lazy loaded modes for instant initial load and code splitting
 const HomePage = lazy(() => import('./components/HomePage'));
