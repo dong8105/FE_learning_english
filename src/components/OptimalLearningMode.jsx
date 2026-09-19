@@ -94,7 +94,6 @@ Hãy trả về một đối tượng JSON BẮT BUỘC có cấu trúc:
             const token = localStorage.getItem('engmaster_token') || localStorage.getItem('token');
             const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/generate`, {
                 method: 'POST',
-                credentials: 'include',
                 headers: { 
                     'Content-Type': 'application/json',
                     ...(token ? { 'Authorization': `Bearer ${token}` } : {})
@@ -126,7 +125,6 @@ Hãy trả về một đối tượng JSON BẮT BUỘC có cấu trúc:
             // Save to database cache
             await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/words/${currentWord.id}/helpers`, {
                 method: 'PUT',
-                credentials: 'include',
                 headers: { 
                     'Content-Type': 'application/json',
                     ...(token ? { 'Authorization': `Bearer ${token}` } : {})
@@ -193,7 +191,6 @@ Hãy trả về một đối tượng JSON BẮT BUỘC có cấu trúc:
             const token = localStorage.getItem('engmaster_token') || localStorage.getItem('token');
             const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/generate`, {
                 method: 'POST',
-                credentials: 'include',
                 headers: { 
                     'Content-Type': 'application/json',
                     ...(token ? { 'Authorization': `Bearer ${token}` } : {})

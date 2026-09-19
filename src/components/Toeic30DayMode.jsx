@@ -220,8 +220,7 @@ const Toeic30DayMode = ({ words = [], speak, onNavigate, setActiveTab: setParent
 
         // Sync with backend database if user is logged in
         if (token) {
-            fetch('http://localhost:5000/api/progress/toeic30', {
-                credentials: 'include',
+            fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/progress/toeic30`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             })
             .then(res => res.ok ? res.json() : null)
@@ -316,9 +315,8 @@ const Toeic30DayMode = ({ words = [], speak, onNavigate, setActiveTab: setParent
 
         // Sync to MySQL if user is logged in
         if (token) {
-            fetch('http://localhost:5000/api/progress/toeic30', {
+            fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/progress/toeic30`, {
                 method: 'POST',
-                credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
@@ -348,9 +346,8 @@ const Toeic30DayMode = ({ words = [], speak, onNavigate, setActiveTab: setParent
             localStorage.removeItem(QUIZZES_STATE_KEY);
 
             if (token) {
-                fetch('http://localhost:5000/api/progress/toeic30', {
+                fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/progress/toeic30`, {
                     method: 'POST',
-                    credentials: 'include',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
@@ -545,7 +542,6 @@ const Toeic30DayMode = ({ words = [], speak, onNavigate, setActiveTab: setParent
 
             const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/generate`, {
                 method: 'POST',
-                credentials: 'include',
                 headers: { 
                     'Content-Type': 'application/json',
                     ...(token ? { 'Authorization': `Bearer ${token}` } : {})

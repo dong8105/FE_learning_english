@@ -43,7 +43,7 @@ export class VocabularyApiService implements IVocabularyApi {
 
   public async getAllWords(): Promise<WordItem[]> {
     try {
-      const response = await fetch(this.baseUrl, { credentials: 'include' });
+      const response = await fetch(this.baseUrl);
       if (!response.ok) throw new Error('Failed to fetch words');
       return await response.json();
     } catch (error) {
@@ -61,7 +61,6 @@ export class VocabularyApiService implements IVocabularyApi {
         const res = await fetch(this.baseUrl, {
           method: 'POST',
           headers,
-          credentials: 'include',
           body: JSON.stringify(word),
         });
         if (res.ok) count++;
@@ -77,7 +76,6 @@ export class VocabularyApiService implements IVocabularyApi {
       const response = await fetch(this.baseUrl, {
         method: 'POST',
         headers: this.getAuthHeaders(),
-        credentials: 'include',
         body: JSON.stringify(word),
       });
       return await response.json();
@@ -92,7 +90,6 @@ export class VocabularyApiService implements IVocabularyApi {
       const response = await fetch(`${this.baseUrl}/${id}`, {
         method: 'DELETE',
         headers: this.getAuthHeaders(),
-        credentials: 'include',
       });
       return await response.json();
     } catch (error: any) {

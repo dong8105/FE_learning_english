@@ -29,7 +29,6 @@ export function usePresenceHeartbeat(currentTab: string = 'home') {
       const res = await fetch(`${API_BASE_URL}/api/presence/heartbeat`, {
         method: 'POST',
         headers,
-        credentials: 'include',
         body: JSON.stringify({
           sessionId: sessionIdRef.current,
           currentTab,

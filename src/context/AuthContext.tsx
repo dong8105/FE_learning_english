@@ -67,12 +67,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const isAdmin = user?.role === 'admin';
 
-  // Automatically restore / verify session from HttpOnly Cookie on mount
+  // Automatically restore / verify session from Token on mount
   useEffect(() => {
     const checkSession = async () => {
       try {
+        const savedToken = localStorage.getItem('engmaster_token') || localStorage.getItem('token');
+        const headers: Record<string, string> = {};
+        if (savedToken) {
+          headers['Authorization'] = `Bearer ${savedToken}`;
+        }
         const res = await fetch(`${API_BASE_URL}/api/auth/me`, {
-          credentials: 'include',
+          headers,
         });
         if (res.ok) {
           const data = await res.json();
@@ -111,11 +116,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const trimmedPassword = password.trim();
 
     try {
-      // 1. Try Backend API first with HttpOnly credentials
+      // 1. Try Backend API first
       const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ username: trimmedUsername, password: trimmedPassword }),
       });
 
@@ -149,7 +153,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         name: 'Quản Trị Viên (Admin Demo)',
         role: 'admin',
       };
-      const demoToken = `demo-token-${Date.now()}`;
+      const demoToken = `demo-token-admin-${Date.now()}`;
       localStorage.setItem('engmaster_user', JSON.stringify(demoAdmin));
       localStorage.setItem('engmaster_token', demoToken);
       setUser(demoAdmin);
@@ -165,7 +169,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         name: 'Học Viên Mẫu',
         role: 'user',
       };
-      const demoToken = `demo-token-${Date.now()}`;
+      const demoToken = `demo-token-user-${Date.now()}`;
       localStorage.setItem('engmaster_user', JSON.stringify(demoUser));
       localStorage.setItem('engmaster_token', demoToken);
       setUser(demoUser);
@@ -186,7 +190,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ username: trimmedUsername, password: trimmedPassword, name: displayName }),
       });
 
@@ -215,7 +218,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         name: displayName,
         role: 'user',
       };
-      const demoToken = `demo-token-${Date.now()}`;
+      const demoToken = `demo-token-user-${Date.now()}`;
       localStorage.setItem('engmaster_user', JSON.stringify(newLocalUser));
       localStorage.setItem('engmaster_token', demoToken);
       setUser(newLocalUser);
@@ -228,10 +231,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const logout = () => {
-    // Notify server to clear HttpOnly cookie
+    // Notify server to clear session
     fetch(`${API_BASE_URL}/api/auth/logout`, {
       method: 'POST',
-      credentials: 'include',
     }).catch(() => {});
 
     setUser(null);

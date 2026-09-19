@@ -51,7 +51,6 @@ export class HttpClient {
     }
 
     const response = await fetch(url, {
-      credentials: 'include',
       ...customConfig,
       headers: mergedHeaders,
     });
@@ -104,4 +103,4 @@ export class HttpClient {
   }
 }
 
-export const defaultHttpClient = new HttpClient('http://localhost:5000');
+export const defaultHttpClient = new HttpClient(import.meta.env.VITE_API_URL || 'http://localhost:5000');

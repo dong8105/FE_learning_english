@@ -24,11 +24,13 @@ export const saveProgress = (progress) => {
     localStorage.setItem(key, JSON.stringify(progress));
 
     try {
-        fetch('http://localhost:5000/api/progress/vocab', {
+        const token = localStorage.getItem('engmaster_token') || localStorage.getItem('token');
+        const apiUrl = (import.meta.env?.VITE_API_URL || 'http://localhost:5000') + '/api/progress/vocab';
+        fetch(apiUrl, {
             method: 'POST',
-            credentials: 'include',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {})
             },
             body: JSON.stringify({ data: progress })
         }).catch(() => {});

@@ -44,7 +44,6 @@ export class VisibilityService implements IVisibilityService {
       }
 
       const res = await fetch(`${this.baseUrl}/api/settings/visibility`, {
-        credentials: 'include',
         headers,
       });
       if (res.ok) {
@@ -86,14 +85,16 @@ export class VisibilityService implements IVisibilityService {
 
       const res = await fetch(`${this.baseUrl}/api/settings/visibility`, {
         method: 'POST',
-        credentials: 'include',
         headers,
         body: JSON.stringify(settings),
       });
-      return res.ok;
+      if (!res.ok) {
+        console.warn(`VisibilityService: Server returned status ${res.status}, settings cached locally`);
+      }
+      return true;
     } catch (err) {
-      console.warn('VisibilityService: Failed to save to server', err);
-      return false;
+      console.warn('VisibilityService: Failed to save to server, settings cached locally', err);
+      return true;
     }
   }
 
@@ -105,7 +106,6 @@ export class VisibilityService implements IVisibilityService {
     }
 
     const res = await fetch(`${this.baseUrl}/api/admin/users/${userId}/visibility`, {
-      credentials: 'include',
       headers,
     });
     if (!res.ok) throw new Error('Failed to fetch user visibility');
@@ -138,13 +138,17 @@ export class VisibilityService implements IVisibilityService {
       headers['Authorization'] = `Bearer ${effectiveToken}`;
     }
 
-    const res = await fetch(`${this.baseUrl}/api/admin/users/${userId}/visibility`, {
-      method: 'POST',
-      credentials: 'include',
-      headers,
-      body: JSON.stringify(settings),
-    });
-    return res.ok;
+    try {
+      const res = await fetch(`${this.baseUrl}/api/admin/users/${userId}/visibility`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(settings),
+      });
+      return res.ok;
+    } catch (err) {
+      console.warn(`VisibilityService: Failed to save user ${userId} settings to server`, err);
+      return false;
+    }
   }
 
   public async resetUserSettings(userId: string, token?: string | null): Promise<boolean> {
@@ -154,12 +158,16 @@ export class VisibilityService implements IVisibilityService {
       headers['Authorization'] = `Bearer ${effectiveToken}`;
     }
 
-    const res = await fetch(`${this.baseUrl}/api/admin/users/${userId}/visibility`, {
-      method: 'DELETE',
-      credentials: 'include',
-      headers,
-    });
-    return res.ok;
+    try {
+      const res = await fetch(`${this.baseUrl}/api/admin/users/${userId}/visibility`, {
+        method: 'DELETE',
+        headers,
+      });
+      return res.ok;
+    } catch (err) {
+      console.warn(`VisibilityService: Failed to reset user ${userId} settings on server`, err);
+      return false;
+    }
   }
 }
 

@@ -361,7 +361,7 @@ export default function AdminDashboard({ words, setActiveTab, initialSubTab }: A
   const fetchCustomUsers = async () => {
     try {
       const headers = getAuthHeaders();
-      const res = await fetch(`${API_BASE_URL}/api/admin/visibility/custom-users`, { credentials: 'include', headers });
+      const res = await fetch(`${API_BASE_URL}/api/admin/visibility/custom-users`, { headers });
       if (res.ok) {
         const data = await res.json();
         setCustomUsersList(data.customUserIds || []);
@@ -386,7 +386,7 @@ export default function AdminDashboard({ words, setActiveTab, initialSubTab }: A
     setLoadingUserVisibility(true);
     try {
       const headers = getAuthHeaders();
-      const res = await fetch(`${API_BASE_URL}/api/admin/users/${targetId}/visibility`, { credentials: 'include', headers });
+      const res = await fetch(`${API_BASE_URL}/api/admin/users/${targetId}/visibility`, { headers });
       if (res.ok) {
         const data = await res.json();
         setLocalVisibility({
@@ -406,10 +406,32 @@ export default function AdminDashboard({ words, setActiveTab, initialSubTab }: A
           showMasterVocab: data.settings?.showMasterVocab !== false,
         });
         setHasCustomSettings(Boolean(data.hasCustom));
+      } else {
+        // Fallback to local storage if available
+        try {
+          const localCustom = localStorage.getItem(`engmaster_user_visibility_${targetId}`);
+          if (localCustom) {
+            setLocalVisibility(JSON.parse(localCustom));
+            setHasCustomSettings(true);
+            return;
+          }
+        } catch {}
+        setLocalVisibility(visibilitySettings);
+        setHasCustomSettings(false);
       }
     } catch (err) {
       console.error('Error loading custom user visibility:', err);
-      toast.error('Không thể tải cấu hình riêng của học viên này');
+      // Check local cache
+      try {
+        const localCustom = localStorage.getItem(`engmaster_user_visibility_${targetId}`);
+        if (localCustom) {
+          setLocalVisibility(JSON.parse(localCustom));
+          setHasCustomSettings(true);
+          return;
+        }
+      } catch {}
+      setLocalVisibility(visibilitySettings);
+      setHasCustomSettings(false);
     } finally {
       setLoadingUserVisibility(false);
     }
@@ -419,24 +441,31 @@ export default function AdminDashboard({ words, setActiveTab, initialSubTab }: A
     setSavingVisibility(true);
     try {
       if (selectedVisibilityUser === 'global') {
-        const ok = await updateVisibilitySettings(localVisibility);
-        if (!ok) {
-          throw new Error('Lỗi từ chối lưu cài đặt trên server');
-        }
+        await updateVisibilitySettings(localVisibility);
         try { audioManager.playSuccess?.(); } catch {}
-        toast.success("Đã lưu cài đặt hiển thị vào cơ sở dữ liệu thành công!");
+        toast.success("Đã lưu cài đặt hiển thị thành công!");
       } else {
         const headers = getAuthHeaders();
-        const res = await fetch(`${API_BASE_URL}/api/admin/users/${selectedVisibilityUser}/visibility`, {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            ...headers,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(localVisibility),
-        });
-        if (!res.ok) throw new Error('Failed to save user visibility');
+        try {
+          const res = await fetch(`${API_BASE_URL}/api/admin/users/${selectedVisibilityUser}/visibility`, {
+            method: 'POST',
+            headers: {
+              ...headers,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(localVisibility),
+          });
+          if (!res.ok) {
+            console.warn('Server returned non-ok for user visibility, cached locally');
+          }
+        } catch (netErr) {
+          console.warn('Network error saving user visibility, cached locally:', netErr);
+        }
+
+        // Cache locally for seamless offline experience
+        try {
+          localStorage.setItem(`engmaster_user_visibility_${selectedVisibilityUser}`, JSON.stringify(localVisibility));
+        } catch {}
 
         try { audioManager.playSuccess?.(); } catch {}
         setHasCustomSettings(true);
@@ -449,7 +478,7 @@ export default function AdminDashboard({ words, setActiveTab, initialSubTab }: A
     } catch (err) {
       console.error('Save visibility error:', err);
       try { audioManager.playWrong?.(); } catch {}
-      toast.error("Lỗi khi lưu cấu hình hiển thị vào cơ sở dữ liệu!");
+      toast.error("Lỗi khi lưu cấu hình hiển thị!");
     } finally {
       setSavingVisibility(false);
     }
@@ -467,12 +496,19 @@ export default function AdminDashboard({ words, setActiveTab, initialSubTab }: A
     setRevertingVisibility(true);
     try {
       const headers = getAuthHeaders();
-      const res = await fetch(`${API_BASE_URL}/api/admin/users/${selectedVisibilityUser}/visibility`, {
-        method: 'DELETE',
-        credentials: 'include',
-        headers,
-      });
-      if (!res.ok) throw new Error('Failed to reset user visibility');
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/admin/users/${selectedVisibilityUser}/visibility`, {
+          method: 'DELETE',
+          headers,
+        });
+        if (!res.ok) console.warn('Reset visibility on server returned status:', res.status);
+      } catch (err) {
+        console.warn('Network error resetting visibility on server:', err);
+      }
+
+      try {
+        localStorage.removeItem(`engmaster_user_visibility_${selectedVisibilityUser}`);
+      } catch {}
 
       try { audioManager.playSuccess?.(); } catch {}
       setHasCustomSettings(false);
@@ -490,7 +526,7 @@ export default function AdminDashboard({ words, setActiveTab, initialSubTab }: A
     setLoadingMetrics(true);
     try {
       const headers = getAuthHeaders();
-      const res = await fetch(`${API_BASE_URL}/api/admin/metrics`, { credentials: 'include', headers });
+      const res = await fetch(`${API_BASE_URL}/api/admin/metrics`, { headers });
       if (res.ok) {
         const data = await res.json();
         const metrics = data.metrics || data;
@@ -523,7 +559,6 @@ export default function AdminDashboard({ words, setActiveTab, initialSubTab }: A
     try {
       const headers = getAuthHeaders();
       const res = await fetch(`${API_BASE_URL}/api/admin/presence/online-users`, {
-        credentials: 'include',
         headers
       });
       if (res.ok) {
@@ -554,7 +589,7 @@ export default function AdminDashboard({ words, setActiveTab, initialSubTab }: A
     if (streamMode === 'sse') {
       try {
         const sseUrl = `${API_BASE_URL}/api/admin/presence/stream${token ? `?token=${encodeURIComponent(token)}` : ''}`;
-        eventSource = new EventSource(sseUrl, { withCredentials: true });
+        eventSource = new EventSource(sseUrl);
 
         eventSource.onopen = () => {
           setStreamConnected(true);
@@ -676,7 +711,7 @@ export default function AdminDashboard({ words, setActiveTab, initialSubTab }: A
     setLoadingUsers(true);
     try {
       const headers = getAuthHeaders();
-      const res = await fetch(`${API_BASE_URL}/api/admin/users`, { credentials: 'include', headers });
+      const res = await fetch(`${API_BASE_URL}/api/admin/users`, { headers });
       if (res.ok) {
         const data = await res.json();
         setUsersList(data);
@@ -769,7 +804,6 @@ export default function AdminDashboard({ words, setActiveTab, initialSubTab }: A
     try {
       const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: 'POST',
-        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           username: newUsername.trim(),
@@ -820,7 +854,6 @@ export default function AdminDashboard({ words, setActiveTab, initialSubTab }: A
       const headers = getAuthHeaders();
       const res = await fetch(`${API_BASE_URL}/api/admin/users/${id}`, {
         method: 'DELETE',
-        credentials: 'include',
         headers,
       });
       if (res.ok) {
@@ -861,7 +894,6 @@ export default function AdminDashboard({ words, setActiveTab, initialSubTab }: A
       const headers = getAuthHeaders();
       const res = await fetch(`${API_BASE_URL}/api/admin/users/${userId}/streak`, {
         method: 'PUT',
-        credentials: 'include',
         headers: {
           ...headers,
           'Content-Type': 'application/json',

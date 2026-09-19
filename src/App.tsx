@@ -359,7 +359,6 @@ function AppContent() {
           const headers: Record<string, string> = {};
           if (token) headers['Authorization'] = `Bearer ${token}`;
           const res = await fetch(`${API_BASE_URL}/api/progress/streak`, {
-            credentials: 'include',
             headers
           });
           if (res.ok) {
@@ -413,7 +412,6 @@ function AppContent() {
           if (token) headers['Authorization'] = `Bearer ${token}`;
           await fetch(`${API_BASE_URL}/api/progress/streak`, {
             method: 'POST',
-            credentials: 'include',
             headers,
             body: JSON.stringify({
               data: {
